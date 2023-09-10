@@ -12,9 +12,8 @@ public class LinkLocalMulticastAddrParser {
             if(!addr.isMulticastAddress()) {
                 throw new IllegalArgumentException("Address must be multicast");
             }
-            if(addr instanceof Inet4Address addr4 && isLinkLocal4Address(addr4)) {
-                return addr;
-            } else if(addr instanceof Inet6Address addr6 && isLinkLocal6Address(addr6)) {
+            if(addr instanceof Inet4Address addr4 && isLinkLocal4Address(addr4) ||
+                    addr instanceof Inet6Address addr6 && isLinkLocal6Address(addr6)) {
                 return addr;
             } else {
                 throw new IllegalArgumentException("Address must be link local");
