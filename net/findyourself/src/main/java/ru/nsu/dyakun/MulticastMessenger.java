@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.net.*;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class MulticastMessenger {
+    private final int N = 15;
+    private final Timer timer = new Timer();
     private final Map<InetAddress, LocalDateTime> members = new HashMap<>();
     private final InetSocketAddress groupAddr;
     private final int port;
@@ -32,16 +32,30 @@ public class MulticastMessenger {
             socket.joinGroup(groupAddr, netInterface);
             System.out.println("Joined in group " + groupAddr.getAddress());
             isRunning = true;
-            send("Hello from ILya");
+            TimerTask timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    try {
+                        send(new byte[]{(byte) MessageType.Report.getCode()});
+                        System.out.println("Sent report");
+                        deleteInactiveMembers();
+                        printMembers();
+                    } catch (IOException e) {
+                        System.out.println(e.getMessage());
+                        stop();
+                    }
+                }
+            };
+            timer.schedule(timerTask, 0, N * 1000);
             while(isRunning) {
                 DatagramPacket datagramPacket = new DatagramPacket(message, message.length);
                 socket.receive(datagramPacket);
-                members.put(datagramPacket.getAddress(), LocalDateTime.now());
-                String msg = new String(message);
-                System.out.printf("%s: %s%n", datagramPacket.getAddress().getHostAddress(), msg);
-                send("echo: " + datagramPacket.getAddress());
-                deleteInactiveMembers();
-                printMembers();
+                MessageType type = MessageType.valueOf(message[0]);
+                System.out.printf("%s: %s%n", datagramPacket.getAddress().getHostAddress(), type);
+                switch (type) {
+                    case Report -> members.put(datagramPacket.getAddress(), LocalDateTime.now());
+                    case Leave -> members.remove(datagramPacket.getAddress());
+                }
             }
         } catch (IOException e) {
             System.out.println(e.getMessage());
@@ -49,7 +63,7 @@ public class MulticastMessenger {
     }
 
     private void deleteInactiveMembers(){
-        members.entrySet().removeIf(item -> ChronoUnit.SECONDS.between(item.getValue(), LocalDateTime.now()) > 15);
+        members.entrySet().removeIf(item -> ChronoUnit.SECONDS.between(item.getValue(), LocalDateTime.now()) > N * 2);
     }
 
     private void printMembers(){
@@ -59,8 +73,7 @@ public class MulticastMessenger {
         }
     }
 
-    private void send(String message) throws IOException {
-        byte[] bytes = message.getBytes();
+    private void send(byte[] bytes) throws IOException {
         var packet = new DatagramPacket(bytes, bytes.length, groupAddr.getAddress(), port);
         socket.send(packet);
     }
@@ -68,7 +81,10 @@ public class MulticastMessenger {
     private void stop() {
         if(socket == null) return;
         try {
+            send(new byte[]{(byte) MessageType.Leave.getCode()});
+            timer.cancel();
             socket.leaveGroup(groupAddr, netInterface);
+
         } catch (IOException e) {
             System.out.println(e.getMessage());
         } finally {
