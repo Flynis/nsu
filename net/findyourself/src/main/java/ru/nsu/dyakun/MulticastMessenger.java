@@ -84,7 +84,6 @@ public class MulticastMessenger {
             send(new byte[]{(byte) MessageType.Leave.getCode()});
             timer.cancel();
             socket.leaveGroup(groupAddr, netInterface);
-
         } catch (IOException e) {
             System.out.println(e.getMessage());
         } finally {
