@@ -16,6 +16,8 @@ public class ServerLauncher {
             server.run();
         } catch (IOException e) {
             System.out.println(e.getMessage());
+        } catch (NumberFormatException e) {
+            System.out.println("Port parse failed " + e.getMessage());
         } catch (Exception e) {
             System.out.println("Fatal error: " + e.getMessage());
         }

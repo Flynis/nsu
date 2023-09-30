@@ -18,7 +18,7 @@ public class Message {
         return new Message(type, length, payload);
     }
 
-    public static int writeIn(MessageType type, byte[] payload, byte[] buffer) {
+    public static int writeIn(MessageType type, byte[] payload, int length, byte[] buffer) {
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
         if(buffer.length < MESSAGE_HEADER_SIZE) {
             throw new IllegalStateException("Buffer length must be >= MESSAGE_HEADER_SIZE");
@@ -28,12 +28,19 @@ public class Message {
             byteBuffer.putInt(0);
             return MESSAGE_HEADER_SIZE;
         }
-        int messageLength = MESSAGE_HEADER_SIZE + payload.length;
+        int messageLength = MESSAGE_HEADER_SIZE + length;
         if(buffer.length < messageLength) {
             throw new IllegalStateException("Buffer length must be >= message length");
         }
-        byteBuffer.put(payload);
+        byteBuffer.put(payload, 0, length);
         return messageLength;
+    }
+
+    public static int writeIn(MessageType type, byte[] payload, byte[] buffer) {
+        if(payload == null) {
+            return writeIn(type, null, 0, buffer);
+        }
+        return writeIn(type, payload, payload.length, buffer);
     }
 
     private Message(MessageType type, int length, byte[] payload) {
