@@ -15,6 +15,7 @@ public class Message {
         MessageType type = MessageType.valueOf(in.readByte());
         int length = in.readInt();
         in.readFully(payload, 0 , length);
+        //System.out.printf("Recv [%s] %d%n", type, length);
         return new Message(type, length, payload);
     }
 
@@ -26,13 +27,17 @@ public class Message {
         byteBuffer.put((byte) type.getCode());
         if(payload == null) {
             byteBuffer.putInt(0);
+            //System.out.printf("Send [%s] %d%n", type, 0);
             return MESSAGE_HEADER_SIZE;
         }
         int messageLength = MESSAGE_HEADER_SIZE + length;
         if(buffer.length < messageLength) {
             throw new IllegalStateException("Buffer length must be >= message length");
         }
+        byteBuffer.putInt(length);
         byteBuffer.put(payload, 0, length);
+        //System.out.printf("Send [%s] %d: %s", type, length, Arrays.toString(buffer));
+        //System.out.printf("Send [%s] %d%n", type, length);
         return messageLength;
     }
 

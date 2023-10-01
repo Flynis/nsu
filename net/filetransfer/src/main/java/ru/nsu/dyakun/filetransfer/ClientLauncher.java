@@ -16,13 +16,13 @@ public class ClientLauncher {
         try (var client = new Client(Path.of(args[2]), InetAddress.getByName(args[0]), Integer.parseInt(args[1]))) {
             client.run();
         } catch (UnknownHostException e) {
-            System.out.println("Unknown host" + e.getMessage());
+            System.out.println("Unknown host: " + e.getMessage());
         } catch (IOException e) {
             System.out.println(e.getMessage());
         } catch (NumberFormatException e) {
             System.out.println("Port parse failed: " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("Fatal error" + e.getMessage());
+            System.out.println("Fatal error: " + e.getMessage());
         }
     }
 }

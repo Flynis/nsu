@@ -37,24 +37,22 @@ public class Client implements Runnable, AutoCloseable {
             System.out.println("Connect to server");
             var output = socket.getOutputStream();
             var input = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-            int length = MessageUtils.writeUploadRequest(Files.size(path), path.getFileName().toString(), bufferToSend);
+            long fileSize = Files.size(path);
+            int length = MessageUtils.writeUploadRequest(fileSize, path.getFileName().toString(), bufferToSend);
             output.write(bufferToSend, 0 , length);
-            System.out.println("Send upload request " + length);
             Message response = Message.readFrom(input, buffer);
-            System.out.println("Response: " + response.getType());
             if(response.getType() != MessageType.OK) {
                 System.out.println("File upload failed: " + MessageUtils.readStringFrom(response));
                 throw new IllegalStateException("Server sent error");
             }
-            byte[] fileBuffer = new byte[1024];
+            byte[] fileBuffer = new byte[1350];
             while (true) {
                 int readBytes = file.read(fileBuffer);
-                if(readBytes == -1) {
+                if(readBytes <= 0) {
                     break;
                 }
                 length = Message.writeIn(MessageType.DATA, fileBuffer, readBytes, bufferToSend);
                 output.write(bufferToSend, 0, length);
-                System.out.println("Send data: " + length);
             }
             Message uploadStatus = Message.readFrom(input, buffer);
             if(uploadStatus.getType() == MessageType.OK) {

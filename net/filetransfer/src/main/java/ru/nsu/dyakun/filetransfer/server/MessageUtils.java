@@ -1,6 +1,5 @@
 package ru.nsu.dyakun.filetransfer.server;
 
-import ru.nsu.dyakun.filetransfer.protocol.Constants;
 import ru.nsu.dyakun.filetransfer.protocol.Message;
 import ru.nsu.dyakun.filetransfer.protocol.MessageType;
 
@@ -27,7 +26,7 @@ public class MessageUtils {
         byte[] payload = message.getPayload();
         ByteBuffer byteBuffer = ByteBuffer.wrap(payload);
         long length = byteBuffer.getLong();
-        String name = new String(payload, FILE_LEN_SIZE, payload.length);
+        String name = new String(payload, FILE_LEN_SIZE, message.getLength() - FILE_LEN_SIZE);
         return new FileAttrs(name, length);
     }
 }

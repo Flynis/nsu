@@ -13,7 +13,7 @@ public class MessageUtils {
     }
 
     public static int writeUploadRequest(long fileLength, String fileName, byte[] buffer) {
-        System.out.println();
+        System.out.printf("Send file %s: %d%n", fileName, fileLength);
         if(fileLength <= 0) {
             throw new IllegalArgumentException("File length must be > 0");
         }
