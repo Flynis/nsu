@@ -21,10 +21,7 @@ public class Server implements AutoCloseable, Runnable {
     private final Path uploadsDirectory;
 
     public void showClientsSpeed() {
-        if(clients.isEmpty()) {
-            System.out.println("No one connect");
-            return;
-        }
+        System.out.println("Connected clients: " + clients.size());
         for(var iter = clients.iterator(); iter.hasNext();) {
             var client = iter.next();
             if(client.isStopped()) {
