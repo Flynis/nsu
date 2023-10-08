@@ -1,0 +1,6 @@
+S = sum | mul | int ;
+sum = "(" ws S:left ws "+" ws S:right ws ")" { Sum(:left, :right) };
+mul = "(" ws S:left ws "*" ws S:right ws ")" { Mul(:left, :right) };
+int = digit+ $s { Int(s2i($s)) };
+digit = '0'-'9';
+ws = (' ' | '\n' | '\t' | '\r')*;

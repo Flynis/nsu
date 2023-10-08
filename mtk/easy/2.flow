@@ -1,0 +1,11 @@
+import string;
+
+sum(arr : [int]) -> int {
+    fold(arr, 0, \x, y -> x + y);
+}
+
+main() {
+    arr = [ 1, 2, 3];
+    println("sum: " + i2s(sum(arr)));
+    quit(0);
+}

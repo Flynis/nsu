@@ -1,0 +1,29 @@
+import string;
+import ds/tree;
+
+findPair(firstIndex : int, target : int, tree : Tree<int, int>) -> Maybe<Pair<int, int>> {
+    m = lookupTree(tree, target);
+    maybeMap(m, \secondIndex -> Pair(firstIndex, secondIndex));
+}
+
+inds(a : [int], m : int) -> [Pair<int, int>] {
+    tree = foldi(a, makeTree(), \i, tree, value -> setTree(tree, value, i));
+    filtermapi(a, \i, value -> findPair(i, m - value, tree));
+}
+
+arr2s(arr : [int]) -> string {
+    strGlue(map(arr, i2s), ",");
+}
+
+pair_arr2s(arr : [Pair<int, int>]) -> string {
+    strGlue(map(arr, \pair -> formatString("[%1, %2]", [i2s(pair.first), i2s(pair.second)])), ", ");
+}
+
+main() {
+    arr = [ 6, 5, 4, 3, 2, 1];
+    n = 7;
+    println("arr: " + arr2s(arr));
+    println("m: " + i2s(n));
+    println("pairs: " + pair_arr2s(inds(arr, n)));
+    quit(0);
+}
