@@ -27,7 +27,8 @@ public class Integral {
         double b = args.b();
         var f = args.f();
         if(n % 2 != 0) {
-            throw new IllegalArgumentException("n must be even");
+            System.out.println("n must be even");
+            //throw new IllegalArgumentException("n must be even");
         }
         int N = n / 2;
         double h = (b - a) / n;
@@ -51,7 +52,8 @@ public class Integral {
         double b = args.b();
         var f = args.f();
         if(n % 3 != 0) {
-            throw new IllegalArgumentException("n must be divisible by 3");
+            System.out.println("n must be divisible by 3");
+            //throw new IllegalArgumentException("n must be divisible by 3");
         }
         int N = n / 3;
         double delta = (b - a) / N;
