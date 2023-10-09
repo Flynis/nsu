@@ -1,0 +1,32 @@
+import ds/list;
+
+export {
+	makeStack() -> Stack<?>;
+
+	pushStack(s : Stack<?>, value : ?) -> Stack<?>;
+
+	popStack(s : Stack<?>) -> StackPop;
+
+	StackPop(stack : Stack<?>, value : Maybe<?>);
+}
+
+Stack(list : List<?>);
+
+makeStack() -> Stack<?> {
+	Stack(makeList());
+}
+
+pushStack(s : Stack<?>, value : ?) -> Stack<?> {
+	Stack(Cons(value, s.list));
+}
+
+popStack(s : Stack<?>) -> StackPop {
+	switch (s.list) {
+		EmptyList(): {
+			StackPop(s, None());
+		}
+		Cons(h, t): {
+			StackPop(Stack(t), Some(h))
+		}
+	}
+}
