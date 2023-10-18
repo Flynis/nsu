@@ -7,10 +7,7 @@ public record Args(
         double eps,
         double a,
         double b,
-        double x0,
-        double z,
-        Function<Double, Double> f,
-        Function<Double, Double> f_
+        Function<Double, Double> f
 ) {
     public Args {
         if(eps <= 0) {
@@ -19,13 +16,6 @@ public record Args(
         if(b < a) {
             throw new IllegalArgumentException("b must be > a");
         }
-        if(x0 < a || x0 > b) {
-            throw new IllegalArgumentException("x0 must be in [a, b]");
-        }
-        if(z < a || z > b) {
-            throw new IllegalArgumentException("z must be in [a, b]");
-        }
         Objects.requireNonNull(f);
-        Objects.requireNonNull(f_);
     }
 }

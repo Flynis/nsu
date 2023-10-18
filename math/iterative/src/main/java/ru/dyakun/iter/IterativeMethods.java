@@ -8,20 +8,14 @@ public class IterativeMethods {
     private final double eps;
     private final double a;
     private final double b;
-    private final double x0;
-    private final double z;
     private final Function<Double, Double> f;
-    private final Function<Double, Double> f_;
     private int iterationCounter = 0;
 
     public IterativeMethods(Args args) {
         eps = args.eps();
         a = args.a();
         b = args.b();
-        x0 = args.x0();
-        z = args.z();
         f = args.f();
-        f_ = args.f_();
     }
 
     public int getIterationCounter() {
@@ -46,7 +40,7 @@ public class IterativeMethods {
         }
         double c = (_b + _a) / 2;
         double fc = f.apply(c);
-        System.out.printf("bisect: f(%f) = %f %f%n", c, fc, abs(fc));
+        //System.out.printf("bisect: f(%f) = %f %f%n", c, fc, abs(fc));
         if(abs(fc) < eps) {
             return c;
         }
@@ -55,44 +49,6 @@ public class IterativeMethods {
         } else {
             return findRootBisect(c, _b);
         }
-    }
-
-    public double findRootNewton() {
-        checkInterval(f.apply(a), f.apply(b));
-        double x = x0;
-        double x_prev = Double.MAX_VALUE;
-        while (abs(x - x_prev) > eps) {
-            iterationCounter++;
-            x_prev = x;
-            x = x - f.apply(x) / f_.apply(x);
-        }
-        return x;
-    }
-
-    public double findRootSimpleNewton() {
-        checkInterval(f.apply(a), f.apply(b));
-        double x = x0;
-        double f_0 = f_.apply(x0);
-        double x_prev = Double.MAX_VALUE;
-        while (abs(x - x_prev) > eps) {
-            iterationCounter++;
-            x_prev = x;
-            x = x - f.apply(x) / f_0;
-        }
-        return x;
-    }
-
-    public double findRootSecant() {
-        checkInterval(f.apply(a), f.apply(b));
-        double x = x0;
-        double x_prev = x0 + 2 * eps;
-        while (abs(x - x_prev) > eps) {
-            iterationCounter++;
-            double tmp = x;
-            x = x - f.apply(x) / (f.apply(x) - f.apply(x_prev)) * (x - x_prev);
-            x_prev = tmp;
-        }
-        return x;
     }
 
     private void checkInterval(double fa, double fb) {
