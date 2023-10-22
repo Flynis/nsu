@@ -1,0 +1,163 @@
+.root{
+    -primary: #85c286;
+    -secondary: #339933;
+    -tertiary: #fcc200;
+    -tertiary-armed: #FDDD71;
+    -foreground: #202020;
+}
+
+.body {
+    -fx-background-image: url(../images/background.png);
+    -fx-background-repeat: stretch;
+    -fx-background-position: center center;
+}
+
+.logo {
+    -fx-font-family: "Droid Sans";
+    -fx-font-weight: bold;
+    -fx-font-size: 150px;
+    -fx-text-fill: -foreground;
+}
+
+.header {
+    -fx-font-family: "Roboto Light";
+    -fx-font-weight: bold;
+    -fx-font-size: 24px;
+    -fx-text-fill: -foreground;
+}
+
+.canvas {
+    -fx-background-color: #00000011;
+}
+
+.medium-text {
+    -fx-font-family: "Roboto Light";
+    -fx-font-weight: normal;
+    -fx-font-size: 20px;
+    -fx-text-fill: -foreground;
+}
+
+.value-text {
+    -fx-font-family: "Roboto Light";
+    -fx-font-weight: 600;
+    -fx-font-size: 20px;
+    -fx-text-fill: -foreground;
+}
+
+.error-label{
+    -fx-text-fill: #d81717;
+    -fx-font-weight: bold;
+    -fx-font-size: 20;
+    -fx-background-color: #00000022;
+    -fx-background-radius: 10px;
+    -fx-padding: 3px 12px 3px 12px;
+    -fx-alignment: center;
+}
+
+.button {
+    -fx-background-color: -primary;
+    -fx-background-radius: 10px;
+    -fx-border-width: 0;
+    -fx-text-fill: -foreground;
+    -fx-font-family: "Roboto Light";
+    -fx-font-weight: bold;
+    -fx-padding: 3px;
+    -fx-font-size: 20px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 8, 0, 0, 0);
+}
+
+.button:hover {
+    -fx-background-color: -secondary;
+}
+
+.align-center {
+    -fx-alignment: center;
+}
+
+.split-pane > .split-pane-divider {
+    -fx-background-color: -foreground;
+}
+
+.split-pane:horizontal > .split-pane-divider {
+    -fx-pref-width: 3;
+}
+
+.split-pane:vertical > .split-pane-divider {
+    -fx-pref-height: 3;
+}
+
+.table-view {
+    -fx-background-color: #00000011;
+}
+
+.table-view .column-header,
+.table-view .column-header-background .filler,
+.table-view .corner {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header-background{
+    -fx-background-color: -primary;
+    -fx-background-radius: 7px 7px 0px 0px;
+    -fx-background-insets: 0 11px 0 0;
+    -fx-padding: 0 0 5px 0;
+}
+
+.table-view .column-header {
+    -fx-font-family: "Roboto Light";
+    -fx-font-size: 20px;
+}
+
+.table-view .table-cell{
+    -fx-border-color: transparent;
+    -fx-padding: 2 0 2 10px;
+}
+
+.table-row-cell {
+    -fx-font-family: "Roboto Light";
+    -fx-font-size: 16px;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #93f9b911;
+    -fx-text-background-color: -tertiary;
+}
+
+.table-row-cell:odd{
+    -fx-background-color: #93f9b911;
+    -fx-background-insets: 0, 0 0 1 0;
+    -fx-padding: 0.0em;
+}
+
+.table-row-cell:even{
+    -fx-background-color: #1dbbdd22;
+    -fx-background-insets: 0, 0 0 1 0;
+    -fx-padding: 0.0em;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: -tertiary;
+    -fx-text-background-color: white;
+    -fx-background-radius: 5px;
+    -fx-background-insets: 2px;
+}
+
+.table-view .virtual-flow .scroll-bar:vertical,
+.table-view .virtual-flow .scroll-bar:vertical .track,
+.table-view .virtual-flow .scroll-bar:vertical .track-background,
+.table-view .virtual-flow .scroll-bar:horizontal,
+.table-view .virtual-flow .scroll-bar:horizontal .track,
+.table-view .virtual-flow .scroll-bar:horizontal .track-background {
+    -fx-background-color: transparent;
+}
+
+.table-view .virtual-flow .scroll-bar:vertical .thumb,
+.table-view .virtual-flow .scroll-bar:horizontal .thumb {
+    -fx-background-color:  -primary;
+}
+
+.table-view .virtual-flow .scroll-bar .increment-button,
+.table-view .virtual-flow .scroll-bar .decrement-button {
+    -fx-opacity: 0;
+    -fx-padding: 2;
+}
