@@ -3,10 +3,10 @@ package ru.dyakun.snake.model;
 import ru.dyakun.snake.util.Config;
 
 public class GameConfig extends Config {
-    private int width = 40;
-    private int height = 30;
-    private int foodStatic = 1;
-    private int delay = 1000; // ms
+    private int width;
+    private int height;
+    private int foodStatic;
+    private int delay; // ms
 
     public int getWidth() {
         return width;

@@ -8,6 +8,7 @@ import ru.dyakun.snake.controller.GameController;
 import ru.dyakun.snake.controller.SceneManager;
 import ru.dyakun.snake.gui.javafx.JFXSceneFactory;
 import ru.dyakun.snake.gui.javafx.JFXWindow;
+import ru.dyakun.snake.model.Game;
 import ru.dyakun.snake.model.GameConfig;
 
 public class Launcher extends Application {
@@ -23,7 +24,7 @@ public class Launcher extends Application {
             var config = GameConfig.load("game.cfg", GameConfig.class);
             logger.info("Load config: {}", config);
             var sceneManager = new SceneManager(new JFXWindow(stage));
-            new GameController(new JFXSceneFactory(), sceneManager, config);
+            new GameController(new JFXSceneFactory(), sceneManager, new Game(config));
         } catch (Exception e) {
             logger.info("Fatal error", e);
         }

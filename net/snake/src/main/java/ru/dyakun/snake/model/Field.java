@@ -1,5 +1,7 @@
 package ru.dyakun.snake.model;
 
+import ru.dyakun.snake.protocol.Direction;
+
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -37,6 +39,17 @@ public class Field {
         return snakes.values();
     }
 
+    void changeSnakeDirection(int id, Direction direction) {
+        if(!snakes.containsKey(id)) {
+            throw new IllegalArgumentException("Illegal snake id");
+        }
+        var snake = snakes.get(id);
+        if(snake.direction != direction) {
+            snake.direction = direction;
+            snake.needRotate = true;
+        }
+    }
+
     private void createFood() {
         while (currentFoodCount < foodStatic + snakes.size()) {
             int x = ThreadLocalRandom.current().nextInt(0, width);
@@ -46,6 +59,57 @@ public class Field {
                 foods.add(new Point(x, y));
                 currentFoodCount++;
             }
+        }
+    }
+
+    void updateField() {
+        for(var snake: snakes.values()) {
+            List<Point> points = snake.points;
+            Point tail = points.get(0);
+            Point next = points.get(1);
+            set(tail.x, tail.y, Tiles.EMPTY);
+            if(tail.x == next.x) {
+                if(Math.abs(tail.y - next.y) == 1) {
+                    points.remove(0);
+                } else {
+                    if(tail.y > next.y) {
+                        tail.y--;
+                    } else {
+                        tail.y++;
+                    }
+                }
+            } else if(tail.y == next.y) {
+                if(Math.abs(tail.x - next.x) == 1) {
+                    points.remove(0);
+                } else {
+                    if(tail.x > next.x) {
+                        tail.x--;
+                    } else {
+                        tail.x++;
+                    }
+                }
+            } else {
+                throw new IllegalStateException("At least one coordinate must coincide between tail and next");
+            }
+            Point head = points.get(points.size() - 1);
+            if(snake.needRotate) {
+                Point newHead = new Point(head.x, head.y);
+                move(newHead, snake.direction);
+                set(newHead.x, newHead.y, Tiles.EMPTY);
+                points.add(newHead);
+            } else {
+                set(head.x, head.y, Tiles.EMPTY);
+                move(head, snake.direction);
+            }
+        }
+    }
+
+    private void move(Point point, Direction direction) {
+        switch (direction) {
+            case UP -> point.y++;
+            case DOWN -> point.y--;
+            case LEFT -> point.x--;
+            case RIGHT -> point.x++;
         }
     }
 
@@ -61,7 +125,9 @@ public class Field {
         Snake snake = new Snake(points, playersId);
         playersId++;
         snakes.put(snake.playerId, snake);
-        // TODO place snake into field
+        for(var point: points) {
+            set(point.x, point.y, Tiles.SNAKE);
+        }
     }
 
     private void set(int x, int y, Tiles tile) {
@@ -104,8 +170,8 @@ public class Field {
                 if(field[y * height + j] == Tiles.EMPTY) {
                     Point tail = findFreeNeighbor(j, y);
                     if(tail != null) {
-                        points.add(new Point(j, y));
                         points.add(tail);
+                        points.add(new Point(j, y));
                         return points;
                     }
                 }
@@ -115,8 +181,8 @@ public class Field {
                 if(field[y * height + j] == Tiles.EMPTY) {
                     Point tail = findFreeNeighbor(j, y);
                     if(tail != null) {
-                        points.add(new Point(j, y));
                         points.add(tail);
+                        points.add(new Point(j, y));
                         return points;
                     }
                 }
@@ -126,8 +192,8 @@ public class Field {
                 if(field[i * height + x] == Tiles.EMPTY) {
                     Point tail = findFreeNeighbor(x, i);
                     if(tail != null) {
-                        points.add(new Point(x, i));
                         points.add(tail);
+                        points.add(new Point(x, i));
                         return points;
                     }
                 }
@@ -137,8 +203,8 @@ public class Field {
                 if(field[i * height + x] == Tiles.EMPTY) {
                     Point tail = findFreeNeighbor(x, i);
                     if(tail != null) {
-                        points.add(new Point(x, i));
                         points.add(tail);
+                        points.add(new Point(x, i));
                         return points;
                     }
                 }

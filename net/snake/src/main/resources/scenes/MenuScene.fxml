@@ -15,7 +15,7 @@
                <Label styleClass="medium-text" text="No active games"/>
            </placeholder>
            <columns>
-               <TableColumn fx:id="masterColumn" editable="false" sortable="false" prefWidth="150.0" text="master" />
+               <TableColumn fx:id="nameColumn" editable="false" sortable="false" prefWidth="150.0" text="name" />
                <TableColumn fx:id="ipColumn" editable="false" sortable="false" prefWidth="150.0" text="ip" />
                <TableColumn fx:id="playersColumn" editable="false" sortable="false" prefWidth="100.0" styleClass="align-center" text="players" />
                <TableColumn fx:id="fieldColumn" editable="false" sortable="false" prefWidth="100.0" styleClass="align-center" text="field" />

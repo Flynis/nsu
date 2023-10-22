@@ -18,7 +18,7 @@ import java.util.ResourceBundle;
 
 public class MenuSceneController extends AbstractSceneController implements Initializable {
     public TableView<GameInfo> gamesInfoTable;
-    public TableColumn<GameInfo, String> masterColumn;
+    public TableColumn<GameInfo, String> nameColumn;
     public TableColumn<GameInfo, String> ipColumn;
     public TableColumn<GameInfo, Integer> playersColumn;
     public TableColumn<GameInfo, String> fieldColumn;
@@ -33,56 +33,37 @@ public class MenuSceneController extends AbstractSceneController implements Init
     }
 
     public void connectClick(ActionEvent ignored) {
-
+        // TODO connect
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        masterColumn.setCellValueFactory(cellData -> cellData.getValue().masterProperty());
+        nameColumn.setCellValueFactory(cellData -> cellData.getValue().masterProperty());
         ipColumn.setCellValueFactory(cellData -> cellData.getValue().ipProperty());
         playersColumn.setCellValueFactory(cellData -> cellData.getValue().playersProperty().asObject());
         fieldColumn.setCellValueFactory(cellData -> cellData.getValue().fieldProperty());
         foodColumn.setCellValueFactory(cellData -> cellData.getValue().foodProperty());
-
         List<GameInfo> orders = new ArrayList<>();
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-        orders.add(new GameInfo("Vasya", "192.168.255.255", 2, "20x20", "1+2x"));
-
         ObservableList<GameInfo> ol = FXCollections.observableArrayList(orders);
         gamesInfoTable.setItems(ol);
     }
 
     public static class GameInfo {
-        StringProperty master;
+        StringProperty name;
         StringProperty ip;
         IntegerProperty players;
         StringProperty field;
 
         public String getMaster() {
-            return master.get();
+            return name.get();
         }
 
         public StringProperty masterProperty() {
-            return master;
+            return name;
         }
 
         public void setMaster(String master) {
-            this.master.set(master);
+            this.name.set(master);
         }
 
         public String getIp() {
@@ -136,7 +117,7 @@ public class MenuSceneController extends AbstractSceneController implements Init
         StringProperty food;
 
         public GameInfo(String master, String ip, int players, String field, String food) {
-            this.master = new SimpleStringProperty(master);
+            this.name = new SimpleStringProperty(master);
             this.ip = new SimpleStringProperty(ip);
             this.players = new SimpleIntegerProperty(players);
             this.field = new SimpleStringProperty(field);

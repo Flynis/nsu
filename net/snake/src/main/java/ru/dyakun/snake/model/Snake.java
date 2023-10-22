@@ -1,5 +1,7 @@
 package ru.dyakun.snake.model;
 
+import ru.dyakun.snake.protocol.Direction;
+
 import java.util.List;
 
 class Snake {
@@ -10,6 +12,7 @@ class Snake {
 
     public final List<Point> points;
     public Direction direction;
+    public boolean needRotate;
     public State state;
     public final int playerId;
 
@@ -18,5 +21,6 @@ class Snake {
         this.playerId = playerId;
         this.state = State.ALIVE;
         this.direction = Direction.RIGHT;
+        this.needRotate = false;
     }
 }
