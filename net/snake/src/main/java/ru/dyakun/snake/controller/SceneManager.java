@@ -20,21 +20,21 @@ public class SceneManager {
         scenes = new EnumMap<>(SceneNames.class);
     }
 
-    void addScene(SceneNames name, Scene scene) {
+    public void addScene(SceneNames name, Scene scene) {
         scenes.put(name, scene);
     }
 
-    void showCurrentScene() {
+    public void showCurrentScene() {
         window.show();
     }
 
-    void changeScene(SceneNames name) {
+    public void changeScene(SceneNames name) {
         logger.info("Change scene to {}", name);
         current = name;
         window.changeScene(scenes.get(name));
     }
 
-    void exit() {
+    public void exit() {
         logger.info("Close window");
         window.close();
     }

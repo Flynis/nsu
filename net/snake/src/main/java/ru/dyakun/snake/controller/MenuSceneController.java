@@ -11,7 +11,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import ru.dyakun.snake.model.GameInfo;
 import ru.dyakun.snake.model.event.GameEvent;
-import ru.dyakun.snake.model.event.GameEventListener;
 import ru.dyakun.snake.protocol.NodeRole;
 
 import java.net.URL;
@@ -19,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class MenuSceneController extends AbstractSceneController implements Initializable, GameEventListener {
+public class MenuSceneController extends AbstractSceneController implements Initializable {
     public TableView<GameDesc> gamesInfoTable;
     public TableColumn<GameDesc, String> nameColumn;
     public TableColumn<GameDesc, String> ipColumn;
@@ -109,6 +108,7 @@ public class MenuSceneController extends AbstractSceneController implements Init
         StringProperty ip;
         IntegerProperty players;
         StringProperty field;
+        StringProperty food;
 
         public String getName() {
             return name.get();
@@ -169,8 +169,6 @@ public class MenuSceneController extends AbstractSceneController implements Init
         public void setFood(String food) {
             this.food.set(food);
         }
-
-        StringProperty food;
 
         public GameDesc(String name, String ip, int players, String field, String food) {
             this.name = new SimpleStringProperty(name);

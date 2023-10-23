@@ -55,6 +55,8 @@ public class MulticastMessageReceiver implements MessageReceiver {
                     logger.info("Receive broken protobuf");
                 }
             }
+        } catch (SocketException e) {
+            logger.debug("Socket", e);
         } catch (IOException e) {
             logger.info("Multicast receive failed", e);
         }

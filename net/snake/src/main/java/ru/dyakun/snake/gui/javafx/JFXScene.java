@@ -2,7 +2,7 @@ package ru.dyakun.snake.gui.javafx;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import ru.dyakun.snake.controller.GameController;
+import ru.dyakun.snake.model.GameController;
 import ru.dyakun.snake.gui.base.Scene;
 import ru.dyakun.snake.gui.base.SceneController;
 

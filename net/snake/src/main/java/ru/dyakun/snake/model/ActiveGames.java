@@ -10,19 +10,19 @@ import java.net.SocketAddress;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ActiveGames implements GameMessageListener {
     private static final int DELETE_TIME = 2; // sec
     private record Entry(GameInfo game, LocalDateTime time) {}
-    private final Map<String, Entry> games = new HashMap<>();
+    private final Map<String, Entry> games = new ConcurrentHashMap<>();
     private final List<GameEventListener> listeners = new ArrayList<>();
 
-    private void notifyListeners(GameEvent event) {
+    private void notifyListeners() {
         for(var listener : listeners) {
-            listener.onEvent(event);
+            listener.onEvent(GameEvent.UPDATE_ACTIVE_GAMES);
         }
     }
 
@@ -36,6 +36,7 @@ public class ActiveGames implements GameMessageListener {
 
     void deleteInactiveGames() {
         games.entrySet().removeIf(item -> ChronoUnit.SECONDS.between(item.getValue().time, LocalDateTime.now()) > DELETE_TIME);
+        notifyListeners();
     }
 
     @Override
@@ -49,6 +50,7 @@ public class ActiveGames implements GameMessageListener {
             } else {
                 games.put(gameInfo.getName(), new Entry(gameInfo, LocalDateTime.now()));
             }
+            notifyListeners();
         }
     }
 }

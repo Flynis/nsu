@@ -1,6 +1,6 @@
 package ru.dyakun.snake.gui.javafx;
 
-import ru.dyakun.snake.controller.GameController;
+import ru.dyakun.snake.model.GameController;
 import ru.dyakun.snake.gui.base.Scene;
 import ru.dyakun.snake.gui.base.SceneFactory;
 import ru.dyakun.snake.gui.base.SceneNames;

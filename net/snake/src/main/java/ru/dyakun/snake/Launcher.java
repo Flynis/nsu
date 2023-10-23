@@ -4,7 +4,7 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.dyakun.snake.controller.GameController;
+import ru.dyakun.snake.model.GameController;
 import ru.dyakun.snake.controller.SceneManager;
 import ru.dyakun.snake.gui.javafx.JFXSceneFactory;
 import ru.dyakun.snake.gui.javafx.JFXWindow;
