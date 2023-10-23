@@ -34,7 +34,10 @@ public class SceneManager {
         window.changeScene(scenes.get(name));
     }
 
-    void exit() { window.close(); }
+    void exit() {
+        logger.info("Close window");
+        window.close();
+    }
 
     public SceneNames getCurrentScene() {
         return current;

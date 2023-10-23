@@ -1,9 +1,9 @@
 package ru.dyakun.snake.net;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.protocol.GameMessage;
-import ru.dyakun.snake.protocol.GameMessageOrBuilder;
 
 import java.io.IOException;
 import java.net.*;
@@ -25,7 +25,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
         this.port = port;
     }
 
-    private void notifyListeners(GameMessageOrBuilder message, InetAddress receiver) {
+    private void notifyListeners(GameMessage message, SocketAddress receiver) {
         for(var listener : listeners) {
             listener.handle(message, receiver);
         }
@@ -49,16 +49,22 @@ public class MulticastMessageReceiver implements MessageReceiver {
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
                 socket.receive(datagramPacket);
                 logger.debug("Receive from [{}]", datagramPacket.getAddress().getHostAddress());
-                notifyListeners(GameMessage.parseFrom(buf), datagramPacket.getAddress());
+                try {
+                    notifyListeners(GameMessage.parseFrom(buf), datagramPacket.getSocketAddress());
+                } catch (InvalidProtocolBufferException e) {
+                    logger.info("Receive broken protobuf");
+                }
             }
         } catch (IOException e) {
             logger.info("Multicast receive failed", e);
         }
+        logger.info("Multicast receiver successfully stopped");
     }
 
     @Override
     public void stop() {
         if(socket == null || socket.isClosed()) return;
+        logger.info("Try to stop Multicast receiver");
         isRunning = false;
         try {
             socket.leaveGroup(groupAddr, netInterface);

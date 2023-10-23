@@ -1,5 +1,6 @@
 .root{
     -primary: #85c286;
+    -light: #ccffcc;
     -secondary: #339933;
     -tertiary: #fcc200;
     -tertiary-armed: #FDDD71;
@@ -68,6 +69,44 @@
 
 .button:hover {
     -fx-background-color: -secondary;
+}
+
+.text-field {
+    -fx-background-color: -light;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-width: 2;
+    -fx-border-color: transparent;
+    -fx-text-fill: #202020;
+    -fx-prompt-text-fill: #808080;
+    -fx-font-family: "Roboto Light";
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+
+.text-field:hover {
+    -fx-border-color: -tertiary;
+}
+
+.choice-box {
+    -fx-background-color: -light;
+    -fx-background-radius: 10px;
+    -fx-font-family: "Roboto Light";
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+    -fx-text-fill: -foreground;
+}
+
+.choice-box .menu-item:focused {
+    -fx-background-color: -primary;
+}
+
+.choice-box .context-menu {
+    -fx-background-color: -light ;
+}
+
+.choice-box {
+    -fx-mark-color: -foreground ;
 }
 
 .align-center {

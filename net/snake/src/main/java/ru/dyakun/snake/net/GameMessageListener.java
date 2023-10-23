@@ -1,9 +1,9 @@
 package ru.dyakun.snake.net;
 
-import ru.dyakun.snake.protocol.GameMessageOrBuilder;
+import ru.dyakun.snake.protocol.GameMessage;
 
-import java.net.InetAddress;
+import java.net.SocketAddress;
 
 public interface GameMessageListener {
-    void handle(GameMessageOrBuilder message, InetAddress receiver);
+    void handle(GameMessage message, SocketAddress receiver);
 }
