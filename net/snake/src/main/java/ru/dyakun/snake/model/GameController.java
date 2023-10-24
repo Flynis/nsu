@@ -6,8 +6,6 @@ import ru.dyakun.snake.controller.SceneManager;
 import ru.dyakun.snake.gui.base.SceneFactory;
 import ru.dyakun.snake.gui.base.SceneNames;
 import ru.dyakun.snake.model.event.GameEventListener;
-import ru.dyakun.snake.model.field.Field;
-import ru.dyakun.snake.model.field.GameField;
 import ru.dyakun.snake.net.MessageReceiver;
 import ru.dyakun.snake.net.MulticastMessageReceiver;
 import ru.dyakun.snake.protocol.Direction;
@@ -15,25 +13,20 @@ import ru.dyakun.snake.protocol.NodeRole;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
 
 public class GameController {
     private static final Logger logger = LoggerFactory.getLogger(GameController.class);
     private final SceneManager manager;
     private final ActiveGames activeGames;
     private final MessageReceiver announcementReceiver;
-    private final GameConfig config;
-    private final List<GameEventListener> listeners = new ArrayList<>();
-    private final Timer timer = new Timer();
-    private final GameTimerRoutine timerRoutine;
-    private Field field;
-    private Player player;
+    private final GameConfig initialConfig;
+    private final GameTimer timer;
+    private GameState state;
 
-    public GameController(SceneFactory factory, SceneManager manager, GameConfig config) {
+    public GameController(SceneFactory factory, SceneManager manager, GameConfig initialConfig) {
         this.manager = manager;
-        this.config = config;
+        this.initialConfig = initialConfig;
         this.activeGames = new ActiveGames();
         try {
             announcementReceiver = new MulticastMessageReceiver(InetAddress.getByName("239.192.0.4"), 9192);
@@ -43,25 +36,24 @@ public class GameController {
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }
-        timerRoutine = new GameTimerRoutine(activeGames);
-        timer.schedule(timerRoutine, 0, config.getDelay());
+        timer = new GameTimer(activeGames);
         manager.addScene(SceneNames.MENU, factory.create(SceneNames.MENU, this));
         manager.addScene(SceneNames.GAME, factory.create(SceneNames.GAME, this));
         manager.changeScene(SceneNames.MENU);
         manager.showCurrentScene();
     }
 
-    public List<GameInfo> getActiveGames() {
+    public List<GameInfoView> getActiveGames() {
         return activeGames.getActiveGames();
     }
 
-    public GameField getField() {
-        return field;
+    public GameStateView getGameState() {
+        return state;
     }
 
     public void addGameEventListener(GameEventListener listener) {
         activeGames.addGameEventListener(listener);
-        listeners.add(listener);
+        timer.addGameEventListener(listener);
     }
 
     public void exit() {
@@ -89,30 +81,20 @@ public class GameController {
         if(nickname.isBlank()) {
             throw new IllegalArgumentException("Nickname is empty");
         }
-        try {
-            field = new Field(config.getWidth(), config.getHeight(), config.getFoodStatic());
-            for(var listener : listeners) {
-                field.addGameEventListener(listener);
-            }
-            int id = field.createSnake();
-            timerRoutine.changeField(field);
-            logger.debug("Field change request");
-            player = new Player.Builder(nickname, id).role(NodeRole.MASTER).score(0).build();
-            manager.changeScene(SceneNames.GAME);
-        } catch (SnakeCreateException e) {
-            throw new IllegalStateException(e);
-        }
+        state = new GameState(initialConfig, nickname);
+        timer.addGameStateTask(state, initialConfig.getDelay());
+        manager.changeScene(SceneNames.GAME);
     }
 
     public void changeSnakeDirection(Direction direction) {
         if(manager.getCurrentScene() != SceneNames.GAME) {
             throw new IllegalStateException("Game not started");
         }
-        field.changeSnakeDirection(player.getId(), direction);
+        state.changeSnakeDirection(state.getPlayer().getId(), direction);
     }
 
     public void back() {
-        // TODO
+        timer.cancelGameStateTask();
         manager.changeScene(SceneNames.MENU);
     }
 }

@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ActiveGames implements GameMessageListener {
-    private static final int DELETE_TIME = 2; // sec
+    public static final int DELETE_TIME = 2; // sec
     private record Entry(GameInfo game, LocalDateTime time) {}
     private final Map<String, Entry> games = new ConcurrentHashMap<>();
     private final List<GameEventListener> listeners = new ArrayList<>();
@@ -30,8 +30,8 @@ public class ActiveGames implements GameMessageListener {
         listeners.add(listener);
     }
 
-    public List<GameInfo> getActiveGames() {
-        return games.values().stream().map(e -> e.game).toList();
+    public List<GameInfoView> getActiveGames() {
+        return games.values().stream().map(e -> (GameInfoView)e.game).toList();
     }
 
     void deleteInactiveGames() {

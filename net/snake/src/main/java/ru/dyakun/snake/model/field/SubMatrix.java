@@ -1,5 +1,7 @@
 package ru.dyakun.snake.model.field;
 
+import ru.dyakun.snake.model.entity.Point;
+
 public record SubMatrix(int n, Point leftUpper, Point bottomRight) {
     public SubMatrix {
         if (n < 0) {

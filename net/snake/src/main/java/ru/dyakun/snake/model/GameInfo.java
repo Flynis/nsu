@@ -1,5 +1,6 @@
 package ru.dyakun.snake.model;
 
+import ru.dyakun.snake.model.entity.Player;
 import ru.dyakun.snake.protocol.GameAnnouncement;
 import ru.dyakun.snake.protocol.GamePlayers;
 
@@ -7,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class GameInfo {
+public class GameInfo implements GameInfoView {
     private List<Player> players;
     private final GameConfig config;
     private final String name;
@@ -46,14 +47,17 @@ public class GameInfo {
         return players;
     }
 
+    @Override
     public int getPlayersCount() {
         return players.size();
     }
 
+    @Override
     public GameConfig getConfig() {
         return config;
     }
 
+    @Override
     public String getName() {
         return name;
     }

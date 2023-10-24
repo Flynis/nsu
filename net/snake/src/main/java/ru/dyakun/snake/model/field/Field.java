@@ -2,10 +2,13 @@ package ru.dyakun.snake.model.field;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.dyakun.snake.model.GameConfig;
 import ru.dyakun.snake.model.SnakeCreateException;
-import ru.dyakun.snake.model.event.GameEvent;
-import ru.dyakun.snake.model.event.GameEventListener;
-import ru.dyakun.snake.protocol.Direction;
+import ru.dyakun.snake.model.entity.Player;
+import ru.dyakun.snake.model.entity.Point;
+import ru.dyakun.snake.model.entity.Snake;
+import ru.dyakun.snake.util.IdGenerator;
+import ru.dyakun.snake.util.SimpleIdGenerator;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -17,36 +20,29 @@ public class Field implements GameField {
     private final int height;
     private final int foodStatic;
     private final Tile[] field;
-    private final List<Point> foods = new ArrayList<>();
-    private final Map<Integer, Snake> snakes = new HashMap<>();
-    private int playersId;
-    private final List<GameEventListener> listeners = new ArrayList<>();
+    private final List<Point> foods;
+    private final Map<Integer, Snake> snakes;
+    private final Map<Integer, Player> players;
+    private final IdGenerator generator = new SimpleIdGenerator();
+    private boolean updating = false;
 
-    private void notifyListeners() {
-        for(var listener : listeners) {
-            listener.onEvent(GameEvent.REPAINT_FIELD);
-        }
-    }
-
-    public void addGameEventListener(GameEventListener listener) {
-        listeners.add(listener);
-    }
-
-    public Field(int width, int height, int foodStatic) {
-        this.width = width;
-        this.height = height;
-        this.foodStatic = foodStatic;
+    public Field(GameConfig config, Map<Integer, Player> players, Map<Integer, Snake> snakes, List<Point> foods) {
+        this.width = config.getWidth();
+        this.height = config.getHeight();
+        this.foodStatic = config.getFoodStatic();
         this.field = new Tile[height * width];
         Arrays.fill(field, Tile.EMPTY);
-        this.playersId = 0;
+        this.foods = foods;
+        fillPoints(foods, Tile.FOOD);
+        this.snakes = snakes;
+        for(var snake : this.snakes.values()) {
+            fillPoints(snake.points(), Tile.SNAKE);
+        }
+        this.players = players;
     }
 
-    public Collection<Point> getFoods() {
-        return foods;
-    }
-
-    public Collection<Snake> getSnakes() {
-        return snakes.values();
+    public boolean isUpdating() {
+        return updating;
     }
 
     @Override
@@ -70,17 +66,6 @@ public class Field implements GameField {
         return field[y * height + x];
     }
 
-    public void changeSnakeDirection(int id, Direction direction) {
-        if(!snakes.containsKey(id)) {
-            throw new IllegalArgumentException("Illegal snake id");
-        }
-        var snake = snakes.get(id);
-        if(snake.direction != direction) {
-            snake.direction = direction;
-            snake.needRotate = true;
-        }
-    }
-
     private void createFood() {
         while (foods.size() < foodStatic + snakes.size()) {
             int x = ThreadLocalRandom.current().nextInt(0, width);
@@ -94,73 +79,30 @@ public class Field implements GameField {
     }
 
     public void updateField() {
+        updating = true;
         logger.debug("Food {}", foods);
         for(var snake: snakes.values()) {
-            List<Point> points = snake.points;
-            Point head = points.get(points.size() - 1);
-            if(snake.needRotate) {
-                Point newHead = new Point(head.x, head.y);
-                move(newHead, snake.direction);
-                points.add(newHead);
-                head = newHead;
-                snake.needRotate = false;
-            } else {
-                move(head, snake.direction);
-            }
-            logger.debug("Snake move {}", points);
+            var head = snake.moveHead();
             switch (get(head.x, head.y)) {
                 case FOOD -> {
                     set(head.x, head.y, Tile.SNAKE);
-                    Point finalHead = head;
-                    foods.removeIf(p -> p.x == finalHead.x && p.y == finalHead.y);
-                    // TODO score
+                    foods.removeIf(p -> p.x == head.x && p.y == head.y);
+                    players.get(snake.playerId()).addScore(1);
                 }
                 case SNAKE -> {
                     // TODO destroy
                 }
                 case EMPTY -> {
                     set(head.x, head.y, Tile.SNAKE);
-                    Point tail = points.get(0);
-                    Point next = points.get(1);
+                    var tail = snake.getTail();
                     set(tail.x, tail.y, Tile.EMPTY);
-                    if(tail.x == next.x) {
-                        if(Math.abs(tail.y - next.y) == 1 && points.size() > 2) {
-                            points.remove(0);
-                        } else {
-                            if(tail.y > next.y) {
-                                tail.y--;
-                            } else {
-                                tail.y++;
-                            }
-                        }
-                    } else if(tail.y == next.y) {
-                        if(Math.abs(tail.x - next.x) == 1 && points.size() > 2) {
-                            points.remove(0);
-                        } else {
-                            if(tail.x > next.x) {
-                                tail.x--;
-                            } else {
-                                tail.x++;
-                            }
-                        }
-                    } else {
-                        throw new IllegalStateException("At least one coordinate must coincide between tail and next");
-                    }
+                    snake.moveTail();
                 }
             }
-            logger.debug("Snake move {}", points);
+            logger.debug("Snake move {}", snake.points());
         }
         createFood();
-        notifyListeners();
-    }
-
-    private void move(Point point, Direction direction) {
-        switch (direction) {
-            case UP -> point.y--;
-            case DOWN -> point.y++;
-            case LEFT -> point.x--;
-            case RIGHT -> point.x++;
-        }
+        updating = false;
     }
 
     public int createSnake() throws SnakeCreateException {
@@ -175,14 +117,10 @@ public class Field implements GameField {
             throw new SnakeCreateException("No free space for new snake");
         }
         logger.debug("Snake: {}", points);
-        int id = playersId;
-        playersId++;
+        int id = generator.next();
         Snake snake = new Snake(points, id);
-        logger.debug("Snake direction {}", snake.direction);
-        snakes.put(snake.playerId, snake);
-        for(var point: points) {
-            set(point.x, point.y, Tile.SNAKE);
-        }
+        snakes.put(id, snake);
+        fillPoints(points, Tile.SNAKE);
         return id;
     }
 
@@ -200,6 +138,12 @@ public class Field implements GameField {
 
     private int mod(int n, int size) {
         return (n % size + size) % size;
+    }
+
+    private void fillPoints(List<Point> points, Tile tile) {
+        for(var point: points) {
+            set(point.x, point.y, tile);
+        }
     }
 
     private List<Point> placeSnake(SubMatrix matrix) {
@@ -312,6 +256,7 @@ public class Field implements GameField {
                 right = d2[j] - 1;
             }
         }
+        // TODO correct calc n
         return new SubMatrix(ans, new Point(left, upper), new Point(right, bottom));
     }
 }

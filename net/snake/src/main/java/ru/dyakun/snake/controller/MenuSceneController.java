@@ -10,6 +10,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import ru.dyakun.snake.model.GameInfo;
+import ru.dyakun.snake.model.GameInfoView;
 import ru.dyakun.snake.model.event.GameEvent;
 import ru.dyakun.snake.protocol.NodeRole;
 
@@ -178,7 +179,7 @@ public class MenuSceneController extends AbstractSceneController implements Init
             this.food = new SimpleStringProperty(food);
         }
 
-        public static GameDesc fromGameInfo(GameInfo gameInfo) {
+        public static GameDesc fromGameInfo(GameInfoView gameInfo) {
             return new GameDesc(
                 gameInfo.getName(),
                 "0.0.0.0",

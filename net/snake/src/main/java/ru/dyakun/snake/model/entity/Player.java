@@ -1,9 +1,9 @@
-package ru.dyakun.snake.model;
+package ru.dyakun.snake.model.entity;
 
 import ru.dyakun.snake.protocol.GamePlayer;
 import ru.dyakun.snake.protocol.NodeRole;
 
-public class Player {
+public class Player implements PlayerView {
     private final String name;
     private final int id;
     private final String ip;
@@ -11,6 +11,7 @@ public class Player {
     private NodeRole role;
     private int score;
 
+    @Override
     public String getName() {
         return name;
     }
@@ -31,6 +32,7 @@ public class Player {
         return role;
     }
 
+    @Override
     public int getScore() {
         return score;
     }
@@ -39,11 +41,11 @@ public class Player {
         this.role = role;
     }
 
-    public void setScore(int score) {
-        if(score < this.score) {
-            throw new IllegalArgumentException("New score is less then current");
+    public void addScore(int s) {
+        if(s <= 0) {
+            throw new IllegalArgumentException("Addition must be positive");
         }
-        this.score = score;
+        this.score += s;
     }
 
     private Player(String name, int id, String ip, int port, NodeRole role, int score) {
