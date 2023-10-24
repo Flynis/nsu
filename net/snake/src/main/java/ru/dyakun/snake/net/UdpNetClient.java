@@ -3,6 +3,7 @@ package ru.dyakun.snake.net;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.dyakun.snake.model.util.MessageType;
 import ru.dyakun.snake.protocol.GameMessage;
 
 import java.io.IOException;
@@ -42,8 +43,8 @@ public class UdpNetClient implements NetClient {
     }
 
     @Override
-    public void send(GameMessage message) {
-        pending.add(message);
+    public void send(MessageType type, GameMessage message, SocketAddress receiver) {
+        // TODO impl
     }
 
     @Override

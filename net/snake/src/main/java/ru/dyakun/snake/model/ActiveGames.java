@@ -15,10 +15,21 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ActiveGames implements GameMessageListener {
-    public static final int DELETE_TIME = 2; // sec
     private record Entry(GameInfo game, LocalDateTime time) {}
     private final Map<String, Entry> games = new ConcurrentHashMap<>();
     private final List<GameEventListener> listeners = new ArrayList<>();
+    private final int announcementTimeToLive;
+
+    public ActiveGames(int announcementTimeToLive) {
+        if(announcementTimeToLive < 1000) {
+            throw new IllegalArgumentException("To little announcement time to live");
+        }
+        this.announcementTimeToLive = announcementTimeToLive;
+    }
+
+    public int getAnnouncementTimeToLive() {
+        return announcementTimeToLive;
+    }
 
     private void notifyListeners() {
         for(var listener : listeners) {
@@ -34,8 +45,9 @@ public class ActiveGames implements GameMessageListener {
         return games.values().stream().map(e -> (GameInfoView)e.game).toList();
     }
 
-    void deleteInactiveGames() {
-        games.entrySet().removeIf(item -> ChronoUnit.SECONDS.between(item.getValue().time, LocalDateTime.now()) > DELETE_TIME);
+    public void deleteInactiveGames() {
+        games.entrySet().removeIf(
+                item -> ChronoUnit.MILLIS.between(item.getValue().time, LocalDateTime.now()) > announcementTimeToLive);
         notifyListeners();
     }
 

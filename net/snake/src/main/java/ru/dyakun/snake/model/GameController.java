@@ -6,6 +6,7 @@ import ru.dyakun.snake.controller.SceneManager;
 import ru.dyakun.snake.gui.base.SceneFactory;
 import ru.dyakun.snake.gui.base.SceneNames;
 import ru.dyakun.snake.model.event.GameEventListener;
+import ru.dyakun.snake.model.timer.GameTimer;
 import ru.dyakun.snake.net.*;
 import ru.dyakun.snake.protocol.Direction;
 import ru.dyakun.snake.protocol.GameMessage;
@@ -26,15 +27,17 @@ public class GameController implements GameMessageListener {
     private final GameTimer timer;
     private GameState state;
 
-    public GameController(SceneFactory factory, SceneManager manager, GameConfig initialConfig) {
+    public GameController(SceneFactory factory, SceneManager manager, ClientConfig config, GameConfig initialConfig) {
         this.manager = manager;
         this.initialConfig = initialConfig;
-        this.activeGames = new ActiveGames();
+        this.activeGames = new ActiveGames(config.getAnnouncementTimeToLive());
         try {
             client = new UdpNetClient();
             client.addMessageListener(this);
             new Thread(client).start();
-            announcementReceiver = new MulticastMessageReceiver(InetAddress.getByName("239.192.0.4"), 9192);
+            announcementReceiver = new MulticastMessageReceiver(
+                    InetAddress.getByName(config.getMulticastGroupAddress()),
+                    config.getMulticastGroupPort());
             announcementReceiver.addMessageListener(activeGames);
             announcementReceiver.addMessageListener(this);
             new Thread(announcementReceiver).start();
@@ -42,7 +45,7 @@ public class GameController implements GameMessageListener {
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }
-        timer = new GameTimer(activeGames);
+        timer = new GameTimer(activeGames, config.getAnnouncementPeriod());
         manager.addScene(SceneNames.MENU, factory.create(SceneNames.MENU, this));
         manager.addScene(SceneNames.GAME, factory.create(SceneNames.GAME, this));
         manager.changeScene(SceneNames.MENU);
@@ -88,7 +91,7 @@ public class GameController implements GameMessageListener {
             throw new IllegalArgumentException("Nickname is empty");
         }
         state = new GameState(initialConfig, nickname);
-        timer.addGameStateTask(state, initialConfig.getDelay());
+        timer.startGameStateUpdate(state, initialConfig.getDelay());
         manager.changeScene(SceneNames.GAME);
     }
 
@@ -100,12 +103,12 @@ public class GameController implements GameMessageListener {
     }
 
     public void back() {
-        timer.cancelGameStateTask();
+        timer.cancelGameStateUpdate();
         manager.changeScene(SceneNames.MENU);
     }
 
     @Override
     public void handle(GameMessage message, SocketAddress receiver) {
-
+        // TODO impl
     }
 }

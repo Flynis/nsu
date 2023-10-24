@@ -3,7 +3,6 @@ package ru.dyakun.snake.model.field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.model.GameConfig;
-import ru.dyakun.snake.model.SnakeCreateException;
 import ru.dyakun.snake.model.entity.Player;
 import ru.dyakun.snake.model.entity.Point;
 import ru.dyakun.snake.model.entity.Snake;

@@ -21,6 +21,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
     private boolean isRunning = false;
 
     public MulticastMessageReceiver(InetAddress groupAddr, int port) {
+        // TODO args to socket address
         this.groupAddr = new InetSocketAddress(groupAddr, port);
         this.port = port;
     }

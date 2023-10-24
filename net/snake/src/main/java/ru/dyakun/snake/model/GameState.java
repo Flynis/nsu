@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.model.entity.*;
 import ru.dyakun.snake.model.field.Field;
 import ru.dyakun.snake.model.field.GameField;
+import ru.dyakun.snake.model.field.SnakeCreateException;
 import ru.dyakun.snake.protocol.Direction;
 import ru.dyakun.snake.protocol.NodeRole;
 
@@ -68,6 +69,10 @@ public class GameState implements GameStateView {
 
     @Override
     public GameInfoView getGameInfo() {
+        return gameInfo;
+    }
+
+    public GameInfo getCurrentGameInfo() {
         return gameInfo;
     }
 }

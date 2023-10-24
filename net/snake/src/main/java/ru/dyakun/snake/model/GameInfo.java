@@ -14,7 +14,7 @@ public class GameInfo implements GameInfoView {
     private final String name;
     private boolean mayJoin;
 
-    GameInfo(List<Player> players, GameConfig config, String name, boolean mayJoin) {
+    public GameInfo(List<Player> players, GameConfig config, String name, boolean mayJoin) {
         this.players = Objects.requireNonNull(players);
         this.config = Objects.requireNonNull(config);
         if(name.isBlank()) {
@@ -24,7 +24,7 @@ public class GameInfo implements GameInfoView {
         this.mayJoin = mayJoin;
     }
 
-    static GameInfo fromAnnouncement(GameAnnouncement announcement) {
+    public static GameInfo fromAnnouncement(GameAnnouncement announcement) {
         Builder builder = new Builder(GameConfig.from(announcement.getConfig()), announcement.getGameName());
         GamePlayers gamePlayers = announcement.getPlayers();
         for(int i = 0; i < gamePlayers.getPlayersCount(); i++) {
@@ -36,14 +36,14 @@ public class GameInfo implements GameInfoView {
         return builder.build();
     }
 
-    void updateFrom(GameInfo gameInfo) {
+    public void updateFrom(GameInfo gameInfo) {
         if (this.name.equals(gameInfo.name)) {
             this.players = gameInfo.players;
             this.mayJoin = gameInfo.mayJoin;
         }
     }
 
-    List<Player> getPlayers() {
+    public List<Player> getPlayers() {
         return players;
     }
 

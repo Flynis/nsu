@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.dyakun.snake.model.ClientConfig;
 import ru.dyakun.snake.model.GameController;
 import ru.dyakun.snake.controller.SceneManager;
 import ru.dyakun.snake.gui.javafx.JFXSceneFactory;
@@ -20,10 +21,11 @@ public class Launcher extends Application {
     @Override
     public void start(Stage stage) {
         try {
-            var config = GameConfig.load("game.cfg", GameConfig.class);
-            logger.info("Load config: {}", config);
+            var gameConfig = GameConfig.load("game.cfg", GameConfig.class);
+            var clientConfig = GameConfig.load("client.cfg", ClientConfig.class);
+            logger.info("Load config: {}", gameConfig);
             var sceneManager = new SceneManager(new JFXWindow(stage));
-            new GameController(new JFXSceneFactory(), sceneManager, config);
+            new GameController(new JFXSceneFactory(), sceneManager, clientConfig, gameConfig);
         } catch (Exception e) {
             logger.info("Fatal error", e);
         }
