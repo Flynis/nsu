@@ -6,20 +6,22 @@ import ru.dyakun.snake.controller.SceneManager;
 import ru.dyakun.snake.gui.base.SceneFactory;
 import ru.dyakun.snake.gui.base.SceneNames;
 import ru.dyakun.snake.model.event.GameEventListener;
-import ru.dyakun.snake.net.MessageReceiver;
-import ru.dyakun.snake.net.MulticastMessageReceiver;
+import ru.dyakun.snake.net.*;
 import ru.dyakun.snake.protocol.Direction;
+import ru.dyakun.snake.protocol.GameMessage;
 import ru.dyakun.snake.protocol.NodeRole;
 
 import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 
-public class GameController {
+public class GameController implements GameMessageListener {
     private static final Logger logger = LoggerFactory.getLogger(GameController.class);
     private final SceneManager manager;
     private final ActiveGames activeGames;
     private final MessageReceiver announcementReceiver;
+    private final NetClient client;
     private final GameConfig initialConfig;
     private final GameTimer timer;
     private GameState state;
@@ -29,8 +31,12 @@ public class GameController {
         this.initialConfig = initialConfig;
         this.activeGames = new ActiveGames();
         try {
+            client = new UdpNetClient();
+            client.addMessageListener(this);
+            new Thread(client).start();
             announcementReceiver = new MulticastMessageReceiver(InetAddress.getByName("239.192.0.4"), 9192);
             announcementReceiver.addMessageListener(activeGames);
+            announcementReceiver.addMessageListener(this);
             new Thread(announcementReceiver).start();
             // TODO refactor
         } catch (UnknownHostException e) {
@@ -57,7 +63,7 @@ public class GameController {
     }
 
     public void exit() {
-        // TODO correct exit
+        client.stop();
         timer.cancel();
         announcementReceiver.stop();
         manager.exit();
@@ -96,5 +102,10 @@ public class GameController {
     public void back() {
         timer.cancelGameStateTask();
         manager.changeScene(SceneNames.MENU);
+    }
+
+    @Override
+    public void handle(GameMessage message, SocketAddress receiver) {
+
     }
 }

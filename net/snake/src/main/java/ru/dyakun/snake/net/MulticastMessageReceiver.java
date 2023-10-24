@@ -90,7 +90,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
                 logger.debug("Interface name: {}", netInterface.getDisplayName());
                 logger.debug("\tInterface addresses: ");
                 for (InterfaceAddress addr : netInterface.getInterfaceAddresses()) {
-                    logger.debug("\t\t{}", addr.getAddress().toString());
+                    logger.debug("\t\t{}", addr.getAddress().getHostAddress());
                 }
                 networkInterface = netInterface;
             }
