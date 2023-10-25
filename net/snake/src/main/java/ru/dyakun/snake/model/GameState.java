@@ -34,6 +34,22 @@ public class GameState implements GameStateView {
         }
     }
 
+    public Collection<Player> getMembers() {
+        return players.values();
+    }
+
+    public Collection<Snake> getSnakes() {
+        return snakes.values();
+    }
+
+    public List<Point> getFoods() {
+        return foods;
+    }
+
+    public int getStateOrder() {
+        return stateOrder;
+    }
+
     @Override
     public List<PlayerView> getPlayers() {
         return players.values().stream().map(p -> (PlayerView)p).toList();
@@ -63,16 +79,12 @@ public class GameState implements GameStateView {
     }
 
     @Override
-    public SnakeView getSnake() {
+    public Snake getSnake() {
         return snakes.get(player.getId());
     }
 
     @Override
-    public GameInfoView getGameInfo() {
-        return gameInfo;
-    }
-
-    public GameInfo getCurrentGameInfo() {
+    public GameInfo getGameInfo() {
         return gameInfo;
     }
 }

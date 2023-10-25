@@ -6,7 +6,7 @@ import ru.dyakun.snake.net.GameMessageListener;
 import ru.dyakun.snake.protocol.GameAnnouncement;
 import ru.dyakun.snake.protocol.GameMessage;
 
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -45,6 +45,10 @@ public class ActiveGames implements GameMessageListener {
         return games.values().stream().map(e -> (GameInfoView)e.game).toList();
     }
 
+    public GameInfo getByName(String name) {
+        return games.get(name).game;
+    }
+
     public void deleteInactiveGames() {
         games.entrySet().removeIf(
                 item -> ChronoUnit.MILLIS.between(item.getValue().time, LocalDateTime.now()) > announcementTimeToLive);
@@ -52,7 +56,7 @@ public class ActiveGames implements GameMessageListener {
     }
 
     @Override
-    public void handle(GameMessage message, SocketAddress receiver) {
+    public void handle(GameMessage message, InetSocketAddress sender) {
         if(message.hasAnnouncement()) {
             GameMessage.AnnouncementMsg announcementMsg = message.getAnnouncement();
             GameAnnouncement announcement = announcementMsg.getGames(0);
@@ -62,6 +66,7 @@ public class ActiveGames implements GameMessageListener {
             } else {
                 games.put(gameInfo.getName(), new Entry(gameInfo, LocalDateTime.now()));
             }
+            gameInfo.findMaster().setAddress(sender);
             notifyListeners();
         }
     }

@@ -10,25 +10,23 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class MulticastMessageReceiver implements MessageReceiver {
     private static final Logger logger = LoggerFactory.getLogger(MulticastMessageReceiver.class);
     private final List<GameMessageListener> listeners = new ArrayList<>();
-    private final InetSocketAddress groupAddr;
-    private final int port;
+    private final InetSocketAddress group;
     private MulticastSocket socket = null;
     private NetworkInterface netInterface = null;
     private boolean isRunning = false;
 
-    public MulticastMessageReceiver(InetAddress groupAddr, int port) {
-        // TODO args to socket address
-        this.groupAddr = new InetSocketAddress(groupAddr, port);
-        this.port = port;
+    public MulticastMessageReceiver(InetSocketAddress group) {
+        this.group = Objects.requireNonNull(group);
     }
 
-    private void notifyListeners(GameMessage message, SocketAddress receiver) {
+    private void notifyListeners(GameMessage message, InetSocketAddress sender) {
         for(var listener : listeners) {
-            listener.handle(message, receiver);
+            listener.handle(message, sender);
         }
     }
 
@@ -41,17 +39,17 @@ public class MulticastMessageReceiver implements MessageReceiver {
     public void run() {
         byte[] buf = new byte[4096];
         try {
-            socket = new MulticastSocket(port);
+            socket = new MulticastSocket(group.getPort());
             netInterface = getNetInterface();
-            socket.joinGroup(groupAddr, netInterface);
-            logger.debug("Joined in group [{}]", groupAddr.getAddress());
+            socket.joinGroup(group, netInterface);
+            logger.debug("Joined in group [{}]", group.getAddress());
             isRunning = true;
             while(isRunning) {
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
                 socket.receive(datagramPacket);
                 logger.debug("Receive from [{}]", datagramPacket.getAddress().getHostAddress());
                 try {
-                    notifyListeners(GameMessage.parseFrom(buf), datagramPacket.getSocketAddress());
+                    notifyListeners(GameMessage.parseFrom(buf), (InetSocketAddress) datagramPacket.getSocketAddress());
                 } catch (InvalidProtocolBufferException e) {
                     logger.info("Receive broken protobuf");
                 }
@@ -70,7 +68,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
         logger.info("Try to stop Multicast receiver");
         isRunning = false;
         try {
-            socket.leaveGroup(groupAddr, netInterface);
+            socket.leaveGroup(group, netInterface);
             logger.debug("Leave from group");
             socket.close();
             logger.debug("Close multicast socket");

@@ -3,11 +3,12 @@ package ru.dyakun.snake.model.entity;
 import ru.dyakun.snake.protocol.GamePlayer;
 import ru.dyakun.snake.protocol.NodeRole;
 
+import java.net.InetSocketAddress;
+
 public class Player implements PlayerView {
     private final String name;
     private final int id;
-    private final String ip;
-    private final int port;
+    private InetSocketAddress address;
     private NodeRole role;
     private int score;
 
@@ -20,12 +21,12 @@ public class Player implements PlayerView {
         return id;
     }
 
-    public String getIp() {
-        return ip;
+    public InetSocketAddress getAddress() {
+        return address;
     }
 
-    public int getPort() {
-        return port;
+    public void setAddress(InetSocketAddress address) {
+        this.address = address;
     }
 
     public NodeRole getRole() {
@@ -48,11 +49,10 @@ public class Player implements PlayerView {
         this.score += s;
     }
 
-    private Player(String name, int id, String ip, int port, NodeRole role, int score) {
+    private Player(String name, int id, InetSocketAddress address, NodeRole role, int score) {
         this.name = name;
         this.id = id;
-        this.ip = ip;
-        this.port = port;
+        this.address = address;
         this.role = role;
         this.score = score;
     }
@@ -60,7 +60,7 @@ public class Player implements PlayerView {
     public static Player fromGamePlayer(GamePlayer gamePlayer) {
         Builder builder = new Builder(gamePlayer.getName(), gamePlayer.getId());
         builder.role(gamePlayer.getRole()).score(gamePlayer.getScore());
-        if(gamePlayer.hasIpAddress()) {
+        if(gamePlayer.hasIpAddress() && gamePlayer.hasPort()) {
             builder.address(gamePlayer.getIpAddress(), gamePlayer.getPort());
         }
         return builder.build();
@@ -69,16 +69,19 @@ public class Player implements PlayerView {
     public static class Builder {
         private final String name;
         private final int id;
-        private String ip;
-        private int port;
+        private InetSocketAddress address;
         private NodeRole role;
         private int score;
 
         public Builder(String name, int id) {
+            if(name.isBlank()) {
+                throw new IllegalArgumentException("Player name is empty");
+            }
+            if(id < 0) {
+                throw new IllegalArgumentException("Player id must >= 0");
+            }
             this.name = name;
             this.id = id;
-            this.ip = null;
-            this.port = -1;
             this.role = NodeRole.NORMAL;
             this.score = 0;
         }
@@ -87,8 +90,7 @@ public class Player implements PlayerView {
             if(ip.isBlank() || port < 1024) {
                 throw new IllegalArgumentException("Incorrect address");
             }
-            this.ip = ip;
-            this.port = port;
+            this.address = new InetSocketAddress(ip, port);
             return this;
         }
 
@@ -98,12 +100,15 @@ public class Player implements PlayerView {
         }
 
         public Builder score(int score) {
+            if(score < 0) {
+                throw new IllegalArgumentException("Player score must >= 0");
+            }
             this.score = score;
             return this;
         }
 
         public Player build() {
-            return new Player(name, id, ip, port, role, score);
+            return new Player(name, id, address, role, score);
         }
     }
 }

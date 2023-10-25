@@ -3,6 +3,7 @@ package ru.dyakun.snake.model;
 import ru.dyakun.snake.model.entity.Player;
 import ru.dyakun.snake.protocol.GameAnnouncement;
 import ru.dyakun.snake.protocol.GamePlayers;
+import ru.dyakun.snake.protocol.NodeRole;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,15 @@ public class GameInfo implements GameInfoView {
         return builder.build();
     }
 
+    public Player findMaster() {
+        for(var player : players) {
+            if(player.getRole() == NodeRole.MASTER) {
+                return player;
+            }
+        }
+        throw new IllegalStateException("No master in game");
+    }
+
     public void updateFrom(GameInfo gameInfo) {
         if (this.name.equals(gameInfo.name)) {
             this.players = gameInfo.players;
@@ -64,10 +74,6 @@ public class GameInfo implements GameInfoView {
 
     public boolean isMayJoin() {
         return mayJoin;
-    }
-
-    void setMayJoin(boolean mayJoin) {
-        this.mayJoin = mayJoin;
     }
 
     public static class Builder {

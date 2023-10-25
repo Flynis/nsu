@@ -6,8 +6,19 @@ import java.util.List;
 
 public class Snake implements SnakeView {
     public enum State {
-        ALIVE,
-        ZOMBIE
+        ALIVE(0),
+        ZOMBIE(1);
+        // TODO add destroyed
+
+        private final int code;
+
+        public int getCode() {
+            return code;
+        }
+
+        State(int code) {
+            this.code = code;
+        }
     }
 
     private final List<Point> points;

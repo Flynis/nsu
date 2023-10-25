@@ -7,10 +7,7 @@ import ru.dyakun.snake.model.util.MessageType;
 import ru.dyakun.snake.protocol.GameMessage;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketAddress;
-import java.net.SocketException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -36,14 +33,14 @@ public class UdpNetClient implements NetClient {
         }
     }
 
-    private void notifyListeners(GameMessage message, SocketAddress receiver) {
+    private void notifyListeners(GameMessage message, InetSocketAddress sender) {
         for(var listener : listeners) {
-            listener.handle(message, receiver);
+            listener.handle(message, sender);
         }
     }
 
     @Override
-    public void send(MessageType type, GameMessage message, SocketAddress receiver) {
+    public void send(MessageType type, GameMessage message, InetSocketAddress receiver) {
         // TODO impl
     }
 
@@ -62,7 +59,7 @@ public class UdpNetClient implements NetClient {
                 socket.receive(datagramPacket);
                 logger.debug("Receive from [{}]", datagramPacket.getAddress().getHostAddress());
                 try {
-                    notifyListeners(GameMessage.parseFrom(buf), datagramPacket.getSocketAddress());
+                    notifyListeners(GameMessage.parseFrom(buf), (InetSocketAddress) datagramPacket.getSocketAddress());
                 } catch (InvalidProtocolBufferException e) {
                     logger.info("Receive broken protobuf");
                 }
@@ -92,6 +89,7 @@ public class UdpNetClient implements NetClient {
         public MessageSender(BlockingQueue<GameMessage> queue, DatagramSocket socket, UdpNetClient client) {
             this.queue = queue;
             this.socket = socket;
+            // TODO ack receive
         }
 
         @Override

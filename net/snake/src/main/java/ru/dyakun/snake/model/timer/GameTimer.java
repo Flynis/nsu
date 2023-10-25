@@ -4,22 +4,24 @@ import ru.dyakun.snake.model.ActiveGames;
 import ru.dyakun.snake.model.GameState;
 import ru.dyakun.snake.model.event.GameEvent;
 import ru.dyakun.snake.model.event.GameEventListener;
+import ru.dyakun.snake.net.NetClient;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.net.InetSocketAddress;
+import java.util.*;
 
 public class GameTimer {
     private final Timer timer;
     private final List<GameEventListener> listeners = new ArrayList<>();
     private GameStateUpdateTask gameStateTask;
+    private GameAnnouncementTask announcementTask;
     private final int announcementPeriod;
+    private final InetSocketAddress groupAddress;
 
-    public GameTimer(ActiveGames activeGames, int announcementPeriod) {
+    public GameTimer(ActiveGames activeGames, int announcementPeriod, InetSocketAddress groupAddress) {
         if (announcementPeriod < 10) {
             throw new IllegalArgumentException("Announcement period is too little");
         }
+        this.groupAddress = groupAddress;
         this.announcementPeriod = announcementPeriod;
         this.timer = new Timer();
         int period = activeGames.getAnnouncementTimeToLive();
@@ -36,24 +38,21 @@ public class GameTimer {
         listeners.add(listener);
     }
 
-    public void startGameStateUpdate(GameState state, int period) {
+    public void startGameStateUpdate(GameState state, int period, NetClient client) {
         if(period < 10) {
             throw new IllegalArgumentException("To little period");
         }
-        gameStateTask = new GameStateUpdateTask(state, listeners);
+        gameStateTask = new GameStateUpdateTask(state, listeners, client);
         timer.schedule(gameStateTask, 0, period);
-    }
-
-    public void startAnnouncementSend() {
-        // TODO impl
-    }
-
-    public void cancelAnnouncementSend() {
-
+        announcementTask = new GameAnnouncementTask(client, state, groupAddress);
+        timer.schedule(announcementTask, 0, announcementPeriod);
     }
 
     public void cancelGameStateUpdate() {
+        announcementTask.cancel();
+        announcementTask = null;
         gameStateTask.cancel();
+        gameStateTask = null;
         notifyListeners();
     }
 

@@ -1,24 +1,21 @@
 package ru.dyakun.snake.model;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.controller.SceneManager;
 import ru.dyakun.snake.gui.base.SceneFactory;
 import ru.dyakun.snake.gui.base.SceneNames;
 import ru.dyakun.snake.model.event.GameEventListener;
 import ru.dyakun.snake.model.timer.GameTimer;
+import ru.dyakun.snake.model.util.MessageType;
+import ru.dyakun.snake.model.util.MessageUtils;
 import ru.dyakun.snake.net.*;
 import ru.dyakun.snake.protocol.Direction;
 import ru.dyakun.snake.protocol.GameMessage;
 import ru.dyakun.snake.protocol.NodeRole;
 
-import java.net.InetAddress;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
+import java.net.InetSocketAddress;
 import java.util.List;
 
 public class GameController implements GameMessageListener {
-    private static final Logger logger = LoggerFactory.getLogger(GameController.class);
     private final SceneManager manager;
     private final ActiveGames activeGames;
     private final MessageReceiver announcementReceiver;
@@ -31,21 +28,18 @@ public class GameController implements GameMessageListener {
         this.manager = manager;
         this.initialConfig = initialConfig;
         this.activeGames = new ActiveGames(config.getAnnouncementTimeToLive());
-        try {
-            client = new UdpNetClient();
-            client.addMessageListener(this);
-            new Thread(client).start();
-            announcementReceiver = new MulticastMessageReceiver(
-                    InetAddress.getByName(config.getMulticastGroupAddress()),
-                    config.getMulticastGroupPort());
-            announcementReceiver.addMessageListener(activeGames);
-            announcementReceiver.addMessageListener(this);
-            new Thread(announcementReceiver).start();
-            // TODO refactor
-        } catch (UnknownHostException e) {
-            throw new IllegalStateException(e);
-        }
-        timer = new GameTimer(activeGames, config.getAnnouncementPeriod());
+        var groupAddress = new InetSocketAddress(
+                config.getMulticastGroupAddress(),
+                config.getMulticastGroupPort());
+        client = new UdpNetClient();
+        client.addMessageListener(activeGames);
+        client.addMessageListener(this);
+        new Thread(client).start();
+        announcementReceiver = new MulticastMessageReceiver(groupAddress);
+        announcementReceiver.addMessageListener(activeGames);
+        announcementReceiver.addMessageListener(this);
+        new Thread(announcementReceiver).start();
+        timer = new GameTimer(activeGames, config.getAnnouncementPeriod(), groupAddress);
         manager.addScene(SceneNames.MENU, factory.create(SceneNames.MENU, this));
         manager.addScene(SceneNames.GAME, factory.create(SceneNames.GAME, this));
         manager.changeScene(SceneNames.MENU);
@@ -80,8 +74,10 @@ public class GameController implements GameMessageListener {
             throw new IllegalArgumentException("Game name is empty");
         }
         if(role == NodeRole.NORMAL || role == NodeRole.VIEWER) {
-            // TODO connect
-            manager.changeScene(SceneNames.GAME);
+            var gameInfo = activeGames.getByName(game);
+            var masterAddress = gameInfo.findMaster().getAddress();
+            var message = MessageUtils.joinMessage(nickname, game, role);
+            client.send(MessageType.JOIN, message, masterAddress);
         }
         throw new IllegalArgumentException("Illegal role");
     }
@@ -91,7 +87,7 @@ public class GameController implements GameMessageListener {
             throw new IllegalArgumentException("Nickname is empty");
         }
         state = new GameState(initialConfig, nickname);
-        timer.startGameStateUpdate(state, initialConfig.getDelay());
+        timer.startGameStateUpdate(state, initialConfig.getDelay(), client);
         manager.changeScene(SceneNames.GAME);
     }
 
@@ -108,7 +104,59 @@ public class GameController implements GameMessageListener {
     }
 
     @Override
-    public void handle(GameMessage message, SocketAddress receiver) {
+    public void handle(GameMessage message, InetSocketAddress sender) {
+        if(message.hasAck()) {
+
+        } else if(message.hasError()) {
+
+        } else if(message.hasState()) {
+
+        } else if(message.hasDiscover()) {
+            handlerDiscoverMessage(sender);
+        } else if(message.hasRoleChange()) {
+
+        } else if(message.hasJoin()) {
+
+        } else if(message.hasPing()) {
+
+        } else if(message.hasSteer()) {
+
+        }
+    }
+
+    private void handlePingMessage(GameMessage message, InetSocketAddress sender) {
+        // TODO update sender time in table
+
+    }
+
+    private void handlerDiscoverMessage(InetSocketAddress sender) {
+        if(state != null && state.getPlayer().getRole() == NodeRole.MASTER) {
+            var message = MessageUtils.announcementMessage(state.getGameInfo());
+            client.send(MessageType.ANNOUNCEMENT, message, sender);
+        }
+    }
+
+    private void handleErrorMessage(GameMessage message, InetSocketAddress sender) {
+        // TODO impl
+    }
+
+    private void handleAckMessage(GameMessage message, InetSocketAddress sender) {
+        // TODO impl
+    }
+
+    private void handleSteerMessage(GameMessage message, InetSocketAddress sender) {
+        // TODO impl
+    }
+
+    private void handleJoinMessage(GameMessage message, InetSocketAddress sender) {
+        // TODO impl
+    }
+
+    private void handleRoleChangeMessage(GameMessage message, InetSocketAddress sender) {
+        // TODO impl
+    }
+
+    private void handleStateMessage(GameMessage message, InetSocketAddress sender) {
         // TODO impl
     }
 }
