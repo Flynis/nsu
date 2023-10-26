@@ -2,11 +2,8 @@ package ru.dyakun.snake.model.field;
 
 import ru.dyakun.snake.model.entity.Point;
 
-public record SubMatrix(int n, Point leftUpper, Point bottomRight) {
+public record SubMatrix(Point leftUpper, Point bottomRight) {
     public SubMatrix {
-        if (n < 0) {
-            throw new IllegalArgumentException("Sub matrix size must be positive");
-        }
         if(leftUpper.x < 0 || leftUpper.y < 0) {
             throw new IllegalArgumentException("Point coords must be positive");
         }
@@ -15,10 +12,14 @@ public record SubMatrix(int n, Point leftUpper, Point bottomRight) {
         }
     }
 
+    public int getSize() {
+        return Math.min(bottomRight.x - leftUpper.x, bottomRight.y - leftUpper.y);
+    }
+
     @Override
     public String toString() {
         return String.format("SubMatrix{ n = %d, (%d, %d), (%d, %d)}",
-                n,
+                getSize(),
                 leftUpper.x,
                 leftUpper.y,
                 bottomRight.x,

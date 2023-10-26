@@ -1,9 +1,9 @@
 package ru.dyakun.snake.model.entity;
 
-import java.util.List;
+import java.util.Collection;
 
 public interface SnakeView {
-    List<Point> points();
+    Collection<Point> points();
     Point getHead();
     Point getTail();
 }

@@ -8,6 +8,8 @@ import ru.dyakun.snake.model.field.GameField;
 import ru.dyakun.snake.model.field.SnakeCreateException;
 import ru.dyakun.snake.protocol.Direction;
 import ru.dyakun.snake.protocol.NodeRole;
+import ru.dyakun.snake.util.IdGenerator;
+import ru.dyakun.snake.util.SimpleIdGenerator;
 
 import java.util.*;
 
@@ -20,11 +22,13 @@ public class GameState implements GameStateView {
     private final Field field;
     private final Player player;
     private final GameInfo gameInfo;
+    private final IdGenerator generator = new SimpleIdGenerator();
 
     public GameState(GameConfig config, String nickname) {
         field = new Field(config, players, snakes, foods);
         try {
-            int id = field.createSnake();
+            int id = generator.next();
+            field.createSnake(id);
             player = new Player.Builder(nickname, id).role(NodeRole.MASTER).score(0).build();
             players.put(player.getId(), player);
             gameInfo = new GameInfo.Builder(config, player.getName()).addPlayer(player).mayJoin(true).build();

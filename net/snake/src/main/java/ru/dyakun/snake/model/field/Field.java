@@ -6,31 +6,33 @@ import ru.dyakun.snake.model.GameConfig;
 import ru.dyakun.snake.model.entity.Player;
 import ru.dyakun.snake.model.entity.Point;
 import ru.dyakun.snake.model.entity.Snake;
-import ru.dyakun.snake.util.IdGenerator;
-import ru.dyakun.snake.util.SimpleIdGenerator;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Field implements GameField {
     private static final int FREE_SPACE_SIZE = 5;
+    private static final int MIN_FREE_SPACE_FOR_RANDOM = 5;
     private static final Logger logger = LoggerFactory.getLogger(Field.class);
     private final int width;
     private final int height;
     private final int foodStatic;
     private final Tile[] field;
-    private final List<Point> foods;
+    private final Collection<Point> foods;
     private final Map<Integer, Snake> snakes;
     private final Map<Integer, Player> players;
-    private final IdGenerator generator = new SimpleIdGenerator();
-    private boolean updating = false;
+    private int freeSpace;
+    private int aliveSnakes;
 
-    public Field(GameConfig config, Map<Integer, Player> players, Map<Integer, Snake> snakes, List<Point> foods) {
+    private record StartSnake(Point head, Point tail) {}
+
+    public Field(GameConfig config, Map<Integer, Player> players, Map<Integer, Snake> snakes, Collection<Point> foods) {
         this.width = config.getWidth();
         this.height = config.getHeight();
         this.foodStatic = config.getFoodStatic();
         this.field = new Tile[height * width];
         Arrays.fill(field, Tile.EMPTY);
+        freeSpace = height * width;
         this.foods = foods;
         fillPoints(foods, Tile.FOOD);
         this.snakes = snakes;
@@ -38,10 +40,6 @@ public class Field implements GameField {
             fillPoints(snake.points(), Tile.SNAKE);
         }
         this.players = players;
-    }
-
-    public boolean isUpdating() {
-        return updating;
     }
 
     @Override
@@ -65,31 +63,53 @@ public class Field implements GameField {
         return field[y * height + x];
     }
 
+    private void setFood(int x, int y) {
+        if(get(x, y) == Tile.EMPTY) {
+            set(x, y, Tile.FOOD);
+            logger.debug("Created food ({}, {})", x, y);
+            foods.add(new Point(x, y));
+        }
+    }
+
     private void createFood() {
-        while (foods.size() < foodStatic + snakes.size()) {
+        while (foods.size() < foodStatic + aliveSnakes && freeSpace > MIN_FREE_SPACE_FOR_RANDOM) {
             int x = ThreadLocalRandom.current().nextInt(0, width);
             int y = ThreadLocalRandom.current().nextInt(0, height);
-            if(get(x, y) == Tile.EMPTY) {
-                set(x, y, Tile.FOOD);
-                logger.debug("Created food ({}, {})", x, y);
-                foods.add(new Point(x, y));
+            setFood(x, y);
+        }
+        for(int i = 0; i < height; i++) {
+            for(int j = 0; j < width; j++) {
+                if(foods.size() == foodStatic + aliveSnakes || freeSpace == 0) {
+                    return;
+                }
+                setFood(j, i);
             }
         }
     }
 
     public void updateField() {
-        updating = true;
         logger.debug("Food {}", foods);
+        aliveSnakes = 0;
+        List<Point> eatenFoods = new ArrayList<>();
         for(var snake: snakes.values()) {
+            if(snake.state() == Snake.State.ALIVE) {
+                aliveSnakes++;
+            }
             var head = snake.moveHead();
+            if(get(head.x, head.y) == Tile.EMPTY) {
+                var tail = snake.getTail();
+                set(tail.x, tail.y, Tile.EMPTY);
+                snake.moveTail();
+            }
+        }
+        for(var snake: snakes.values()) {
+            // TODO
+            var head = snake.getHead();
             switch (get(head.x, head.y)) {
                 case FOOD -> {
                     set(head.x, head.y, Tile.SNAKE);
                     foods.removeIf(p -> p.x == head.x && p.y == head.y);
                     players.get(snake.playerId()).addScore(1);
-                }
-                case SNAKE -> {
-                    // TODO destroy
                 }
                 case EMPTY -> {
                     set(head.x, head.y, Tile.SNAKE);
@@ -98,35 +118,36 @@ public class Field implements GameField {
                     snake.moveTail();
                 }
             }
-            logger.debug("Snake move {}", snake.points());
         }
         createFood();
-        updating = false;
     }
 
-    public int createSnake() throws SnakeCreateException {
+    public void createSnake(int id) throws SnakeCreateException {
         logger.debug("Creating new snake");
         SubMatrix freeSpace = findFreeSpace();
         logger.debug("Free space {}", freeSpace);
-        if(freeSpace.n() < FREE_SPACE_SIZE) {
+        if(freeSpace.getSize() < FREE_SPACE_SIZE) {
             throw new SnakeCreateException("No free space for new snake");
         }
-        List<Point> points = placeSnake(freeSpace);
-        if (points.isEmpty()) {
+        StartSnake points = placeSnake(freeSpace);
+        if (points == null) {
             throw new SnakeCreateException("No free space for new snake");
         }
         logger.debug("Snake: {}", points);
-        int id = generator.next();
-        Snake snake = new Snake(points, id);
+        Snake snake = new Snake(points.head, points.tail, id);
         snakes.put(id, snake);
-        fillPoints(points, Tile.SNAKE);
-        return id;
+        fillPoints(snake.points(), Tile.SNAKE);
     }
 
     private void set(int x, int y, Tile tile) {
         x = mod(x, width);
         y = mod(y, height);
         field[y * height + x] = tile;
+        if(tile == Tile.EMPTY) {
+            freeSpace++;
+        } else {
+            freeSpace--;
+        }
     }
 
     Tile get(int x, int y) {
@@ -139,26 +160,23 @@ public class Field implements GameField {
         return (n % size + size) % size;
     }
 
-    private void fillPoints(List<Point> points, Tile tile) {
+    private void fillPoints(Collection<Point> points, Tile tile) {
         for(var point: points) {
             set(point.x, point.y, tile);
         }
     }
 
-    private List<Point> placeSnake(SubMatrix matrix) {
-        List<Point> points = new ArrayList<>();
+    private StartSnake placeSnake(SubMatrix matrix) {
         int centerX = matrix.leftUpper().x + (matrix.bottomRight().x - matrix.leftUpper().x) / 2;
         int centerY = matrix.leftUpper().y + (matrix.bottomRight().y - matrix.leftUpper().y) / 2;
-        for(int s = 0; s <= matrix.n() / 2; s++) {
+        for(int s = 0; s <= matrix.getSize() / 2; s++) {
             int y = centerY - s;
             // TODO refactor
             for(int j = centerX - s; j <= centerX + s; j++) {
                 if(get(j, y) == Tile.EMPTY) {
                     Point tail = findFreeNeighbor(j, y);
                     if(tail != null) {
-                        points.add(tail);
-                        points.add(new Point(j, y));
-                        return points;
+                        return new StartSnake(new Point(j, y), tail);
                     }
                 }
             }
@@ -167,9 +185,7 @@ public class Field implements GameField {
                 if(get(j, y) == Tile.EMPTY) {
                     Point tail = findFreeNeighbor(j, y);
                     if(tail != null) {
-                        points.add(tail);
-                        points.add(new Point(j, y));
-                        return points;
+                        return new StartSnake(new Point(j, y), tail);
                     }
                 }
             }
@@ -178,9 +194,7 @@ public class Field implements GameField {
                 if(get(x, i) == Tile.EMPTY) {
                     Point tail = findFreeNeighbor(x, i);
                     if(tail != null) {
-                        points.add(tail);
-                        points.add(new Point(x, i));
-                        return points;
+                        return new StartSnake(new Point(x, i), tail);
                     }
                 }
             }
@@ -189,14 +203,12 @@ public class Field implements GameField {
                 if(get(x, i) == Tile.EMPTY) {
                     Point tail = findFreeNeighbor(x, i);
                     if(tail != null) {
-                        points.add(tail);
-                        points.add(new Point(x, i));
-                        return points;
+                        return new StartSnake(new Point(x, i), tail);
                     }
                 }
             }
         }
-        return points;
+        return null;
     }
 
     private Point findFreeNeighbor(int x, int y) {
@@ -255,7 +267,6 @@ public class Field implements GameField {
                 right = d2[j] - 1;
             }
         }
-        // TODO correct calc n
-        return new SubMatrix(ans, new Point(left, upper), new Point(right, bottom));
+        return new SubMatrix(new Point(left, upper), new Point(right, bottom));
     }
 }

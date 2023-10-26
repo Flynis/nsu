@@ -90,6 +90,16 @@ public enum Direction
     return forNumber(value);
   }
 
+  public static Direction getReverse(Direction direction) {
+    switch (direction) {
+      case UP -> { return DOWN; }
+      case DOWN -> { return UP; }
+      case LEFT -> { return RIGHT; }
+      case RIGHT -> { return LEFT; }
+      default -> throw new IllegalArgumentException("Unknown direction");
+    }
+  }
+
   /**
    * @param value The numeric wire value of the corresponding enum entry.
    * @return The enum associated with the given numeric wire value.
