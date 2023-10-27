@@ -29,7 +29,10 @@ public class GameStateUpdateTask extends TimerTask {
 
     @Override
     public void run() {
-        state.update();
+        var viewers = state.update();
+        for(var viewer : viewers) {
+            // TODO send change role msg
+        }
         var players = state.getMembers();
         var message = MessageUtils.stateMessage(state);
         for(var player : players) {

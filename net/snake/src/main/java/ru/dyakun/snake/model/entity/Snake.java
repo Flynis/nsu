@@ -1,6 +1,7 @@
 package ru.dyakun.snake.model.entity;
 
 import ru.dyakun.snake.protocol.Direction;
+import ru.dyakun.snake.protocol.GameState;
 
 import java.util.*;
 
@@ -33,6 +34,13 @@ public class Snake implements SnakeView {
         this.playerId = playerId;
         this.state = State.ALIVE;
         this.direction = determineDirection(head, tail);
+    }
+
+    public Snake(Deque<Point> points, Direction direction, State state, int playerId) {
+        this.points = points;
+        this.direction = direction;
+        this.state = state;
+        this.playerId = playerId;
     }
 
     @Override
@@ -99,6 +107,48 @@ public class Snake implements SnakeView {
             }
         } else {
             throw new IllegalStateException("At least one coordinate must coincide between tail and head");
+        }
+    }
+
+    public static Snake from(GameState.Snake snake) {
+        var builder = new Builder(snake.getPlayerId())
+                .direction(snake.getHeadDirection())
+                .state(snake.getState());
+        for(int i = 0; i < snake.getPointsCount(); i++) {
+            builder.addPoint(Point.from(snake.getPoints(i)));
+        }
+        return builder.build();
+    }
+
+    public static class Builder {
+        private final Deque<Point> points = new ArrayDeque<>();
+        private Direction direction;
+        private State state;
+        private final int playerId;
+
+        public Builder(int playerId) {
+            this.playerId = playerId;
+        }
+
+        public Builder direction(Direction direction) {
+            this.direction = direction;
+            return this;
+        }
+
+        public Builder state(GameState.Snake.SnakeState state) {
+            switch (state) {
+                case ALIVE -> this.state = State.ALIVE;
+                case ZOMBIE -> this.state = State.ZOMBIE;
+            }
+            return this;
+        }
+
+        public void addPoint(Point p) {
+            points.addFirst(p);
+        }
+
+        public Snake build() {
+            return new Snake(points, direction, state, playerId);
         }
     }
 }

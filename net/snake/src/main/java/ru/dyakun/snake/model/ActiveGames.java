@@ -62,7 +62,7 @@ public class ActiveGames implements GameMessageListener {
             GameAnnouncement announcement = announcementMsg.getGames(0);
             GameInfo gameInfo = GameInfo.fromAnnouncement(announcement);
             if(games.containsKey(gameInfo.getName())) {
-                games.get(gameInfo.getName()).game.updateFrom(gameInfo);
+                games.get(gameInfo.getName()).game.updateBy(gameInfo);
             } else {
                 games.put(gameInfo.getName(), new Entry(gameInfo, LocalDateTime.now()));
             }

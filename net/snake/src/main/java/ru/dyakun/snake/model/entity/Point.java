@@ -1,6 +1,7 @@
 package ru.dyakun.snake.model.entity;
 
 import ru.dyakun.snake.protocol.Direction;
+import ru.dyakun.snake.protocol.GameState;
 
 public class Point {
     public int x;
@@ -32,5 +33,9 @@ public class Point {
             case LEFT -> x--;
             case RIGHT -> x++;
         }
+    }
+
+    public static Point from(GameState.Coord coord) {
+        return new Point(coord.getX(), coord.getY());
     }
 }

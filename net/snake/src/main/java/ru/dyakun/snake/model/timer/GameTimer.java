@@ -14,6 +14,7 @@ public class GameTimer {
     private final List<GameEventListener> listeners = new ArrayList<>();
     private GameStateUpdateTask gameStateTask;
     private GameAnnouncementTask announcementTask;
+    private PingTask pingTask;
     private final int announcementPeriod;
     private final InetSocketAddress groupAddress;
 
@@ -49,11 +50,30 @@ public class GameTimer {
     }
 
     public void cancelGameStateUpdate() {
+        if(gameStateTask == null) {
+            return;
+        }
         announcementTask.cancel();
         announcementTask = null;
         gameStateTask.cancel();
         gameStateTask = null;
         notifyListeners();
+    }
+
+    public void startPing(InetSocketAddress masterAddress, int period, NetClient client) {
+        pingTask = new PingTask(client, masterAddress);
+        timer.schedule(pingTask, 0, period);
+    }
+
+    public void changeMasterAddress(InetSocketAddress address) {
+        pingTask.setMasterAddress(address);
+    }
+
+    public void cancelPing() {
+        if(pingTask != null) {
+            pingTask.cancel();
+            pingTask = null;
+        }
     }
 
     public void cancel() {

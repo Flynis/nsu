@@ -18,9 +18,9 @@ public class Field implements GameField {
     private final int height;
     private final int foodStatic;
     private final Tile[] field;
-    private final Collection<Point> foods;
-    private final Map<Integer, Snake> snakes;
-    private final Map<Integer, Player> players;
+    private Collection<Point> foods;
+    private Map<Integer, Snake> snakes;
+    private Map<Integer, Player> players;
     private int freeSpace;
 
     private record StartSnake(Point head, Point tail) {}
@@ -30,6 +30,10 @@ public class Field implements GameField {
         this.height = config.getHeight();
         this.foodStatic = config.getFoodStatic();
         this.field = new Tile[height * width];
+        fill(players, snakes, foods);
+    }
+
+    private void fill(Map<Integer, Player> players, Map<Integer, Snake> snakes, Collection<Point> foods) {
         Arrays.fill(field, Tile.EMPTY);
         freeSpace = height * width;
         this.foods = foods;
@@ -39,6 +43,10 @@ public class Field implements GameField {
             fillPoints(snake.points(), Tile.SNAKE);
         }
         this.players = players;
+    }
+
+    public void updateBy(Map<Integer, Player> players, Map<Integer, Snake> snakes, Collection<Point> foods) {
+        fill(players, snakes, foods);
     }
 
     @Override

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.controller.SceneManager;
 import ru.dyakun.snake.gui.base.SceneFactory;
 import ru.dyakun.snake.gui.base.SceneNames;
+import ru.dyakun.snake.model.event.GameEvent;
 import ru.dyakun.snake.model.event.GameEventListener;
 import ru.dyakun.snake.model.timer.GameTimer;
 import ru.dyakun.snake.model.util.MessageType;
@@ -15,6 +16,7 @@ import ru.dyakun.snake.protocol.GameMessage;
 import ru.dyakun.snake.protocol.NodeRole;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 public class GameController implements GameMessageListener {
@@ -25,9 +27,11 @@ public class GameController implements GameMessageListener {
     private final NetClient client;
     private final GameConfig initialConfig;
     private final GameTimer timer;
+    private final List<GameEventListener> listeners = new ArrayList<>();
     private GameState state;
     private boolean connected = false;
     private InetSocketAddress masterAddress;
+    private GameState.Builder gameStateBuilder;
 
     public GameController(SceneFactory factory, SceneManager manager, ClientConfig config, GameConfig initialConfig) {
         this.manager = manager;
@@ -62,6 +66,13 @@ public class GameController implements GameMessageListener {
     public void addGameEventListener(GameEventListener listener) {
         activeGames.addGameEventListener(listener);
         timer.addGameEventListener(listener);
+        listeners.add(listener);
+    }
+
+    private void notifyListeners(GameEvent event, Object payload) {
+        for(var listener : listeners) {
+            listener.onEvent(event, payload);
+        }
     }
 
     public void exit() {
@@ -80,7 +91,8 @@ public class GameController implements GameMessageListener {
         }
         if(role == NodeRole.NORMAL || role == NodeRole.VIEWER) {
             var gameInfo = activeGames.getByName(game);
-            var masterAddress = gameInfo.findMaster().getAddress();
+            masterAddress = gameInfo.findMaster().getAddress();
+            gameStateBuilder = new GameState.Builder(nickname, role, gameInfo);
             var message = MessageUtils.joinMessage(nickname, game, role);
             client.send(MessageType.JOIN, message, masterAddress);
         }
@@ -114,22 +126,29 @@ public class GameController implements GameMessageListener {
 
     public void back() {
         connected = false;
+        gameStateBuilder = null;
+        state = null;
+        masterAddress = null;
         timer.cancelGameStateUpdate();
+        timer.cancelPing();
         manager.changeScene(SceneNames.MENU);
     }
 
     @Override
     public void handle(GameMessage message, InetSocketAddress sender) {
-        if(!connected) {
-            return;
-        }
         try {
             if(message.hasAck()) {
-
+                handleAckMessage(message);
+                return;
             } else if(message.hasError()) {
-
-            } else if(message.hasState()) {
-
+                handleErrorMessage(message);
+                return;
+            }
+            if(!connected) {
+                return;
+            }
+            if(message.hasState()) {
+                handleStateMessage(message);
             } else if(message.hasDiscover()) {
                 handlerDiscoverMessage(sender);
             } else if(message.hasRoleChange()) {
@@ -157,12 +176,20 @@ public class GameController implements GameMessageListener {
         }
     }
 
-    private void handleErrorMessage(GameMessage message, InetSocketAddress sender) {
-        // TODO impl
+    private void handleErrorMessage(GameMessage message) {
+        var errorMsg = message.getError();
+        notifyListeners(GameEvent.MESSAGE, errorMsg.getErrorMessage());
     }
 
-    private void handleAckMessage(GameMessage message, InetSocketAddress sender) {
-        // TODO impl
+    private void handleAckMessage(GameMessage message) {
+        if(!connected) {
+            gameStateBuilder.setId(message.getReceiverId());
+            manager.changeScene(SceneNames.GAME);
+            connected = true;
+            notifyListeners(GameEvent.CLEAR_FIELD, null);
+            int period = gameStateBuilder.getGameInfo().getConfig().getDelay() / 2;
+            timer.startPing(masterAddress, period, client);
+        }
     }
 
     private void handleSteerMessage(GameMessage message, InetSocketAddress sender) {
@@ -197,7 +224,14 @@ public class GameController implements GameMessageListener {
         // TODO impl
     }
 
-    private void handleStateMessage(GameMessage message, InetSocketAddress sender) {
-        // TODO impl
+    private void handleStateMessage(GameMessage message) {
+        var stateMsg = message.getState();
+        if(state == null) {
+            state = gameStateBuilder.build(stateMsg.getState());
+            gameStateBuilder = null;
+        } else {
+            state.updateBy(stateMsg.getState());
+        }
+        notifyListeners(GameEvent.REPAINT_FIELD, null);
     }
 }

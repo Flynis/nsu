@@ -7,7 +7,6 @@ import ru.dyakun.snake.protocol.NodeRole;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 
 public class GameInfo implements GameInfoView {
@@ -47,7 +46,7 @@ public class GameInfo implements GameInfoView {
         throw new IllegalStateException("No master in game");
     }
 
-    public void updateFrom(GameInfo gameInfo) {
+    public void updateBy(GameInfo gameInfo) {
         if (this.name.equals(gameInfo.name)) {
             this.players = gameInfo.players;
             this.mayJoin = gameInfo.mayJoin;
@@ -56,6 +55,10 @@ public class GameInfo implements GameInfoView {
 
     public Collection<Player> getPlayers() {
         return players;
+    }
+
+    public void setPlayers(Collection<Player> players) {
+        this.players = players;
     }
 
     @Override

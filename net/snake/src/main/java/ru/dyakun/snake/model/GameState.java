@@ -31,6 +31,8 @@ public class GameState implements GameStateView {
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private boolean updating = false;
 
+    private record EntitiesCollections(Collection<Player> players, Collection<Point> foods, Collection<Snake> snakes) {}
+
     public GameState(GameConfig config, String nickname) {
         field = new Field(config, players, snakes, foods);
         try {
@@ -43,6 +45,27 @@ public class GameState implements GameStateView {
             logger.info("Place snake into empty field failed");
             throw new AssertionError();
         }
+    }
+
+    private void fillMaps(EntitiesCollections collections) {
+        this.players.clear();
+        this.snakes.clear();
+        this.foods.clear();
+        for(var player : collections.players) {
+            this.players.put(player.getId(), player);
+        }
+        for(var snake : collections.snakes) {
+            this.snakes.put(snake.playerId(), snake);
+        }
+        this.foods.addAll(collections.foods);
+    }
+
+    private GameState(GameInfo gameInfo, int stateOrder, Player player, EntitiesCollections collections) {
+        this.gameInfo = gameInfo;
+        this.currentPlayer = player;
+        this.stateOrder = stateOrder;
+        fillMaps(collections);
+        field = new Field(gameInfo.getConfig(), this.players, this.snakes, this.foods);
     }
 
     public Collection<Player> getMembers() {
@@ -112,12 +135,21 @@ public class GameState implements GameStateView {
         return players.values().stream().map(p -> (PlayerView)p).toList();
     }
 
-    public void update() {
+    public Collection<Player> update() {
         updating = true;
         stateOrder++;
         field.updateField();
-        // TODO destroyed snakes
+        var viewers = new ArrayList<Player>();
+        for(var snake : snakes.values()) {
+            if (snake.state() == Snake.State.DESTROYED) {
+                viewers.add(players.get(snake.playerId()));
+            }
+        }
+        for(var viewer: viewers) {
+            snakes.remove(viewer.getId());
+        }
         updating = false;
+        return viewers;
     }
 
     @Override
@@ -148,7 +180,54 @@ public class GameState implements GameStateView {
         return gameInfo;
     }
 
-    public GameState from(ru.dyakun.snake.protocol.GameState gameState) {
-        // TODO impl
+    public void updateBy(ru.dyakun.snake.protocol.GameState gameState) {
+        var collections = collectionsFrom(gameState);
+        fillMaps(collections);
+        field.updateBy(players, snakes, foods);
+        gameInfo.setPlayers(collections.players);
+        stateOrder = gameState.getStateOrder();
+    }
+
+    private static EntitiesCollections collectionsFrom(ru.dyakun.snake.protocol.GameState gameState) {
+        var players = new ArrayList<Player>();
+        var gamePlayers = gameState.getPlayers();
+        for(int i = 0; i < gamePlayers.getPlayersCount(); i++) {
+            players.add(Player.fromGamePlayer(gamePlayers.getPlayers(i)));
+        }
+        var foods = new ArrayList<Point>();
+        for(int i = 0; i < gameState.getFoodsCount(); i++) {
+            foods.add(Point.from(gameState.getFoods(i)));
+        }
+        var snakes = new ArrayList<Snake>();
+        for(int i = 0; i < gameState.getSnakesCount(); i++) {
+            snakes.add(Snake.from(gameState.getSnakes(i)));
+        }
+        return new EntitiesCollections(players, foods, snakes);
+    }
+
+    public static class Builder {
+        private final String nickname;
+        private final NodeRole role;
+        private int id;
+        private final GameInfo gameInfo;
+
+        public Builder(String nickname, NodeRole role, GameInfo gameInfo) {
+            this.nickname = nickname;
+            this.role = role;
+            this.gameInfo = gameInfo;
+        }
+
+        public GameInfo getGameInfo() {
+            return gameInfo;
+        }
+
+        public void setId(int id) {
+            this.id = id;
+        }
+
+        public GameState build(ru.dyakun.snake.protocol.GameState gameState) {
+            var player = new Player.Builder(nickname, id).score(0).role(role).build();
+            return new GameState(gameInfo, gameState.getStateOrder(), player, collectionsFrom(gameState));
+        }
     }
 }
