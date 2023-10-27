@@ -26,9 +26,8 @@ public class UdpNetClient implements NetClient {
             socket = new DatagramSocket();
             sender = new MessageSender(pending, socket, this);
             new Thread(sender).start();
-            // TODO refactor
         } catch (SocketException e) {
-            logger.info("Udp socket create failed");
+            logger.error("Udp socket create failed");
             throw new IllegalStateException(e);
         }
     }
@@ -67,7 +66,7 @@ public class UdpNetClient implements NetClient {
         } catch (SocketException e) {
             logger.debug("Socket", e);
         } catch (IOException e) {
-            logger.info("Udp receive failed", e);
+            logger.error("Udp receive failed", e);
         }
         logger.info("Udp receiver successfully stopped");
     }
@@ -103,9 +102,9 @@ public class UdpNetClient implements NetClient {
                     socket.send(datagramPacket);
                 }
             } catch (IOException e) {
-                logger.info("Udp send failed", e);
+                logger.error("Udp send failed", e);
             } catch (InterruptedException e) {
-                logger.info("Udp send interrupted", e);
+                logger.error("Udp send interrupted", e);
             }
         }
 

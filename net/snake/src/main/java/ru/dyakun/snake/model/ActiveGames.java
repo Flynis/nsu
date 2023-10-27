@@ -33,7 +33,7 @@ public class ActiveGames implements GameMessageListener {
 
     private void notifyListeners() {
         for(var listener : listeners) {
-            listener.onEvent(GameEvent.UPDATE_ACTIVE_GAMES);
+            listener.onEvent(GameEvent.UPDATE_ACTIVE_GAMES, null);
         }
     }
 

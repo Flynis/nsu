@@ -12,18 +12,23 @@ import ru.dyakun.snake.util.IdGenerator;
 import ru.dyakun.snake.util.SimpleIdGenerator;
 
 import java.net.InetSocketAddress;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GameState implements GameStateView {
     private static final Logger logger = LoggerFactory.getLogger(GameState.class);
     private int stateOrder = 0;
-    private final Map<Integer, Player> players = new HashMap<>();
-    private final Map<Integer, Snake> snakes = new HashMap<>();
+    private final Map<Integer, Player> players = new ConcurrentHashMap<>();
+    private final Map<Integer, Snake> snakes = new ConcurrentHashMap<>();
+    private final Map<Integer, LocalDateTime> activePlayers = new ConcurrentHashMap<>();
     private final List<Point> foods = new ArrayList<>();
     private final Field field;
-    private final Player player;
+    private final Player currentPlayer;
     private final GameInfo gameInfo;
     private final IdGenerator generator = new SimpleIdGenerator();
+    private final AtomicBoolean busy = new AtomicBoolean(false);
     private boolean updating = false;
 
     public GameState(GameConfig config, String nickname) {
@@ -31,9 +36,9 @@ public class GameState implements GameStateView {
         try {
             int id = generator.next();
             field.createSnake(id);
-            player = new Player.Builder(nickname, id).role(NodeRole.MASTER).score(0).build();
-            players.put(player.getId(), player);
-            gameInfo = new GameInfo.Builder(config, player.getName()).addPlayer(player).mayJoin(true).build();
+            currentPlayer = new Player.Builder(nickname, id).role(NodeRole.MASTER).score(0).build();
+            players.put(currentPlayer.getId(), currentPlayer);
+            gameInfo = new GameInfo.Builder(config, currentPlayer.getName()).setPlayers(players.values()).mayJoin(true).build();
         } catch (SnakeCreateException e) {
             logger.info("Place snake into empty field failed");
             throw new AssertionError();
@@ -52,12 +57,15 @@ public class GameState implements GameStateView {
         return foods;
     }
 
+    public boolean isUpdating() {
+        return updating;
+    }
+
     public int getStateOrder() {
         return stateOrder;
     }
 
     public Player addPlayer(String nickname, NodeRole role, InetSocketAddress address) throws PlayerJoinException {
-        // TODO updating
         int id = generator.next();
         if(role != NodeRole.NORMAL && role != NodeRole.VIEWER) {
             throw new PlayerJoinException("Illegal role: " + role);
@@ -68,6 +76,7 @@ public class GameState implements GameStateView {
                 field.createSnake(id);
             }
             players.put(id, player);
+            activePlayers.put(id, LocalDateTime.now());
             return player;
         } catch (SnakeCreateException e) {
             throw new PlayerJoinException("No space for snake", e);
@@ -76,8 +85,26 @@ public class GameState implements GameStateView {
         }
     }
 
-    public void changePLayerRole() {
+    public Player findPlayerByAddress(InetSocketAddress address) {
+        for(var player : players.values()) {
+            if(player.getAddress().equals(address)) {
+                return player;
+            }
+        }
+        logger.error("Player not found");
+        return null;
+    }
 
+    public void updateActivePlayer(InetSocketAddress playerAddress) {
+        var player = findPlayerByAddress(playerAddress);
+        if(player == null) {
+            return;
+        }
+        activePlayers.put(player.getId(), LocalDateTime.now());
+    }
+
+    public void changePLayerRole() {
+        // TODO impl
     }
 
     @Override
@@ -86,8 +113,11 @@ public class GameState implements GameStateView {
     }
 
     public void update() {
+        updating = true;
         stateOrder++;
         field.updateField();
+        // TODO destroyed snakes
+        updating = false;
     }
 
     @Override
@@ -104,17 +134,21 @@ public class GameState implements GameStateView {
     }
 
     @Override
-    public Player getPlayer() {
-        return player;
+    public Player getCurrentPlayer() {
+        return currentPlayer;
     }
 
     @Override
     public Snake getSnake() {
-        return snakes.get(player.getId());
+        return snakes.get(currentPlayer.getId());
     }
 
     @Override
     public GameInfo getGameInfo() {
         return gameInfo;
+    }
+
+    public GameState from(ru.dyakun.snake.protocol.GameState gameState) {
+        // TODO impl
     }
 }

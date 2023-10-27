@@ -30,7 +30,7 @@ public class GameTimer {
 
     private void notifyListeners() {
         for(var listener : listeners) {
-            listener.onEvent(GameEvent.CLEAR_FIELD);
+            listener.onEvent(GameEvent.CLEAR_FIELD, null);
         }
     }
 

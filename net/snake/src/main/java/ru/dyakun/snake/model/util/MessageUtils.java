@@ -62,7 +62,7 @@ public class MessageUtils {
                 .build();
     }
 
-    public static GameMessage steerMessage(Direction direction, int sender, int receiver) {
+    public static GameMessage steerMessage(Direction direction, int sender) {
         var steerMsg = GameMessage.SteerMsg.newBuilder()
                 .setDirection(direction)
                 .build();
@@ -70,7 +70,6 @@ public class MessageUtils {
                 .setSteer(steerMsg)
                 .setMsgSeq(generator.next())
                 .setSenderId(sender)
-                .setReceiverId(receiver)
                 .build();
     }
 

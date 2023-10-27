@@ -6,16 +6,17 @@ import ru.dyakun.snake.protocol.GamePlayers;
 import ru.dyakun.snake.protocol.NodeRole;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 public class GameInfo implements GameInfoView {
-    private List<Player> players;
+    private Collection<Player> players;
     private final GameConfig config;
     private final String name;
     private boolean mayJoin;
 
-    public GameInfo(List<Player> players, GameConfig config, String name, boolean mayJoin) {
+    public GameInfo(Collection<Player> players, GameConfig config, String name, boolean mayJoin) {
         this.players = Objects.requireNonNull(players);
         this.config = Objects.requireNonNull(config);
         if(name.isBlank()) {
@@ -53,7 +54,7 @@ public class GameInfo implements GameInfoView {
         }
     }
 
-    public List<Player> getPlayers() {
+    public Collection<Player> getPlayers() {
         return players;
     }
 
@@ -77,7 +78,7 @@ public class GameInfo implements GameInfoView {
     }
 
     public static class Builder {
-        private final List<Player> players = new ArrayList<>();
+        private Collection<Player> players = new ArrayList<>();
         private final GameConfig config;
         private final String name;
         private boolean mayJoin = true;
@@ -94,6 +95,11 @@ public class GameInfo implements GameInfoView {
 
         public Builder addPlayer(Player player) {
             players.add(player);
+            return this;
+        }
+
+        public Builder setPlayers(Collection<Player> players) {
+            this.players = players;
             return this;
         }
 

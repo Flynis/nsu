@@ -95,7 +95,8 @@ public class MenuSceneController extends AbstractSceneController implements Init
     }
 
     @Override
-    public void onEvent(GameEvent event) {
+    public void onEvent(GameEvent event, Object payload) {
+        // TODO handle payload
         if(event == GameEvent.UPDATE_ACTIVE_GAMES) {
             var activeGames = controller.getActiveGames();
             var games = activeGames.stream().map(GameDesc::fromGameInfo).toList();

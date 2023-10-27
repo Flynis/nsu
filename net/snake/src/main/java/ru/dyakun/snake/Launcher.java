@@ -27,7 +27,7 @@ public class Launcher extends Application {
             var sceneManager = new SceneManager(new JFXWindow(stage));
             new GameController(new JFXSceneFactory(), sceneManager, clientConfig, gameConfig);
         } catch (Exception e) {
-            logger.info("Fatal error", e);
+            logger.error("Fatal error", e);
         }
     }
 }

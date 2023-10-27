@@ -1,5 +1,7 @@
 package ru.dyakun.snake.model;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.controller.SceneManager;
 import ru.dyakun.snake.gui.base.SceneFactory;
 import ru.dyakun.snake.gui.base.SceneNames;
@@ -16,6 +18,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 public class GameController implements GameMessageListener {
+    private static final Logger logger = LoggerFactory.getLogger(GameController.class);
     private final SceneManager manager;
     private final ActiveGames activeGames;
     private final MessageReceiver announcementReceiver;
@@ -23,6 +26,8 @@ public class GameController implements GameMessageListener {
     private final GameConfig initialConfig;
     private final GameTimer timer;
     private GameState state;
+    private boolean connected = false;
+    private InetSocketAddress masterAddress;
 
     public GameController(SceneFactory factory, SceneManager manager, ClientConfig config, GameConfig initialConfig) {
         this.manager = manager;
@@ -88,6 +93,7 @@ public class GameController implements GameMessageListener {
         }
         state = new GameState(initialConfig, nickname);
         timer.startGameStateUpdate(state, initialConfig.getDelay(), client);
+        connected = true;
         manager.changeScene(SceneNames.GAME);
     }
 
@@ -95,42 +101,57 @@ public class GameController implements GameMessageListener {
         if(manager.getCurrentScene() != SceneNames.GAME) {
             throw new IllegalStateException("Game not started");
         }
-        state.changeSnakeDirection(state.getPlayer().getId(), direction);
+        var player = state.getCurrentPlayer();
+        if(player.getRole() == NodeRole.MASTER) {
+            if(!state.isUpdating()) {
+                state.changeSnakeDirection(state.getCurrentPlayer().getId(), direction);
+            }
+        } else {
+            var steer = MessageUtils.steerMessage(direction, player.getId());
+            client.send(MessageType.STEER, steer, masterAddress);
+        }
     }
 
     public void back() {
+        connected = false;
         timer.cancelGameStateUpdate();
         manager.changeScene(SceneNames.MENU);
     }
 
     @Override
     public void handle(GameMessage message, InetSocketAddress sender) {
-        if(message.hasAck()) {
+        if(!connected) {
+            return;
+        }
+        try {
+            if(message.hasAck()) {
 
-        } else if(message.hasError()) {
+            } else if(message.hasError()) {
 
-        } else if(message.hasState()) {
+            } else if(message.hasState()) {
 
-        } else if(message.hasDiscover()) {
-            handlerDiscoverMessage(sender);
-        } else if(message.hasRoleChange()) {
+            } else if(message.hasDiscover()) {
+                handlerDiscoverMessage(sender);
+            } else if(message.hasRoleChange()) {
 
-        } else if(message.hasJoin()) {
-
-        } else if(message.hasPing()) {
-
-        } else if(message.hasSteer()) {
-
+            } else if(message.hasJoin()) {
+                handleJoinMessage(message, sender);
+            } else if(message.hasPing()) {
+                handlePingMessage(sender);
+            } else if(message.hasSteer()) {
+                handleSteerMessage(message, sender);
+            }
+        } catch (Exception e) {
+            logger.error("Message handle failed", e);
         }
     }
 
-    private void handlePingMessage(GameMessage message, InetSocketAddress sender) {
-        // TODO update sender time in table
-
+    private void handlePingMessage(InetSocketAddress sender) {
+        state.updateActivePlayer(sender);
     }
 
     private void handlerDiscoverMessage(InetSocketAddress sender) {
-        if(state != null && state.getPlayer().getRole() == NodeRole.MASTER) {
+        if(state != null && state.getCurrentPlayer().getRole() == NodeRole.MASTER) {
             var message = MessageUtils.announcementMessage(state.getGameInfo());
             client.send(MessageType.ANNOUNCEMENT, message, sender);
         }
@@ -145,11 +166,31 @@ public class GameController implements GameMessageListener {
     }
 
     private void handleSteerMessage(GameMessage message, InetSocketAddress sender) {
-        // TODO impl
+        var steer = message.getSteer();
+        int id;
+        if(!message.hasSenderId()) {
+            logger.error("Steer message without sender id");
+            var player = state.findPlayerByAddress(sender);
+            if(player == null) {
+                return;
+            }
+            id = player.getId();
+        } else {
+            id = message.getSenderId();
+        }
+        state.changeSnakeDirection(id, steer.getDirection());
     }
 
     private void handleJoinMessage(GameMessage message, InetSocketAddress sender) {
-        // TODO impl
+        var join = message.getJoin();
+        try {
+            var player = state.addPlayer(join.getPlayerName(), join.getRequestedRole(), sender);
+            var ack = MessageUtils.ackMessage(0, player.getId());
+            client.send(MessageType.ACK, ack, sender);
+        } catch (PlayerJoinException e) {
+            var errorMessage = MessageUtils.errorMessage(e.getMessage());
+            client.send(MessageType.ERROR, errorMessage, sender);
+        }
     }
 
     private void handleRoleChangeMessage(GameMessage message, InetSocketAddress sender) {

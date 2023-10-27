@@ -5,8 +5,6 @@ public class SimpleIdGenerator implements IdGenerator {
 
     @Override
     public int next() {
-        int next = id;
-        id++;
-        return next;
+        return id++;
     }
 }

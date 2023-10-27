@@ -57,7 +57,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
         } catch (SocketException e) {
             logger.debug("Socket", e);
         } catch (IOException e) {
-            logger.info("Multicast receive failed", e);
+            logger.error("Multicast receive failed", e);
         }
         logger.info("Multicast receiver successfully stopped");
     }
@@ -73,7 +73,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
             socket.close();
             logger.debug("Close multicast socket");
         } catch (IOException e) {
-            logger.info("Multicast receiver stop failed", e);
+            logger.error("Multicast receiver stop failed", e);
             if(!socket.isClosed()) {
                 stop();
             }

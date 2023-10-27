@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface GameStateView {
     List<PlayerView> getPlayers();
-    PlayerView getPlayer();
+    PlayerView getCurrentPlayer();
     SnakeView getSnake();
     GameInfoView getGameInfo();
     GameField getField();

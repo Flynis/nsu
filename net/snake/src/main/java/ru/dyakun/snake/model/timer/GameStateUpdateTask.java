@@ -23,7 +23,7 @@ public class GameStateUpdateTask extends TimerTask {
 
     private void notifyListeners() {
         for(var listener : listeners) {
-            listener.onEvent(GameEvent.REPAINT_FIELD);
+            listener.onEvent(GameEvent.REPAINT_FIELD, null);
         }
     }
 

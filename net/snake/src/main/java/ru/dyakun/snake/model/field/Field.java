@@ -106,6 +106,24 @@ public class Field implements GameField {
         return null;
     }
 
+    private void removeDestroyedSnakes() {
+        for(var snake : snakes.values()) {
+            if(snake.state() == Snake.State.DESTROYED) {
+                for(var point : snake.points()) {
+                    if(point.equals(snake.getHead())) {
+                        continue;
+                    }
+                    var rand = ThreadLocalRandom.current().nextInt(2);
+                    if(rand == 1) {
+                        set(point.x, point.y, Tile.FOOD);
+                    } else {
+                        set(point.x, point.y, Tile.EMPTY);
+                    }
+                }
+            }
+        }
+    }
+
     public void updateField() {
         logger.debug("Food {}", foods);
         int aliveSnakes = 0;
@@ -130,7 +148,9 @@ public class Field implements GameField {
                         logger.error("Snake point not found");
                         continue;
                     }
-                    players.get(enemy.playerId()).addScore(1);
+                    if(enemy.playerId() != snake.playerId()) {
+                        players.get(enemy.playerId()).addScore(1);
+                    }
                     snake.setState(Snake.State.DESTROYED);
                 }
                 case FOOD -> {
@@ -151,6 +171,7 @@ public class Field implements GameField {
                 }
             }
         }
+        removeDestroyedSnakes();
         foods.removeAll(eatenFoods);
         createFood(aliveSnakes);
     }

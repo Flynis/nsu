@@ -51,13 +51,14 @@ public class GameSceneController extends AbstractSceneController implements Init
     }
 
     @Override
-    public void onEvent(GameEvent event) {
+    public void onEvent(GameEvent event, Object payload) {
+        // TODO handle payload
         switch (event) {
             case REPAINT_FIELD -> {
                 var state = controller.getGameState();
                 redrawField(state.getField(), state.getSnake());
                 updateGameInfo(state.getGameInfo());
-                updateScoreTable(state.getPlayers(), state.getPlayer());
+                updateScoreTable(state.getPlayers(), state.getCurrentPlayer());
             }
             case CLEAR_FIELD -> {
                 clearCanvas();
