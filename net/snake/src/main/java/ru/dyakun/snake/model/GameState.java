@@ -11,6 +11,7 @@ import ru.dyakun.snake.protocol.NodeRole;
 import ru.dyakun.snake.util.IdGenerator;
 import ru.dyakun.snake.util.SimpleIdGenerator;
 
+import java.net.InetSocketAddress;
 import java.util.*;
 
 public class GameState implements GameStateView {
@@ -23,6 +24,7 @@ public class GameState implements GameStateView {
     private final Player player;
     private final GameInfo gameInfo;
     private final IdGenerator generator = new SimpleIdGenerator();
+    private boolean updating = false;
 
     public GameState(GameConfig config, String nickname) {
         field = new Field(config, players, snakes, foods);
@@ -52,6 +54,30 @@ public class GameState implements GameStateView {
 
     public int getStateOrder() {
         return stateOrder;
+    }
+
+    public Player addPlayer(String nickname, NodeRole role, InetSocketAddress address) throws PlayerJoinException {
+        // TODO updating
+        int id = generator.next();
+        if(role != NodeRole.NORMAL && role != NodeRole.VIEWER) {
+            throw new PlayerJoinException("Illegal role: " + role);
+        }
+        try {
+            var player = new Player.Builder(nickname, id).role(role).address(address).score(0).build();
+            if(role == NodeRole.NORMAL) {
+                field.createSnake(id);
+            }
+            players.put(id, player);
+            return player;
+        } catch (SnakeCreateException e) {
+            throw new PlayerJoinException("No space for snake", e);
+        } catch (IllegalArgumentException e) {
+            throw new PlayerJoinException(e.getMessage(), e);
+        }
+    }
+
+    public void changePLayerRole() {
+
     }
 
     @Override

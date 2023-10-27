@@ -61,7 +61,7 @@ public class Player implements PlayerView {
         Builder builder = new Builder(gamePlayer.getName(), gamePlayer.getId());
         builder.role(gamePlayer.getRole()).score(gamePlayer.getScore());
         if(gamePlayer.hasIpAddress() && gamePlayer.hasPort()) {
-            builder.address(gamePlayer.getIpAddress(), gamePlayer.getPort());
+            return builder.address(gamePlayer.getIpAddress(), gamePlayer.getPort()).build();
         }
         return builder.build();
     }
@@ -91,6 +91,11 @@ public class Player implements PlayerView {
                 throw new IllegalArgumentException("Incorrect address");
             }
             this.address = new InetSocketAddress(ip, port);
+            return this;
+        }
+
+        public Builder address(InetSocketAddress address) {
+            this.address = address;
             return this;
         }
 

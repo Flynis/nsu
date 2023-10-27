@@ -22,7 +22,6 @@ public class Field implements GameField {
     private final Map<Integer, Snake> snakes;
     private final Map<Integer, Player> players;
     private int freeSpace;
-    private int aliveSnakes;
 
     private record StartSnake(Point head, Point tail) {}
 
@@ -71,7 +70,7 @@ public class Field implements GameField {
         }
     }
 
-    private void createFood() {
+    private void createFood(int aliveSnakes) {
         while (foods.size() < foodStatic + aliveSnakes && freeSpace > MIN_FREE_SPACE_FOR_RANDOM) {
             int x = ThreadLocalRandom.current().nextInt(0, width);
             int y = ThreadLocalRandom.current().nextInt(0, height);
@@ -87,9 +86,29 @@ public class Field implements GameField {
         }
     }
 
+    private boolean isHeadsCollided(Snake current) {
+        for(var snake: snakes.values()) {
+            if(snake.playerId() != current.playerId() && current.getHead().equals(snake.getHead())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Snake findSnakeByPoint(Point p) {
+        for(var snake : snakes.values()) {
+            for(var point: snake.points()) {
+                if(!p.equals(snake.getHead()) && p.equals(point)) {
+                    return snake;
+                }
+            }
+        }
+        return null;
+    }
+
     public void updateField() {
         logger.debug("Food {}", foods);
-        aliveSnakes = 0;
+        int aliveSnakes = 0;
         List<Point> eatenFoods = new ArrayList<>();
         for(var snake: snakes.values()) {
             if(snake.state() == Snake.State.ALIVE) {
@@ -103,33 +122,42 @@ public class Field implements GameField {
             }
         }
         for(var snake: snakes.values()) {
-            // TODO
             var head = snake.getHead();
             switch (get(head.x, head.y)) {
+                case SNAKE -> {
+                    var enemy = findSnakeByPoint(head);
+                    if (enemy == null) {
+                        logger.error("Snake point not found");
+                        continue;
+                    }
+                    players.get(enemy.playerId()).addScore(1);
+                    snake.setState(Snake.State.DESTROYED);
+                }
                 case FOOD -> {
-                    set(head.x, head.y, Tile.SNAKE);
-                    foods.removeIf(p -> p.x == head.x && p.y == head.y);
                     players.get(snake.playerId()).addScore(1);
+                    eatenFoods.add(new Point(head.x, head.y));
+                    if(isHeadsCollided(snake)) {
+                        snake.setState(Snake.State.DESTROYED);
+                    } else {
+                        set(head.x, head.y, Tile.SNAKE);
+                    }
                 }
                 case EMPTY -> {
-                    set(head.x, head.y, Tile.SNAKE);
-                    var tail = snake.getTail();
-                    set(tail.x, tail.y, Tile.EMPTY);
-                    snake.moveTail();
+                    if(isHeadsCollided(snake)) {
+                        snake.setState(Snake.State.DESTROYED);
+                    } else {
+                        set(head.x, head.y, Tile.SNAKE);
+                    }
                 }
             }
         }
-        createFood();
+        foods.removeAll(eatenFoods);
+        createFood(aliveSnakes);
     }
 
     public void createSnake(int id) throws SnakeCreateException {
         logger.debug("Creating new snake");
-        SubMatrix freeSpace = findFreeSpace();
-        logger.debug("Free space {}", freeSpace);
-        if(freeSpace.getSize() < FREE_SPACE_SIZE) {
-            throw new SnakeCreateException("No free space for new snake");
-        }
-        StartSnake points = placeSnake(freeSpace);
+        StartSnake points = placeSnake();
         if (points == null) {
             throw new SnakeCreateException("No free space for new snake");
         }
@@ -166,45 +194,16 @@ public class Field implements GameField {
         }
     }
 
-    private StartSnake placeSnake(SubMatrix matrix) {
-        int centerX = matrix.leftUpper().x + (matrix.bottomRight().x - matrix.leftUpper().x) / 2;
-        int centerY = matrix.leftUpper().y + (matrix.bottomRight().y - matrix.leftUpper().y) / 2;
-        for(int s = 0; s <= matrix.getSize() / 2; s++) {
-            int y = centerY - s;
-            // TODO refactor
-            for(int j = centerX - s; j <= centerX + s; j++) {
-                if(get(j, y) == Tile.EMPTY) {
-                    Point tail = findFreeNeighbor(j, y);
-                    if(tail != null) {
-                        return new StartSnake(new Point(j, y), tail);
-                    }
+    private StartSnake placeSnake() {
+        int offset = FREE_SPACE_SIZE / 2;
+        for(int i = offset; i < height - offset; i++) {
+            for(int j = offset; j < width - offset; j++) {
+                if(!isFreeSpace(j, i, offset) || get(j, i) != Tile.EMPTY) {
+                    continue;
                 }
-            }
-            y = centerY + s;
-            for(int j = centerX - s; j <= centerX + s; j++) {
-                if(get(j, y) == Tile.EMPTY) {
-                    Point tail = findFreeNeighbor(j, y);
-                    if(tail != null) {
-                        return new StartSnake(new Point(j, y), tail);
-                    }
-                }
-            }
-            int x = centerX - s;
-            for(int i = centerY - s + 1; i <= centerX + s - 1; i++) {
-                if(get(x, i) == Tile.EMPTY) {
-                    Point tail = findFreeNeighbor(x, i);
-                    if(tail != null) {
-                        return new StartSnake(new Point(x, i), tail);
-                    }
-                }
-            }
-            x = centerX + s;
-            for(int i = centerY - s + 1; i <= centerX + s - 1; i++) {
-                if(get(x, i) == Tile.EMPTY) {
-                    Point tail = findFreeNeighbor(x, i);
-                    if(tail != null) {
-                        return new StartSnake(new Point(x, i), tail);
-                    }
+                var tail = findFreeNeighbor(j, i);
+                if(tail != null) {
+                    return new StartSnake(new Point(j, i), tail);
                 }
             }
         }
@@ -212,61 +211,29 @@ public class Field implements GameField {
     }
 
     private Point findFreeNeighbor(int x, int y) {
-        if(field[(y + 1) * height + x] == Tile.EMPTY) {
+        if(get(x, y + 1) == Tile.EMPTY) {
             return new Point(x, y + 1);
         }
-        if(field[(y - 1) * height + x] == Tile.EMPTY) {
+        if(get(x, y - 1) == Tile.EMPTY) {
             return new Point(x, y - 1);
         }
-        if(field[y * height + (x + 1)] == Tile.EMPTY) {
+        if(get(x + 1, y) == Tile.EMPTY) {
             return new Point(x + 1, y);
         }
-        if(field[y * height + (x - 1)] == Tile.EMPTY) {
+        if(get(x - 1, y) == Tile.EMPTY) {
             return new Point(x - 1, y);
         }
         return null;
     }
 
-    private SubMatrix findFreeSpace() {
-        int ans = 0;
-        int[] d = new int[width];
-        Arrays.fill(d, -1);
-        int[] d1 = new int[width];
-        int[] d2 = new int[width];
-        int left = -1, upper = -1, bottom = -1, right = -1;
-        Stack<Integer> stack = new Stack<>();
-        for(int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                if (field[i * height + j] == Tile.SNAKE) {
-                    d[j] = i;
+    private boolean isFreeSpace(int centerX, int centerY, int offset) {
+        for(int i = centerY - offset; i <= centerY + offset; i++) {
+            for(int j = centerX - offset; j <= centerX + offset; j++) {
+                if(get(j, i) == Tile.SNAKE) {
+                    return false;
                 }
-            }
-            while (!stack.isEmpty()) {
-                stack.pop();
-            }
-            for (int j = 0; j < width; j++) {
-                while (!stack.empty() && d[stack.peek()] <= d[j])  {
-                    stack.pop();
-                }
-                d1[j] = stack.empty() ? -1 : stack.peek();
-                stack.push (j);
-            }
-            while (!stack.empty()) stack.pop();
-            for (int j = width - 1; j >= 0; j--) {
-                while (!stack.empty() && d[stack.peek()] <= d[j])  {
-                    stack.pop();
-                }
-                d2[j] = stack.empty() ? width : stack.peek();
-                stack.push (j);
-            }
-            for (int j = 0; j < width; j++) {
-                ans = Math.max(ans, (i - d[j]) * (d2[j] - d1[j] - 1));
-                upper = d[j] + 1;
-                bottom = i;
-                left = d1[j] + 1;
-                right = d2[j] - 1;
             }
         }
-        return new SubMatrix(new Point(left, upper), new Point(right, bottom));
+        return true;
     }
 }
