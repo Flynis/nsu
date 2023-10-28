@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.controller.SceneManager;
 import ru.dyakun.snake.gui.base.SceneFactory;
 import ru.dyakun.snake.gui.base.SceneNames;
+import ru.dyakun.snake.model.entity.Player;
 import ru.dyakun.snake.model.event.GameEvent;
 import ru.dyakun.snake.model.event.GameEventListener;
 import ru.dyakun.snake.model.timer.GameTimer;
@@ -28,6 +29,7 @@ public class GameController implements GameMessageListener {
     private final GameConfig initialConfig;
     private final GameTimer timer;
     private final List<GameEventListener> listeners = new ArrayList<>();
+    private PlayersStatusTracker tracker;
     private GameState state;
     private boolean connected = false;
     private InetSocketAddress masterAddress;
@@ -105,6 +107,8 @@ public class GameController implements GameMessageListener {
         }
         state = new GameState(initialConfig, nickname);
         timer.startGameStateUpdate(state, initialConfig.getDelay(), client);
+        tracker = new PlayersStatusTracker(initialConfig.getDelay() * 4 / 5);
+        timer.startPlayersStatusTrack(tracker, state, client);
         connected = true;
         manager.changeScene(SceneNames.GAME);
     }
@@ -129,6 +133,7 @@ public class GameController implements GameMessageListener {
         gameStateBuilder = null;
         state = null;
         masterAddress = null;
+        tracker = null;
         timer.cancelGameStateUpdate();
         timer.cancelPing();
         manager.changeScene(SceneNames.MENU);
@@ -138,7 +143,7 @@ public class GameController implements GameMessageListener {
     public void handle(GameMessage message, InetSocketAddress sender) {
         try {
             if(message.hasAck()) {
-                handleAckMessage(message);
+                handleAckMessage(message, sender);
                 return;
             } else if(message.hasError()) {
                 handleErrorMessage(message);
@@ -166,33 +171,50 @@ public class GameController implements GameMessageListener {
     }
 
     private void handlePingMessage(InetSocketAddress sender) {
-        state.updateActivePlayer(sender);
+        if(state.isMaster()) {
+            var player = state.findPlayerByAddress(sender);
+            if(player != null) {
+                tracker.updateStatus(player.getId());
+            }
+        }
     }
 
     private void handlerDiscoverMessage(InetSocketAddress sender) {
-        if(state != null && state.getCurrentPlayer().getRole() == NodeRole.MASTER) {
+        if(state != null && state.isMaster()) {
             var message = MessageUtils.announcementMessage(state.getGameInfo());
             client.send(MessageType.ANNOUNCEMENT, message, sender);
         }
     }
 
     private void handleErrorMessage(GameMessage message) {
-        var errorMsg = message.getError();
-        notifyListeners(GameEvent.MESSAGE, errorMsg.getErrorMessage());
+        if(!connected || !state.isMaster()) {
+            var errorMsg = message.getError();
+            notifyListeners(GameEvent.MESSAGE, errorMsg.getErrorMessage());
+        }
     }
 
-    private void handleAckMessage(GameMessage message) {
+    private void handleAckMessage(GameMessage message, InetSocketAddress sender) {
         if(!connected) {
             gameStateBuilder.setId(message.getReceiverId());
             manager.changeScene(SceneNames.GAME);
             connected = true;
             notifyListeners(GameEvent.CLEAR_FIELD, null);
+            tracker = new PlayersStatusTracker(gameStateBuilder.getGameInfo().getConfig().getDelay() * 4 / 5);
+            timer.startPlayersStatusTrack(tracker, state, client);
             int period = gameStateBuilder.getGameInfo().getConfig().getDelay() / 2;
             timer.startPing(masterAddress, period, client);
+        } else {
+            var player = state.findPlayerByAddress(sender);
+            if(player != null) {
+                tracker.updateStatus(player.getId());
+            }
         }
     }
 
     private void handleSteerMessage(GameMessage message, InetSocketAddress sender) {
+        if(!state.isMaster()) {
+            return;
+        }
         var steer = message.getSteer();
         int id;
         if(!message.hasSenderId()) {
@@ -206,14 +228,27 @@ public class GameController implements GameMessageListener {
             id = message.getSenderId();
         }
         state.changeSnakeDirection(id, steer.getDirection());
+        tracker.updateStatus(id);
     }
 
     private void handleJoinMessage(GameMessage message, InetSocketAddress sender) {
+        if(!state.isMaster()) {
+            return;
+        }
         var join = message.getJoin();
         try {
             var player = state.addPlayer(join.getPlayerName(), join.getRequestedRole(), sender);
             var ack = MessageUtils.ackMessage(0, player.getId());
             client.send(MessageType.ACK, ack, sender);
+            tracker.updateStatus(player.getId());
+            if(player.getRole() == NodeRole.NORMAL && !state.hasDeputy()) {
+                var roleChange = MessageUtils.roleChangeMessage(
+                        NodeRole.MASTER,
+                        NodeRole.DEPUTY,
+                        state.getCurrentPlayer().getId(),
+                        player.getId());
+                client.send(MessageType.ROLE_CHANGE, roleChange, player.getAddress());
+            }
         } catch (PlayerJoinException e) {
             var errorMessage = MessageUtils.errorMessage(e.getMessage());
             client.send(MessageType.ERROR, errorMessage, sender);
@@ -221,10 +256,20 @@ public class GameController implements GameMessageListener {
     }
 
     private void handleRoleChangeMessage(GameMessage message, InetSocketAddress sender) {
-        // TODO impl
+        var roleChange = message.getRoleChange();
+        if(state.isMaster()) {
+
+        } else {
+
+        }
+
     }
 
     private void handleStateMessage(GameMessage message) {
+        if(state.isMaster()) {
+            return;
+        }
+        tracker.updateStatus(state.getMaster().getId());
         var stateMsg = message.getState();
         if(state == null) {
             state = gameStateBuilder.build(stateMsg.getState());

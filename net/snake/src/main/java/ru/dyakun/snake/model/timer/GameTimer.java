@@ -2,6 +2,7 @@ package ru.dyakun.snake.model.timer;
 
 import ru.dyakun.snake.model.ActiveGames;
 import ru.dyakun.snake.model.GameState;
+import ru.dyakun.snake.model.PlayersStatusTracker;
 import ru.dyakun.snake.model.event.GameEvent;
 import ru.dyakun.snake.model.event.GameEventListener;
 import ru.dyakun.snake.net.NetClient;
@@ -14,6 +15,7 @@ public class GameTimer {
     private final List<GameEventListener> listeners = new ArrayList<>();
     private GameStateUpdateTask gameStateTask;
     private GameAnnouncementTask announcementTask;
+    private PlayersStatusTrackTask playersStatusTrackTask;
     private PingTask pingTask;
     private final int announcementPeriod;
     private final InetSocketAddress groupAddress;
@@ -74,6 +76,16 @@ public class GameTimer {
             pingTask.cancel();
             pingTask = null;
         }
+    }
+
+    public void startPlayersStatusTrack(PlayersStatusTracker tracker, GameState state, NetClient client) {
+        playersStatusTrackTask = new PlayersStatusTrackTask(tracker, state, client);
+        timer.schedule(playersStatusTrackTask, 0, tracker.getDeleteTime());
+    }
+
+    public void cancelPlayersStatusTrack() {
+        playersStatusTrackTask.cancel();
+        playersStatusTrackTask = null;
     }
 
     public void cancel() {

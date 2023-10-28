@@ -12,7 +12,6 @@ import ru.dyakun.snake.util.IdGenerator;
 import ru.dyakun.snake.util.SimpleIdGenerator;
 
 import java.net.InetSocketAddress;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -22,10 +21,10 @@ public class GameState implements GameStateView {
     private int stateOrder = 0;
     private final Map<Integer, Player> players = new ConcurrentHashMap<>();
     private final Map<Integer, Snake> snakes = new ConcurrentHashMap<>();
-    private final Map<Integer, LocalDateTime> activePlayers = new ConcurrentHashMap<>();
     private final List<Point> foods = new ArrayList<>();
     private final Field field;
     private final Player currentPlayer;
+    private Player master;
     private final GameInfo gameInfo;
     private final IdGenerator generator = new SimpleIdGenerator();
     private final AtomicBoolean busy = new AtomicBoolean(false);
@@ -39,6 +38,7 @@ public class GameState implements GameStateView {
             int id = generator.next();
             field.createSnake(id);
             currentPlayer = new Player.Builder(nickname, id).role(NodeRole.MASTER).score(0).build();
+            master = currentPlayer;
             players.put(currentPlayer.getId(), currentPlayer);
             gameInfo = new GameInfo.Builder(config, currentPlayer.getName()).setPlayers(players.values()).mayJoin(true).build();
         } catch (SnakeCreateException e) {
@@ -65,7 +65,33 @@ public class GameState implements GameStateView {
         this.currentPlayer = player;
         this.stateOrder = stateOrder;
         fillMaps(collections);
+        master = Player.findMaster(collections.players);
+        if(master == null) {
+            throw new IllegalStateException("Master not found");
+        }
         field = new Field(gameInfo.getConfig(), this.players, this.snakes, this.foods);
+    }
+
+    public boolean hasDeputy() {
+        return Player.findDeputy(players.values()) != null;
+    }
+
+    public Player setNewDeputy() {
+        var deputy = Player.find(players.values(), NodeRole.NORMAL);
+        if(deputy == null) {
+            return null;
+        } else {
+            deputy.setRole(NodeRole.DEPUTY);
+            return deputy;
+        }
+    }
+
+    public void becomeMaster() {
+        // TODO impl
+    }
+
+    public void changeMasterToDeputy() {
+
     }
 
     public Collection<Player> getMembers() {
@@ -78,6 +104,30 @@ public class GameState implements GameStateView {
 
     public List<Point> getFoods() {
         return foods;
+    }
+
+    public Player findDeputy(Collection<Integer> deleted) {
+        for(var id: deleted) {
+            var player = players.get(id);
+            if(player.getRole() == NodeRole.DEPUTY) {
+                return player;
+            }
+        }
+        return null;
+    }
+
+    public void deleteInactivePlayers(Collection<Integer> inactive) {
+        for(var id: inactive) {
+            players.remove(id);
+        }
+    }
+
+    public Player getMaster() {
+        return master;
+    }
+
+    public boolean isMaster() {
+        return master == currentPlayer;
     }
 
     public boolean isUpdating() {
@@ -99,7 +149,6 @@ public class GameState implements GameStateView {
                 field.createSnake(id);
             }
             players.put(id, player);
-            activePlayers.put(id, LocalDateTime.now());
             return player;
         } catch (SnakeCreateException e) {
             throw new PlayerJoinException("No space for snake", e);
@@ -116,14 +165,6 @@ public class GameState implements GameStateView {
         }
         logger.error("Player not found");
         return null;
-    }
-
-    public void updateActivePlayer(InetSocketAddress playerAddress) {
-        var player = findPlayerByAddress(playerAddress);
-        if(player == null) {
-            return;
-        }
-        activePlayers.put(player.getId(), LocalDateTime.now());
     }
 
     public void changePLayerRole() {
@@ -159,7 +200,7 @@ public class GameState implements GameStateView {
 
     public void changeSnakeDirection(int id, Direction direction) {
         if(!snakes.containsKey(id)) {
-            throw new IllegalArgumentException("Illegal snake id");
+            return;
         }
         var snake = snakes.get(id);
         snake.setDirection(direction);

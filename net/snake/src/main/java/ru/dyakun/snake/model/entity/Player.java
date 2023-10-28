@@ -4,6 +4,7 @@ import ru.dyakun.snake.protocol.GamePlayer;
 import ru.dyakun.snake.protocol.NodeRole;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 
 public class Player implements PlayerView {
     private final String name;
@@ -64,6 +65,23 @@ public class Player implements PlayerView {
             return builder.address(gamePlayer.getIpAddress(), gamePlayer.getPort()).build();
         }
         return builder.build();
+    }
+
+    public static Player findMaster(Collection<Player> players) {
+        return find(players, NodeRole.MASTER);
+    }
+
+    public static Player findDeputy(Collection<Player> players) {
+        return find(players, NodeRole.DEPUTY);
+    }
+
+    public static Player find(Collection<Player> players, NodeRole role) {
+        for(var player : players) {
+            if(player.getRole() == role) {
+                return player;
+            }
+        }
+        return null;
     }
 
     public static class Builder {
