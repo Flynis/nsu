@@ -23,8 +23,8 @@ import ru.dyakun.snake.model.field.Tile;
 import ru.dyakun.snake.protocol.Direction;
 
 import java.net.URL;
+import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.IntStream;
 
@@ -56,9 +56,9 @@ public class GameSceneController extends AbstractSceneController implements Init
         switch (event) {
             case REPAINT_FIELD -> {
                 var state = controller.getGameState();
-                redrawField(state.getField(), state.getSnake());
-                updateGameInfo(state.getGameInfo());
-                updateScoreTable(state.getPlayers(), state.getCurrentPlayer());
+                redrawField(state.getField(), controller.getSnake());
+                updateGameInfo(controller.getGameInfo());
+                updateScoreTable(state.getGamePlayers(), controller.getPlayer());
             }
             case CLEAR_FIELD -> {
                 clearCanvas();
@@ -73,7 +73,7 @@ public class GameSceneController extends AbstractSceneController implements Init
         }
     }
 
-    private void updateScoreTable(List<PlayerView> players, PlayerView current) {
+    private void updateScoreTable(Collection<PlayerView> players, PlayerView current) {
         // TODO cur player
         var sorted = players.stream().sorted(new PlayerComparator()).toList();
         var scores = IntStream.range(0, sorted.size()).mapToObj(i -> ScoreEntry.from(sorted.get(i), i)).toList();
@@ -120,10 +120,10 @@ public class GameSceneController extends AbstractSceneController implements Init
     public void handleKey(KeyEvent keyEvent) {
         logger.debug("Pressed {}", keyEvent.getCode());
         switch (keyEvent.getCode()) {
-            case W -> controller.changeSnakeDirection(Direction.UP);
-            case S -> controller.changeSnakeDirection(Direction.DOWN);
-            case D -> controller.changeSnakeDirection(Direction.RIGHT);
-            case A -> controller.changeSnakeDirection(Direction.LEFT);
+            case W -> controller.moveSnake(Direction.UP);
+            case S -> controller.moveSnake(Direction.DOWN);
+            case D -> controller.moveSnake(Direction.RIGHT);
+            case A -> controller.moveSnake(Direction.LEFT);
         }
     }
 

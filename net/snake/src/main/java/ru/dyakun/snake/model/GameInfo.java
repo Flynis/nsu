@@ -1,6 +1,7 @@
 package ru.dyakun.snake.model;
 
 import ru.dyakun.snake.model.entity.Player;
+import ru.dyakun.snake.model.util.Players;
 import ru.dyakun.snake.protocol.GameAnnouncement;
 import ru.dyakun.snake.protocol.GamePlayers;
 
@@ -37,7 +38,7 @@ public class GameInfo implements GameInfoView {
     }
 
     public Player findMaster() {
-        var master = Player.findMaster(players);
+        var master = Players.findMaster(players);
         if(master != null) {
             return master;
         }

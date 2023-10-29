@@ -1,15 +1,11 @@
 package ru.dyakun.snake.model;
 
 import ru.dyakun.snake.model.entity.PlayerView;
-import ru.dyakun.snake.model.entity.SnakeView;
 import ru.dyakun.snake.model.field.GameField;
 
-import java.util.List;
+import java.util.Collection;
 
 public interface GameStateView {
-    List<PlayerView> getPlayers();
-    PlayerView getCurrentPlayer();
-    SnakeView getSnake();
-    GameInfoView getGameInfo();
+    Collection<PlayerView> getGamePlayers();
     GameField getField();
 }

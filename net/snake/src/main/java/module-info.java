@@ -10,8 +10,4 @@ module snake {
     opens ru.dyakun.snake.gui.javafx to javafx.fxml;
     opens ru.dyakun.snake.controller to javafx.fxml;
     opens ru.dyakun.snake.model to com.google.gson, javafx.fxml;
-    opens ru.dyakun.snake.model.field to com.google.gson, javafx.fxml;
-    opens ru.dyakun.snake.model.entity to com.google.gson, javafx.fxml;
-    opens ru.dyakun.snake.model.timer to com.google.gson, javafx.fxml;
-    opens ru.dyakun.snake.model.util to com.google.gson, javafx.fxml; // TODO check
 }

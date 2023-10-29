@@ -1,5 +1,7 @@
-package ru.dyakun.snake.model;
+package ru.dyakun.snake.model.tracker;
 
+import ru.dyakun.snake.model.GameInfo;
+import ru.dyakun.snake.model.GameInfoView;
 import ru.dyakun.snake.model.event.GameEvent;
 import ru.dyakun.snake.model.event.GameEventListener;
 import ru.dyakun.snake.net.GameMessageListener;
@@ -14,13 +16,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ActiveGames implements GameMessageListener {
+public class ActiveGamesTracker implements GameMessageListener {
     private record Entry(GameInfo game, LocalDateTime time) {}
     private final Map<String, Entry> games = new ConcurrentHashMap<>();
     private final List<GameEventListener> listeners = new ArrayList<>();
     private final int announcementTimeToLive;
 
-    public ActiveGames(int announcementTimeToLive) {
+    public ActiveGamesTracker(int announcementTimeToLive) {
         if(announcementTimeToLive < 1000) {
             throw new IllegalArgumentException("To little announcement time to live");
         }

@@ -23,7 +23,8 @@ public class Launcher extends Application {
         try {
             var gameConfig = GameConfig.load("game.cfg", GameConfig.class);
             var clientConfig = GameConfig.load("client.cfg", ClientConfig.class);
-            logger.info("Load config: {}", gameConfig);
+            logger.info("Load game config: {}", gameConfig);
+            logger.info("Load client config: {}", clientConfig);
             var sceneManager = new SceneManager(new JFXWindow(stage));
             new GameController(new JFXSceneFactory(), sceneManager, clientConfig, gameConfig);
         } catch (Exception e) {

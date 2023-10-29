@@ -1,8 +1,9 @@
 package ru.dyakun.snake.model.timer;
 
-import ru.dyakun.snake.model.ActiveGames;
-import ru.dyakun.snake.model.GameState;
-import ru.dyakun.snake.model.PlayersStatusTracker;
+import ru.dyakun.snake.model.person.Master;
+import ru.dyakun.snake.model.person.Member;
+import ru.dyakun.snake.model.tracker.AbstractStatusTracker;
+import ru.dyakun.snake.model.tracker.ActiveGamesTracker;
 import ru.dyakun.snake.model.event.GameEvent;
 import ru.dyakun.snake.model.event.GameEventListener;
 import ru.dyakun.snake.net.NetClient;
@@ -20,15 +21,15 @@ public class GameTimer {
     private final int announcementPeriod;
     private final InetSocketAddress groupAddress;
 
-    public GameTimer(ActiveGames activeGames, int announcementPeriod, InetSocketAddress groupAddress) {
+    public GameTimer(ActiveGamesTracker activeGamesTracker, int announcementPeriod, InetSocketAddress groupAddress) {
         if (announcementPeriod < 10) {
             throw new IllegalArgumentException("Announcement period is too little");
         }
         this.groupAddress = groupAddress;
         this.announcementPeriod = announcementPeriod;
         this.timer = new Timer();
-        int period = activeGames.getAnnouncementTimeToLive();
-        timer.schedule(new ActiveGamesTask(activeGames), period, period);
+        int period = activeGamesTracker.getAnnouncementTimeToLive();
+        timer.schedule(new ActiveGamesTask(activeGamesTracker), period, period);
     }
 
     private void notifyListeners() {
@@ -41,13 +42,13 @@ public class GameTimer {
         listeners.add(listener);
     }
 
-    public void startGameStateUpdate(GameState state, int period, NetClient client) {
+    public void startGameStateUpdate(Master master, int period, NetClient client) {
         if(period < 10) {
             throw new IllegalArgumentException("To little period");
         }
-        gameStateTask = new GameStateUpdateTask(state, listeners, client);
+        gameStateTask = new GameStateUpdateTask(master, listeners, client);
         timer.schedule(gameStateTask, 0, period);
-        announcementTask = new GameAnnouncementTask(client, state, groupAddress);
+        announcementTask = new GameAnnouncementTask(client, master, groupAddress);
         timer.schedule(announcementTask, 0, announcementPeriod);
     }
 
@@ -78,14 +79,16 @@ public class GameTimer {
         }
     }
 
-    public void startPlayersStatusTrack(PlayersStatusTracker tracker, GameState state, NetClient client) {
-        playersStatusTrackTask = new PlayersStatusTrackTask(tracker, state, client);
+    public void startPlayersStatusTrack(AbstractStatusTracker tracker, Member member) {
+        playersStatusTrackTask = new PlayersStatusTrackTask(tracker, member);
         timer.schedule(playersStatusTrackTask, 0, tracker.getDeleteTime());
     }
 
     public void cancelPlayersStatusTrack() {
-        playersStatusTrackTask.cancel();
-        playersStatusTrackTask = null;
+        if(playersStatusTrackTask != null) {
+            playersStatusTrackTask.cancel();
+            playersStatusTrackTask = null;
+        }
     }
 
     public void cancel() {
@@ -93,15 +96,15 @@ public class GameTimer {
     }
 
     private static class ActiveGamesTask extends TimerTask {
-        private final ActiveGames activeGames;
+        private final ActiveGamesTracker activeGamesTracker;
 
-        private ActiveGamesTask(ActiveGames activeGames) {
-            this.activeGames = activeGames;
+        private ActiveGamesTask(ActiveGamesTracker activeGamesTracker) {
+            this.activeGamesTracker = activeGamesTracker;
         }
 
         @Override
         public void run() {
-            activeGames.deleteInactiveGames();
+            activeGamesTracker.deleteInactiveGames();
         }
     }
 }

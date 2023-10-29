@@ -1,7 +1,7 @@
 package ru.dyakun.snake.model.timer;
 
 import ru.dyakun.snake.model.util.MessageType;
-import ru.dyakun.snake.model.util.MessageUtils;
+import ru.dyakun.snake.model.util.Messages;
 import ru.dyakun.snake.net.NetClient;
 
 import java.net.InetSocketAddress;
@@ -22,7 +22,7 @@ public class PingTask extends TimerTask {
 
     @Override
     public void run() {
-        var ping = MessageUtils.pingMessage();
+        var ping = Messages.pingMessage();
         client.send(MessageType.PING, ping, masterAddress);
     }
 }

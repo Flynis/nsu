@@ -11,8 +11,8 @@ import ru.dyakun.snake.util.SimpleIdGenerator;
 
 import java.util.Collection;
 
-public class MessageUtils {
-    private MessageUtils() {
+public class Messages {
+    private Messages() {
         throw new AssertionError();
     }
     private static final IdGenerator generator = new SimpleIdGenerator();
@@ -100,10 +100,14 @@ public class MessageUtils {
     }
 
     public static GameMessage roleChangeMessage(NodeRole sender, NodeRole receiver, int senderId, int receiverId) {
-        var roleChangeMsg = GameMessage.RoleChangeMsg.newBuilder()
-                .setSenderRole(sender)
-                .setReceiverRole(receiver)
-                .build();
+        var builder = GameMessage.RoleChangeMsg.newBuilder();
+        if(sender != null) {
+            builder.setSenderRole(sender);
+        }
+        if(receiver != null) {
+            builder.setReceiverRole(receiver);
+        }
+        var roleChangeMsg = builder.build();
         return GameMessage.newBuilder()
                 .setRoleChange(roleChangeMsg)
                 .setMsgSeq(generator.next())
@@ -115,9 +119,9 @@ public class MessageUtils {
     public static GameState gameStateFrom(ru.dyakun.snake.model.GameState gameState) {
         return GameState.newBuilder()
                 .setStateOrder(gameState.getStateOrder())
-                .addAllSnakes(gameState.getSnakes().stream().map(MessageUtils::snakeFrom).toList())
-                .addAllFoods(gameState.getFoods().stream().map(MessageUtils::coordinatesFrom).toList())
-                .setPlayers(gamePlayersFrom(gameState.getMembers()))
+                .addAllSnakes(gameState.getSnakes().stream().map(Messages::snakeFrom).toList())
+                .addAllFoods(gameState.getFoods().stream().map(Messages::coordinatesFrom).toList())
+                .setPlayers(gamePlayersFrom(gameState.getPlayers()))
                 .build();
     }
 
@@ -143,13 +147,13 @@ public class MessageUtils {
 
     public static GamePlayers gamePlayersFrom(Collection<Player> players) {
         return GamePlayers.newBuilder()
-                .addAllPlayers(players.stream().map(MessageUtils::gamePlayerFrom).toList())
+                .addAllPlayers(players.stream().map(Messages::gamePlayerFrom).toList())
                 .build();
     }
 
     public static GameState.Snake snakeFrom(Snake snake) {
         return GameState.Snake.newBuilder()
-                .addAllPoints(snake.points().stream().map(MessageUtils::coordinatesFrom).toList())
+                .addAllPoints(snake.points().stream().map(Messages::coordinatesFrom).toList())
                 .setPlayerId(snake.playerId())
                 .setHeadDirection(snake.direction())
                 .setState(GameState.Snake.SnakeState.forNumber(snake.state().getCode()))

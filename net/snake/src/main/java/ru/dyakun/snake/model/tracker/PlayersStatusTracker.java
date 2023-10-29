@@ -1,4 +1,4 @@
-package ru.dyakun.snake.model;
+package ru.dyakun.snake.model.tracker;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -7,26 +7,20 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class PlayersStatusTracker {
+public class PlayersStatusTracker extends AbstractStatusTracker {
     private final Map<Integer, LocalDateTime> statuses = new ConcurrentHashMap<>();
-    private final int deleteTime;
 
     public PlayersStatusTracker(int deleteTime) {
-        if(deleteTime < 1) {
-            throw new IllegalArgumentException("Illegal time to delete");
-        }
-        this.deleteTime = deleteTime;
+        super(deleteTime);
     }
 
-    public int getDeleteTime() {
-        return deleteTime;
+    @Override
+    public void updateStatus(int id) {
+        statuses.put(id, LocalDateTime.now());
     }
 
-    public void updateStatus(int playerId) {
-        statuses.put(playerId, LocalDateTime.now());
-    }
-
-    public Collection<Integer> deleteInactivePlayers() {
+    @Override
+    public Collection<Integer> deleteInactive() {
         Collection<Integer> deleted = new ArrayList<>();
         for(var entry : statuses.entrySet()) {
             if(ChronoUnit.MILLIS.between(entry.getValue(), LocalDateTime.now()) > deleteTime) {

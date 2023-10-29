@@ -10,64 +10,24 @@ import ru.dyakun.snake.model.entity.Snake;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class Field implements GameField {
+public class Field extends AbstractField {
     private static final int FREE_SPACE_SIZE = 5;
     private static final int MIN_FREE_SPACE_FOR_RANDOM = 5;
     private static final Logger logger = LoggerFactory.getLogger(Field.class);
-    private final int width;
-    private final int height;
     private final int foodStatic;
-    private final Tile[] field;
-    private Collection<Point> foods;
-    private Map<Integer, Snake> snakes;
-    private Map<Integer, Player> players;
-    private int freeSpace;
+    private final Collection<Point> foods;
+    private final Map<Integer, Snake> snakes;
+    private final Map<Integer, Player> players;
 
     private record StartSnake(Point head, Point tail) {}
 
     public Field(GameConfig config, Map<Integer, Player> players, Map<Integer, Snake> snakes, Collection<Point> foods) {
-        this.width = config.getWidth();
-        this.height = config.getHeight();
+        super(config.getWidth(), config.getHeight());
         this.foodStatic = config.getFoodStatic();
-        this.field = new Tile[height * width];
-        fill(players, snakes, foods);
-    }
-
-    private void fill(Map<Integer, Player> players, Map<Integer, Snake> snakes, Collection<Point> foods) {
-        Arrays.fill(field, Tile.EMPTY);
-        freeSpace = height * width;
-        this.foods = foods;
-        fillPoints(foods, Tile.FOOD);
-        this.snakes = snakes;
-        for(var snake : this.snakes.values()) {
-            fillPoints(snake.points(), Tile.SNAKE);
-        }
         this.players = players;
-    }
-
-    public void updateBy(Map<Integer, Player> players, Map<Integer, Snake> snakes, Collection<Point> foods) {
-        fill(players, snakes, foods);
-    }
-
-    @Override
-    public int getWidth() {
-        return width;
-    }
-
-    @Override
-    public int getHeight() {
-        return height;
-    }
-
-    @Override
-    public Tile getTile(int x, int y) {
-        if(x < 0 || x >= width) {
-            throw new IllegalArgumentException("Illegal x: " + x);
-        }
-        if(y < 0 || y >= height) {
-            throw new IllegalArgumentException("Illegal y: " + y);
-        }
-        return field[y * height + x];
+        this.snakes = snakes;
+        this.foods = foods;
+        fill(snakes.values(), foods);
     }
 
     private void setFood(int x, int y) {
@@ -194,33 +154,6 @@ public class Field implements GameField {
         Snake snake = new Snake(points.head, points.tail, id);
         snakes.put(id, snake);
         fillPoints(snake.points(), Tile.SNAKE);
-    }
-
-    private void set(int x, int y, Tile tile) {
-        x = mod(x, width);
-        y = mod(y, height);
-        field[y * height + x] = tile;
-        if(tile == Tile.EMPTY) {
-            freeSpace++;
-        } else {
-            freeSpace--;
-        }
-    }
-
-    Tile get(int x, int y) {
-        x = mod(x, width);
-        y = mod(y, height);
-        return field[y * height + x];
-    }
-
-    private int mod(int n, int size) {
-        return (n % size + size) % size;
-    }
-
-    private void fillPoints(Collection<Point> points, Tile tile) {
-        for(var point: points) {
-            set(point.x, point.y, tile);
-        }
     }
 
     private StartSnake placeSnake() {

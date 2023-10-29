@@ -9,7 +9,6 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import ru.dyakun.snake.model.GameInfo;
 import ru.dyakun.snake.model.GameInfoView;
 import ru.dyakun.snake.model.event.GameEvent;
 import ru.dyakun.snake.protocol.NodeRole;
