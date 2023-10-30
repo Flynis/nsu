@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static java.lang.Thread.sleep;
+
 public class Service {
     private final ServiceConfig config;
     private final HttpClient client;
@@ -74,6 +76,7 @@ public class Service {
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         var responseFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
         try {
+            sleep(1000);
             HttpResponse<String> response = responseFuture.get();
             //System.out.println("response "+response.body());
             if(response.statusCode() != 200) {
