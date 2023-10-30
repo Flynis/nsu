@@ -15,6 +15,7 @@ public class Deputy extends Normal {
     @Override
     protected void onRoleChangeMsg(GameMessage message, InetSocketAddress sender) {
         var roleChangeMsg = message.getRoleChange();
+        sendAck(id, masterId, sender, message);
         if(masterAddress.equals(sender)
                 && roleChangeMsg.hasReceiverRole()
                 && roleChangeMsg.getReceiverRole() == NodeRole.MASTER

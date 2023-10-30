@@ -76,6 +76,7 @@ public class Viewer extends Member {
     @Override
     protected void onStateMsg(GameMessage message, InetSocketAddress sender) {
         if(notMaster(sender)) return;
+        sendAck(id, masterId, sender, message);
         tracker.updateStatus(masterId);
         var stateMsg = message.getState();
         if(state == null) {
@@ -90,6 +91,7 @@ public class Viewer extends Member {
 
     @Override
     protected void onRoleChangeMsg(GameMessage message, InetSocketAddress sender) {
+        sendAck(id, message.getSenderId(), sender, message);
         var changeRoleMsg = message.getRoleChange();
         if(changeRoleMsg.hasSenderRole() && changeRoleMsg.getSenderRole() == NodeRole.MASTER) {
             changeMaster(message.getSenderId(), sender);
@@ -128,6 +130,7 @@ public class Viewer extends Member {
     @Override
     protected void onErrorMsg(GameMessage message, InetSocketAddress sender) {
         if(notMaster(sender)) return;
+        sendAck(id, masterId, sender, message);
         tracker.updateStatus(masterId);
         var errorMsg = message.getError();
         notifyListeners(GameEvent.MESSAGE, errorMsg.getErrorMessage());
@@ -163,6 +166,7 @@ public class Viewer extends Member {
     }
 
     protected void changeMaster(int masterId, InetSocketAddress masterAddress) {
+        client.changeReceiver(masterAddress, this.masterAddress);
         this.masterId = masterId;
         this.masterAddress = masterAddress;
         timer.changeMasterAddress(masterAddress);

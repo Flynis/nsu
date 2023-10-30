@@ -10,6 +10,8 @@ import ru.dyakun.snake.model.entity.SnakeView;
 import ru.dyakun.snake.model.event.GameEvent;
 import ru.dyakun.snake.model.event.GameEventListener;
 import ru.dyakun.snake.model.timer.GameTimer;
+import ru.dyakun.snake.model.util.MessageType;
+import ru.dyakun.snake.model.util.Messages;
 import ru.dyakun.snake.net.GameMessageListener;
 import ru.dyakun.snake.net.NetClient;
 import ru.dyakun.snake.protocol.Direction;
@@ -40,11 +42,13 @@ public abstract class Member implements GameMessageListener {
 
     protected Member(MemberParams params, NodeRole role) {
         this(params, role, null);
+        client.setTimeout(gameInfo.getConfig().getDelay() / 10);
     }
 
     protected void setGameInfo(GameInfo gameInfo) {
         if(this.gameInfo == null) {
             this.gameInfo = gameInfo;
+            client.setTimeout(gameInfo.getConfig().getDelay() / 10);
         } else {
             throw new IllegalStateException("Game info is already assigned");
         }
@@ -54,6 +58,11 @@ public abstract class Member implements GameMessageListener {
         for(var listener : listeners) {
             listener.onEvent(event, payload);
         }
+    }
+
+    protected void sendAck(int from, int to, InetSocketAddress address, GameMessage message) {
+        var ack = Messages.ackMessage(from, to, message.getMsgSeq());
+        client.send(MessageType.ACK, ack, address);
     }
 
     public NodeRole getRole() {

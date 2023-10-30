@@ -145,6 +145,7 @@ public final class Master extends Member {
         var roleChangeMsg = message.getRoleChange();
         if(roleChangeMsg.hasSenderRole() && roleChangeMsg.getSenderRole() == NodeRole.VIEWER) {
             var senderId = message.getSenderId();
+            sendAck(id, senderId, sender, message);
             var snake = snakes.get(senderId);
             if(snake != null) {
                 snake.setState(Snake.State.ZOMBIE);
@@ -161,6 +162,7 @@ public final class Master extends Member {
     protected void onPingMsg(GameMessage message, InetSocketAddress sender) {
         var player = Players.findPlayerByAddress(players.values(), sender);
         if(player != null) {
+            sendAck(id, player.getId(), sender, message);
             tracker.updateStatus(player.getId());
         }
     }
@@ -168,19 +170,20 @@ public final class Master extends Member {
     @Override
     protected void onSteerMsg(GameMessage message, InetSocketAddress sender) {
         var steer = message.getSteer();
-        int id;
+        int playerId;
         if(!message.hasSenderId()) {
             logger.error("Steer message without sender id");
             var player = Players.findPlayerByAddress(players.values(), sender);
             if(player == null) {
                 return;
             }
-            id = player.getId();
+            playerId = player.getId();
         } else {
-            id = message.getSenderId();
+            playerId = message.getSenderId();
         }
-        changeSnakeDirection(id, steer.getDirection());
-        tracker.updateStatus(id);
+        sendAck(id, playerId, sender, message);
+        changeSnakeDirection(playerId, steer.getDirection());
+        tracker.updateStatus(playerId);
     }
 
     @Override
@@ -196,8 +199,7 @@ public final class Master extends Member {
         var join = message.getJoin();
         try {
             var player = addPlayer(join.getPlayerName(), join.getRequestedRole(), sender);
-            var ack = Messages.ackMessage(0, player.getId(), message.getMsgSeq());
-            client.send(MessageType.ACK, ack, sender);
+            sendAck(id, player.getId(), sender, message);
             tracker.updateStatus(player.getId());
             if(player.getRole() == NodeRole.NORMAL && !hasDeputy) {
                 setDeputy(player.getId());

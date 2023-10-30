@@ -8,8 +8,12 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 
 import static ru.dyakun.snake.model.util.MessageType.*;
@@ -17,20 +21,26 @@ import static ru.dyakun.snake.model.util.MessageType.*;
 public class MessageSender implements Runnable, Stoppable {
     private static final Logger logger = LoggerFactory.getLogger(MessageSender.class);
     private final BlockingQueue<SendData> queue;
-    private final BlockingQueue<SendData> ackWaiters = new ArrayBlockingQueue<>(30);
+    private final Queue<SendData> ackWaiters = new ConcurrentLinkedDeque<>();
     private final DatagramSocket socket;
-    private final NetClient client;
     private boolean isRunning = false;
     private long timeout = 10000;
 
-    MessageSender(BlockingQueue<SendData> queue, DatagramSocket socket, UdpNetClient client) {
+    MessageSender(BlockingQueue<SendData> queue, DatagramSocket socket) {
         this.queue = queue;
         this.socket = socket;
-        this.client = client;
     }
 
     void changeReceiver(InetSocketAddress current, InetSocketAddress old) {
-
+        var resendList = new ArrayList<SendData>();
+        for(var data : ackWaiters) {
+            if(data.receiver().equals(old)) {
+                data.setReceiver(current);
+                resendList.add(data);
+            }
+        }
+        ackWaiters.removeAll(resendList);
+        queue.addAll(resendList);
     }
 
     void setTimeout(int timeout) {
@@ -49,7 +59,8 @@ public class MessageSender implements Runnable, Stoppable {
                 }
                 var type = sendData.type();
                 if(type != ACK && type != ANNOUNCEMENT && type != DISCOVER) {
-                    ackWaiters.put(sendData);
+                    sendData.setSendTime(LocalDateTime.now());
+                    ackWaiters.add(sendData);
                 }
                 byte[] buf = sendData.message().toByteArray();
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
@@ -63,14 +74,18 @@ public class MessageSender implements Runnable, Stoppable {
     }
 
     private void resend() {
-
+        var resendList = new ArrayList<SendData>();
+        for(var data : ackWaiters) {
+            if(ChronoUnit.MILLIS.between(data.sendTime(), LocalDateTime.now()) > timeout) {
+                resendList.add(data);
+            }
+        }
+        ackWaiters.removeAll(resendList);
+        queue.addAll(resendList);
     }
 
     void handleAck(GameMessage message, InetSocketAddress sender) {
-        var ack = message.getAck();
-        for(var sendData : ackWaiters) {
-
-        }
+        ackWaiters.removeIf(data -> data.message().getMsgSeq() == message.getMsgSeq() && data.receiver().equals(sender));
     }
 
     @Override

@@ -24,7 +24,7 @@ public class UdpNetClient implements NetClient {
     public UdpNetClient() {
         try {
             socket = new DatagramSocket();
-            messageSender = new MessageSender(pending, socket, this);
+            messageSender = new MessageSender(pending, socket);
             new Thread(messageSender).start();
         } catch (SocketException e) {
             logger.error("Udp socket create failed");
@@ -53,6 +53,9 @@ public class UdpNetClient implements NetClient {
 
     @Override
     public void setTimeout(int timeout) {
+        if(timeout < 10) {
+            throw new IllegalArgumentException("Too small timeout");
+        }
         messageSender.setTimeout(timeout);
     }
 
