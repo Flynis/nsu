@@ -17,19 +17,23 @@ public class UdpNetClient implements NetClient {
     private static final Logger logger = LoggerFactory.getLogger(UdpNetClient.class);
     private final DatagramSocket socket;
     private final List<GameMessageListener> listeners = new ArrayList<>();
-    private final BlockingQueue<GameMessage> pending = new ArrayBlockingQueue<>(30);
-    private final MessageSender sender;
+    private final BlockingQueue<SendData> pending = new ArrayBlockingQueue<>(30);
+    private final MessageSender messageSender;
     private boolean isRunning = false;
 
     public UdpNetClient() {
         try {
             socket = new DatagramSocket();
-            sender = new MessageSender(pending, socket, this);
-            new Thread(sender).start();
+            messageSender = new MessageSender(pending, socket, this);
+            new Thread(messageSender).start();
         } catch (SocketException e) {
             logger.error("Udp socket create failed");
             throw new IllegalStateException(e);
         }
+    }
+
+    public void changeReceiver(InetSocketAddress current, InetSocketAddress old) {
+        messageSender.changeReceiver(current, old);
     }
 
     private void notifyListeners(GameMessage message, InetSocketAddress sender) {
@@ -40,7 +44,16 @@ public class UdpNetClient implements NetClient {
 
     @Override
     public void send(MessageType type, GameMessage message, InetSocketAddress receiver) {
-        // TODO impl
+        try {
+            pending.put(new SendData(type, message, receiver));
+        } catch (InterruptedException e) {
+            logger.info("Interrupted pending put", e);
+        }
+    }
+
+    @Override
+    public void setTimeout(int timeout) {
+        messageSender.setTimeout(timeout);
     }
 
     @Override
@@ -58,7 +71,12 @@ public class UdpNetClient implements NetClient {
                 socket.receive(datagramPacket);
                 logger.debug("Receive from [{}]", datagramPacket.getAddress().getHostAddress());
                 try {
-                    notifyListeners(GameMessage.parseFrom(buf), (InetSocketAddress) datagramPacket.getSocketAddress());
+                    var message = GameMessage.parseFrom(buf);
+                    var sender = (InetSocketAddress) datagramPacket.getSocketAddress();
+                    if(message.hasAck()) {
+                        messageSender.handleAck(message, sender);
+                    }
+                    notifyListeners(message, sender);
                 } catch (InvalidProtocolBufferException e) {
                     logger.info("Receive broken protobuf");
                 }
@@ -75,42 +93,8 @@ public class UdpNetClient implements NetClient {
     public void stop() {
         if(socket.isClosed()) return;
         isRunning = false;
+        messageSender.stop();
         socket.close();
-        sender.stop();
         logger.debug("Close udp socket");
-    }
-
-    private static class MessageSender implements Runnable, Stoppable{
-        private final BlockingQueue<GameMessage> queue;
-        private final DatagramSocket socket;
-        private boolean isRunning = false;
-
-        public MessageSender(BlockingQueue<GameMessage> queue, DatagramSocket socket, UdpNetClient client) {
-            this.queue = queue;
-            this.socket = socket;
-            // TODO ack receive
-        }
-
-        @Override
-        public void run() {
-            isRunning = true;
-            try {
-                while (isRunning) {
-                    GameMessage message = queue.take();
-                    byte[] buf = message.toByteArray();
-                    DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
-                    socket.send(datagramPacket);
-                }
-            } catch (IOException e) {
-                logger.error("Udp send failed", e);
-            } catch (InterruptedException e) {
-                logger.error("Udp send interrupted", e);
-            }
-        }
-
-        @Override
-        public void stop() {
-            isRunning = false;
-        }
     }
 }

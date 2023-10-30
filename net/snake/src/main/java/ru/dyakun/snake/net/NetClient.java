@@ -7,4 +7,8 @@ import java.net.InetSocketAddress;
 
 public interface NetClient extends MessageReceiver {
     void send(MessageType type, GameMessage message, InetSocketAddress receiver);
+
+    void changeReceiver(InetSocketAddress current, InetSocketAddress old);
+
+    void setTimeout(int timeout);
 }

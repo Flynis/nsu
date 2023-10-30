@@ -196,7 +196,7 @@ public final class Master extends Member {
         var join = message.getJoin();
         try {
             var player = addPlayer(join.getPlayerName(), join.getRequestedRole(), sender);
-            var ack = Messages.ackMessage(0, player.getId());
+            var ack = Messages.ackMessage(0, player.getId(), message.getMsgSeq());
             client.send(MessageType.ACK, ack, sender);
             tracker.updateStatus(player.getId());
             if(player.getRole() == NodeRole.NORMAL && !hasDeputy) {

@@ -83,10 +83,10 @@ public class Messages {
                 .build();
     }
 
-    public static GameMessage ackMessage(int sender, int receiver) {
+    public static GameMessage ackMessage(int sender, int receiver, long msgSeq) {
         return GameMessage.newBuilder()
                 .setAck(GameMessage.AckMsg.newBuilder().build())
-                .setMsgSeq(generator.next())
+                .setMsgSeq(msgSeq)
                 .setSenderId(sender)
                 .setReceiverId(receiver)
                 .build();
