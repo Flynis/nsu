@@ -42,7 +42,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
             socket = new MulticastSocket(group.getPort());
             netInterface = getNetInterface();
             socket.joinGroup(group, netInterface);
-            logger.debug("Joined in group [{}]", group.getAddress());
+            logger.debug("Joined in group [{}]", group.getHostName());
             isRunning = true;
             while(isRunning) {
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);

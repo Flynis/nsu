@@ -1,29 +1,31 @@
+@font-face {
+    src: url(../fonts/PressStart2P-Regular.ttf);
+}
+
 .root{
-    -primary: #85c286;
+    -background: #101010;
+    -primary: #f0f0f0;
     -light: #ccffcc;
-    -secondary: #339933;
+    -secondary: #808080;
     -tertiary: #fcc200;
-    -tertiary-armed: #FDDD71;
-    -foreground: #202020;
+    -tertiary-armed: #fddd71;
+    -foreground: #f0f0f0;
 }
 
 .body {
-    -fx-background-image: url(../images/background.png);
-    -fx-background-repeat: stretch;
-    -fx-background-position: center center;
+    -fx-background-color: -background;
 }
 
 .logo {
-    -fx-font-family: "Droid Sans";
+    -fx-font-family: "Press Start 2P";
     -fx-font-weight: bold;
     -fx-font-size: 150px;
     -fx-text-fill: -foreground;
 }
 
 .header {
-    -fx-font-family: "Roboto Light";
-    -fx-font-weight: bold;
-    -fx-font-size: 24px;
+    -fx-font-family: "Press Start 2P";
+    -fx-font-size: 48px;
     -fx-text-fill: -foreground;
 }
 
@@ -32,55 +34,44 @@
 }
 
 .medium-text {
-    -fx-font-family: "Roboto Light";
-    -fx-font-weight: normal;
-    -fx-font-size: 20px;
+    -fx-font-family: "Press Start 2P";
+    -fx-font-size: 18px;
     -fx-text-fill: -foreground;
 }
 
 .value-text {
-    -fx-font-family: "Roboto Light";
-    -fx-font-weight: 600;
-    -fx-font-size: 20px;
+    -fx-font-family: "Press Start 2P";
+    -fx-font-size: 18px;
     -fx-text-fill: -foreground;
 }
 
 .error-label{
     -fx-text-fill: #d81717;
-    -fx-font-weight: bold;
-    -fx-font-size: 20;
-    -fx-background-color: #00000022;
-    -fx-background-radius: 10px;
+    -fx-font-size: 20px;
     -fx-padding: 3px 12px 3px 12px;
     -fx-alignment: center;
 }
 
 .button {
-    -fx-background-color: -primary;
-    -fx-background-radius: 10px;
-    -fx-border-width: 0;
+    -fx-background-color: -background;
+    -fx-border-width: 3;
+    -fx-border-color: -primary;
     -fx-text-fill: -foreground;
-    -fx-font-family: "Roboto Light";
-    -fx-font-weight: bold;
-    -fx-padding: 3px;
-    -fx-font-size: 20px;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 8, 0, 0, 0);
+    -fx-font-family: "Press Start 2P";
+    -fx-font-size: 24px;
 }
 
 .button:hover {
-    -fx-background-color: -secondary;
+    -fx-background-color: -primary;
+    -fx-text-fill: -background;
 }
 
 .text-field {
-    -fx-background-color: -light;
-    -fx-background-radius: 10px;
-    -fx-border-radius: 10px;
+    -fx-background-color: -background;
     -fx-border-width: 2;
-    -fx-border-color: transparent;
-    -fx-text-fill: #202020;
-    -fx-prompt-text-fill: #808080;
-    -fx-font-family: "Roboto Light";
-    -fx-font-weight: bold;
+    -fx-border-color: -primary;
+    -fx-text-fill: -foreground;
+    -fx-font-family: "Press Start 2P";
     -fx-font-size: 16px;
 }
 
@@ -88,73 +79,70 @@
     -fx-border-color: -tertiary;
 }
 
+.text-field:focused {
+    -fx-background-color: -primary;
+    -fx-border-color: -tertiary;
+    -fx-text-fill: -background;
+}
+
 .choice-box {
-    -fx-background-color: -light;
-    -fx-background-radius: 10px;
-    -fx-font-family: "Roboto Light";
-    -fx-font-weight: bold;
+    -fx-background-color: -background;
+    -fx-font-family: "Press Start 2P";
+    -fx-border-width: 2;
+    -fx-border-color: -primary;
     -fx-font-size: 16px;
     -fx-text-fill: -foreground;
+    -fx-mark-color: -primary;
+}
+
+.choice-box:hover {
+    -fx-border-color: -tertiary;
+}
+
+.choice-box:focused {
+    -fx-border-color: -primary;
 }
 
 .choice-box .menu-item:focused {
-    -fx-background-color: -primary;
+    -fx-background-color: -secondary;
+    -fx-text-fill: -background;
 }
 
 .choice-box .context-menu {
-    -fx-background-color: -light ;
-}
-
-.choice-box {
-    -fx-mark-color: -foreground ;
+    -fx-background-color: -primary;
+    -fx-text-fill: -background;
 }
 
 .align-center {
     -fx-alignment: center;
 }
 
-.split-pane > .split-pane-divider {
-    -fx-background-color: -foreground;
-}
-
-.split-pane:horizontal > .split-pane-divider {
-    -fx-pref-width: 3;
-}
-
-.split-pane:vertical > .split-pane-divider {
-    -fx-pref-height: 3;
-}
-
-.table-view {
-    -fx-background-color: #00000011;
-}
-
+.table-view,
 .table-view .column-header,
+.table-view .column-header-background,
 .table-view .column-header-background .filler,
 .table-view .corner {
     -fx-background-color: transparent;
 }
 
-.table-view .column-header-background{
-    -fx-background-color: -primary;
-    -fx-background-radius: 7px 7px 0px 0px;
-    -fx-background-insets: 0 11px 0 0;
-    -fx-padding: 0 0 5px 0;
+.table-view {
+    -fx-border-width: 2;
+    -fx-border-color: -primary;
 }
 
 .table-view .column-header {
-    -fx-font-family: "Roboto Light";
-    -fx-font-size: 20px;
+    -fx-font-family: "Press Start 2P";
+    -fx-text-fill: -foreground;
+    -fx-font-size: 16px;
 }
 
 .table-view .table-cell{
     -fx-border-color: transparent;
-    -fx-padding: 2 0 2 10px;
 }
 
 .table-row-cell {
-    -fx-font-family: "Roboto Light";
-    -fx-font-size: 16px;
+    -fx-font-family: "Press Start 2P";
+    -fx-font-size: 14px;
 }
 
 .table-row-cell:hover {

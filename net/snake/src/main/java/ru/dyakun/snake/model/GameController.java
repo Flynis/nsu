@@ -50,6 +50,8 @@ public class GameController implements GameMessageListener, ChangeRoleListener {
         timer = new GameTimer(activeGamesTracker, config.getAnnouncementPeriod(), groupAddress);
         manager.addScene(SceneNames.MENU, factory.create(SceneNames.MENU, this));
         manager.addScene(SceneNames.GAME, factory.create(SceneNames.GAME, this));
+        manager.addScene(SceneNames.CONNECT, factory.create(SceneNames.CONNECT, this));
+        manager.addScene(SceneNames.CREATE, factory.create(SceneNames.CREATE, this));
         manager.changeScene(SceneNames.MENU);
         params = new MemberParams(manager, client, timer, listeners);
         manager.showCurrentScene();
@@ -82,6 +84,13 @@ public class GameController implements GameMessageListener, ChangeRoleListener {
         activeGamesTracker.addGameEventListener(listener);
         timer.addGameEventListener(listener);
         listeners.add(listener);
+    }
+
+    public void changeScene(SceneNames name) {
+        switch (name) {
+            case CREATE, CONNECT -> manager.changeScene(name);
+            default -> throw new IllegalArgumentException("Illegal scene name " + name);
+        }
     }
 
     public void exit() {

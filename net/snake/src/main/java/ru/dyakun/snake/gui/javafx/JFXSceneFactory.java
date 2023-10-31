@@ -15,6 +15,12 @@ public class JFXSceneFactory implements SceneFactory {
             case MENU -> {
                 return JFXScene.fromFXML("/scenes/MenuScene.fxml", controller);
             }
+            case CONNECT -> {
+                return JFXScene.fromFXML("/scenes/ConnectScene.fxml", controller);
+            }
+            case CREATE -> {
+                return JFXScene.fromFXML("/scenes/CreateScene.fxml", controller);
+            }
             default -> throw new IllegalArgumentException("Unknown scene name");
         }
     }
