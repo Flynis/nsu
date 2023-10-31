@@ -4,12 +4,10 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.dyakun.snake.model.ClientConfig;
-import ru.dyakun.snake.model.GameController;
-import ru.dyakun.snake.controller.SceneManager;
-import ru.dyakun.snake.gui.javafx.JFXSceneFactory;
+import ru.dyakun.snake.game.ClientConfig;
+import ru.dyakun.snake.game.Game;
 import ru.dyakun.snake.gui.javafx.JFXWindow;
-import ru.dyakun.snake.model.GameConfig;
+import ru.dyakun.snake.game.GameConfig;
 
 public class Launcher extends Application {
     private static final Logger logger = LoggerFactory.getLogger(Launcher.class);
@@ -25,8 +23,8 @@ public class Launcher extends Application {
             var clientConfig = GameConfig.load("client.cfg", ClientConfig.class);
             logger.info("Load game config: {}", gameConfig);
             logger.info("Load client config: {}", clientConfig);
-            var sceneManager = new SceneManager(new JFXWindow(stage));
-            new GameController(new JFXSceneFactory(), sceneManager, clientConfig, gameConfig);
+            var game = new Game(clientConfig, gameConfig);
+            new JFXWindow(stage, game);
         } catch (Exception e) {
             logger.error("Fatal error", e);
         }

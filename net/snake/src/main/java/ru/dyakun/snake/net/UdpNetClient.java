@@ -3,7 +3,7 @@ package ru.dyakun.snake.net;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.dyakun.snake.model.util.MessageType;
+import ru.dyakun.snake.game.util.MessageType;
 import ru.dyakun.snake.protocol.GameMessage;
 
 import java.io.IOException;

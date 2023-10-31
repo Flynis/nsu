@@ -8,7 +8,7 @@
 <HBox minHeight="600.0" minWidth="800.0" prefHeight="900.0" prefWidth="1600.0"
       stylesheets="@../css/global.css" styleClass="body"
       xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="ru.dyakun.snake.controller.GameSceneController"
+      fx:controller="ru.dyakun.snake.controller.GameController"
         onKeyReleased="#handleKey">
     <VBox alignment="CENTER" prefWidth="1200.0" prefHeight="900.0" minHeight="600.0" minWidth="600.0">
         <Canvas fx:id="canvas" height="800.0" width="800.0"/>

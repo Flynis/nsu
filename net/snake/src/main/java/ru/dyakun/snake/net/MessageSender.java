@@ -16,7 +16,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 
-import static ru.dyakun.snake.model.util.MessageType.*;
+import static ru.dyakun.snake.game.util.MessageType.*;
 
 public class MessageSender implements Runnable, Stoppable {
     private static final Logger logger = LoggerFactory.getLogger(MessageSender.class);
