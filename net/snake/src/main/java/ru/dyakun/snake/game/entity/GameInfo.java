@@ -75,6 +75,11 @@ public class GameInfo implements GameInfoView {
         return name;
     }
 
+    @Override
+    public String getIp() {
+        return findMaster().getAddress().getHostName();
+    }
+
     public boolean isMayJoin() {
         return mayJoin;
     }

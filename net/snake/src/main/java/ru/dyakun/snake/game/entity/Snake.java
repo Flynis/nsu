@@ -22,18 +22,47 @@ public class Snake implements SnakeView {
         }
     }
 
+    public enum Axis {
+        X, Y;
+
+        public static Axis fromDirection(Direction direction) {
+            switch (direction) {
+                case LEFT, RIGHT -> {
+                    return X;
+                }
+                case UP, DOWN -> {
+                    return Y;
+                }
+                default -> throw new IllegalArgumentException("Unknown direction");
+            }
+        }
+
+        public static Axis fromPoint(Point p) {
+            if(p.x != 0 && p.y == 0) {
+                return X;
+            }
+            if(p.y != 0 && p.x == 0) {
+                return Y;
+            }
+            throw new IllegalArgumentException("Point is not a vector direction");
+        }
+    }
+
     private final Deque<Point> points;
     private Direction direction;
     private State state;
     private final int playerId;
+    private final Point tail;
 
     public Snake(Point head, Point tail, int playerId) {
         this.points = new ArrayDeque<>();
+        this.tail = tail;
         points.addLast(head);
-        points.addLast(tail);
+        var relativeDisplacement = Point.getRelativeDisplacement(head, tail);
+        points.addLast(relativeDisplacement);
         this.playerId = playerId;
         this.state = State.ALIVE;
-        this.direction = determineDirection(head, tail);
+        this.direction = Point.determineDirection(head, tail);
     }
 
     public Snake(Deque<Point> points, Direction direction, State state, int playerId) {
@@ -41,9 +70,16 @@ public class Snake implements SnakeView {
         this.direction = direction;
         this.state = state;
         this.playerId = playerId;
+        if(points.isEmpty()) {
+            throw new IllegalStateException("Points is empty");
+        }
+        Point p = points.peekFirst();
+        for (Point point : this) {
+            p = point;
+        }
+        this.tail = new Point(p);
     }
 
-    @Override
     public Collection<Point> points() {
         return points;
     }
@@ -71,42 +107,47 @@ public class Snake implements SnakeView {
     }
 
     @Override
+    public Iterator<Point> iterator() {
+        return new SnakeIterator(points);
+    }
+
+    @Override
     public Point getHead() {
         return points.peekFirst();
     }
 
-    @Override
     public Point getTail() {
-        return points.peekLast();
+        return tail;
     }
 
     public Point moveHead() {
-        Point head = getHead();
+        Point head = points.pollFirst();
+        Point prev = points.peekFirst();
+        if(head == null || prev == null) {
+            throw new IllegalStateException("Snake is empty");
+        }
         Point newHead = new Point(head.x, head.y);
         newHead.move(direction);
-        points.addFirst(newHead);
+        if(Axis.fromDirection(direction) == Axis.fromPoint(prev)) {
+            prev.incRelativeDisplacement();
+            head.move(direction);
+            points.addFirst(head);
+        } else {
+            points.addFirst(head);
+            points.addFirst(newHead);
+        }
         return newHead;
     }
 
     public void moveTail() {
-        points.pollLast();
-    }
-
-    private static Direction determineDirection(Point head, Point tail) {
-        if(head.x == tail.x) {
-            if(head.y - tail.y > 0) {
-                return Direction.DOWN;
-            } else {
-                return Direction.UP;
-            }
-        } else if(head.y == tail.y) {
-            if(head.x - tail.x > 0) {
-                return Direction.RIGHT;
-            } else {
-                return Direction.LEFT;
-            }
-        } else {
-            throw new IllegalStateException("At least one coordinate must coincide between tail and head");
+        var tail = points.peekLast();
+        if(tail == null) {
+            throw new IllegalStateException("Snake is empty");
+        }
+        this.tail.moveReverse(tail);
+        tail.decRelativeDisplacement();
+        if(tail.isZero()) {
+            points.pollLast();
         }
     }
 
@@ -118,6 +159,32 @@ public class Snake implements SnakeView {
             builder.addPoint(Point.from(snake.getPoints(i)));
         }
         return builder.build();
+    }
+
+    public static class SnakeIterator implements Iterator<Point> {
+        private Point current;
+        private final Iterator<Point> pointIterator;
+
+        private SnakeIterator(Deque<Point> points) {
+            pointIterator = points.descendingIterator();
+            if(pointIterator.hasNext()) {
+                current = pointIterator.next();
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return pointIterator.hasNext();
+        }
+
+        @Override
+        public Point next() {
+            var result = new Point(current);
+            if(pointIterator.hasNext()) {
+                current.add(pointIterator.next());
+            }
+            return result;
+        }
     }
 
     public static class Builder {

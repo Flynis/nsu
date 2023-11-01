@@ -1,9 +1,5 @@
 package ru.dyakun.snake.game.entity;
 
-import java.util.Collection;
-
-public interface SnakeView {
-    Collection<Point> points();
+public interface SnakeView extends Iterable<Point> {
     Point getHead();
-    Point getTail();
 }

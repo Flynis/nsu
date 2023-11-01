@@ -1,10 +1,9 @@
-package ru.dyakun.snake.gui.javafx;
+package ru.dyakun.snake.gui;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import ru.dyakun.snake.game.Game;
 import ru.dyakun.snake.controller.SceneController;
-import ru.dyakun.snake.gui.base.Window;
 
 import java.io.IOException;
 
@@ -13,7 +12,7 @@ public class JFXScene extends javafx.scene.Scene {
         super(parent);
     }
 
-    public static JFXScene fromFXML(String resourcePath, Game controller, Window window) {
+    public static JFXScene fromFXML(String resourcePath, Game controller, SceneManager window) {
         try {
             FXMLLoader loader = new FXMLLoader(JFXScene.class.getResource(resourcePath));
             Parent parent = loader.load();

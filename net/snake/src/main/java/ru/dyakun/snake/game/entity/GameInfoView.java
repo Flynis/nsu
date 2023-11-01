@@ -6,4 +6,5 @@ public interface GameInfoView {
     int getPlayersCount();
     GameConfig getConfig();
     String getName();
+    String getIp();
 }

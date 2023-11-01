@@ -6,8 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.game.ClientConfig;
 import ru.dyakun.snake.game.Game;
-import ru.dyakun.snake.gui.javafx.JFXWindow;
-import ru.dyakun.snake.game.GameConfig;
+import ru.dyakun.snake.gui.JFXWindow;
 
 public class Launcher extends Application {
     private static final Logger logger = LoggerFactory.getLogger(Launcher.class);
@@ -19,11 +18,9 @@ public class Launcher extends Application {
     @Override
     public void start(Stage stage) {
         try {
-            var gameConfig = GameConfig.load("game.cfg", GameConfig.class);
-            var clientConfig = GameConfig.load("client.cfg", ClientConfig.class);
-            logger.info("Load game config: {}", gameConfig);
+            var clientConfig = ClientConfig.load("client.cfg", ClientConfig.class);
             logger.info("Load client config: {}", clientConfig);
-            var game = new Game(clientConfig, gameConfig);
+            var game = new Game(clientConfig);
             new JFXWindow(stage, game);
         } catch (Exception e) {
             logger.error("Fatal error", e);

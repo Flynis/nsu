@@ -25,11 +25,11 @@ public class AbstractField implements GameField {
         freeSpace = height * width;
         fillPoints(foods, Tile.FOOD);
         for(var snake : snakes) {
-            fillPoints(snake.points(), Tile.SNAKE);
+            fillPoints(snake, Tile.SNAKE);
         }
     }
 
-    protected void fillPoints(Collection<Point> points, Tile tile) {
+    protected void fillPoints(Iterable<Point> points, Tile tile) {
         for(var point: points) {
             set(point.x, point.y, tile);
         }

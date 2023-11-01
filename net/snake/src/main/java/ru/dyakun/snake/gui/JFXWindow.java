@@ -1,16 +1,14 @@
-package ru.dyakun.snake.gui.javafx;
+package ru.dyakun.snake.gui;
 
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.game.Game;
-import ru.dyakun.snake.gui.base.SceneName;
-import ru.dyakun.snake.gui.base.Window;
 
 import java.util.EnumMap;
 import java.util.Map;
 
-public class JFXWindow implements Window {
+public class JFXWindow implements SceneManager {
     private static final Logger logger = LoggerFactory.getLogger(JFXWindow.class);
     private final Stage stage;
     private final Game game;

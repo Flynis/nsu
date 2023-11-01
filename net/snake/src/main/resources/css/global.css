@@ -10,6 +10,7 @@
     -tertiary: #fcc200;
     -tertiary-armed: #fddd71;
     -foreground: #f0f0f0;
+    -error: #d81717;
 }
 
 .body {
@@ -26,7 +27,7 @@
 .header {
     -fx-font-family: "Press Start 2P";
     -fx-font-size: 48px;
-    -fx-text-fill: -foreground;
+    -fx-text-fill: -tertiary;
 }
 
 .canvas {
@@ -46,8 +47,9 @@
 }
 
 .error-label{
-    -fx-text-fill: #d81717;
-    -fx-font-size: 20px;
+    -fx-font-family: "Press Start 2P";
+    -fx-text-fill: -error;
+    -fx-font-size: 18px;
     -fx-padding: 3px 12px 3px 12px;
     -fx-alignment: center;
 }
@@ -95,26 +97,45 @@
     -fx-mark-color: -primary;
 }
 
+.choice-box .label {
+    -fx-text-fill: -foreground;
+}
+
 .choice-box:hover {
     -fx-border-color: -tertiary;
 }
 
-.choice-box:focused {
-    -fx-border-color: -primary;
-}
-
 .choice-box .menu-item:focused {
     -fx-background-color: -secondary;
+}
+
+.choice-box .menu-item .label {
     -fx-text-fill: -background;
 }
 
 .choice-box .context-menu {
     -fx-background-color: -primary;
-    -fx-text-fill: -background;
 }
 
 .align-center {
     -fx-alignment: center;
+}
+
+.slider .thumb {
+    -fx-background-radius: 0;
+    -fx-pref-height: 25px;
+    -fx-pref-width: 7px;
+    -fx-background-color: -tertiary;
+}
+
+.slider .axis {
+    -fx-tick-label-fill: -foreground;
+    -fx-tick-label-font-size: 16px;
+    -fx-tick-length: 10px;
+}
+
+.slider .track {
+    -fx-background-color: -foreground;
 }
 
 .table-view,
@@ -130,9 +151,10 @@
     -fx-border-color: -primary;
 }
 
-.table-view .column-header {
+.table-view .column-header .label {
+    -fx-padding: 5px;
     -fx-font-family: "Press Start 2P";
-    -fx-text-fill: -foreground;
+    -fx-text-fill: -tertiary;
     -fx-font-size: 16px;
 }
 
@@ -143,30 +165,29 @@
 .table-row-cell {
     -fx-font-family: "Press Start 2P";
     -fx-font-size: 14px;
+    -fx-text-background-color: -foreground;
 }
 
 .table-row-cell:hover {
-    -fx-background-color: #93f9b911;
+    -fx-background-color: -background;
     -fx-text-background-color: -tertiary;
 }
 
 .table-row-cell:odd{
-    -fx-background-color: #93f9b911;
+    -fx-background-color: #101010;
     -fx-background-insets: 0, 0 0 1 0;
-    -fx-padding: 0.0em;
+    -fx-padding: 3px;
 }
 
 .table-row-cell:even{
-    -fx-background-color: #1dbbdd22;
+    -fx-background-color: #000000;
     -fx-background-insets: 0, 0 0 1 0;
-    -fx-padding: 0.0em;
+    -fx-padding: 3px;
 }
 
 .table-row-cell:selected {
     -fx-background-color: -tertiary;
-    -fx-text-background-color: white;
-    -fx-background-radius: 5px;
-    -fx-background-insets: 2px;
+    -fx-text-background-color: -background;
 }
 
 .table-view .virtual-flow .scroll-bar:vertical,

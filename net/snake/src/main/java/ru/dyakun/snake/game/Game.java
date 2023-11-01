@@ -24,14 +24,12 @@ public class Game implements GameMessageListener, ChangeRoleListener {
     private final ActiveGamesTracker activeGamesTracker;
     private final MessageReceiver announcementReceiver;
     private final NetClient client;
-    private final GameConfig initialConfig;
     private final GameTimer timer;
     private final MemberParams params;
     private final List<GameEventListener> listeners = new ArrayList<>();
     private Member member;
 
-    public Game(ClientConfig config, GameConfig initialConfig) {
-        this.initialConfig = initialConfig;
+    public Game(ClientConfig config) {
         this.activeGamesTracker = new ActiveGamesTracker(config.getAnnouncementTimeToLive());
         var groupAddress = new InetSocketAddress(
                 config.getMulticastGroupAddress(),
@@ -100,11 +98,11 @@ public class Game implements GameMessageListener, ChangeRoleListener {
         throw new IllegalArgumentException("Illegal role");
     }
 
-    public void createGame(String nickname) {
+    public void createGame(String nickname, GameConfig config) {
         if(nickname.isBlank()) {
             throw new IllegalArgumentException("Nickname is empty");
         }
-        member = new Master(nickname, initialConfig, params);
+        member = new Master(nickname, config, params);
     }
 
     public void moveSnake(Direction direction) {
@@ -115,8 +113,10 @@ public class Game implements GameMessageListener, ChangeRoleListener {
     }
 
     public void finishCurrentSession() {
-        member.exit();
-        member = null;
+        if(member != null) {
+            member.exit();
+            member = null;
+        }
     }
 
     @Override

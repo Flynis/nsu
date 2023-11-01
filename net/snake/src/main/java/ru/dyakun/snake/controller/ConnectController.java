@@ -11,7 +11,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import ru.dyakun.snake.game.entity.GameInfoView;
 import ru.dyakun.snake.game.event.GameEvent;
-import ru.dyakun.snake.gui.base.SceneName;
+import ru.dyakun.snake.gui.SceneName;
 import ru.dyakun.snake.protocol.NodeRole;
 
 import java.net.URL;
@@ -44,14 +44,7 @@ public class ConnectController extends AbstractController implements Initializab
 
     public void backClick(ActionEvent ignored) {
         game.finishCurrentSession();
-        window.changeScene(SceneName.MENU);
-    }
-
-    public void createGameClick(ActionEvent ignored) {
-        if(validate()) {
-            game.createGame(nicknameField.getText());
-            errorLabel.setVisible(false);
-        }
+        manager.changeScene(SceneName.MENU);
     }
 
     private NodeRole getRole(String role) {
@@ -84,8 +77,8 @@ public class ConnectController extends AbstractController implements Initializab
         ipColumn.setCellValueFactory(cellData -> cellData.getValue().ipProperty());
         playersColumn.setCellValueFactory(cellData -> cellData.getValue().playersProperty().asObject());
         fieldColumn.setCellValueFactory(cellData -> cellData.getValue().fieldProperty());
-        List<GameDesc> orders = new ArrayList<>();
-        ObservableList<GameDesc> ol = FXCollections.observableArrayList(orders);
+        List<GameDesc> games = new ArrayList<>();
+        ObservableList<GameDesc> ol = FXCollections.observableArrayList(games);
         gamesInfoTable.setItems(ol);
         errorLabel.setVisible(false);
         List<String> roles = List.of("Player", "Viewer");
@@ -95,12 +88,15 @@ public class ConnectController extends AbstractController implements Initializab
 
     @Override
     public void onEvent(GameEvent event, Object payload) {
-        // TODO handle payload
-        if(event == GameEvent.UPDATE_ACTIVE_GAMES) {
-            var activeGames = game.getActiveGames();
-            var games = activeGames.stream().map(GameDesc::fromGameInfo).toList();
-            ObservableList<GameDesc> ol = FXCollections.observableArrayList(games);
-            gamesInfoTable.setItems(ol);
+        switch (event) {
+            case UPDATE_ACTIVE_GAMES -> {
+                var activeGames = game.getActiveGames();
+                var games = activeGames.stream().map(GameDesc::fromGameInfo).toList();
+                ObservableList<GameDesc> ol = FXCollections.observableArrayList(games);
+                gamesInfoTable.setItems(ol);
+            }
+            case JOINED -> manager.changeScene(SceneName.GAME);
+            case MESSAGE -> showErrorMessage((String) payload);
         }
     }
 
@@ -109,7 +105,6 @@ public class ConnectController extends AbstractController implements Initializab
         StringProperty ip;
         IntegerProperty players;
         StringProperty field;
-        StringProperty food;
 
         public String getName() {
             return name.get();
@@ -159,33 +154,19 @@ public class ConnectController extends AbstractController implements Initializab
             this.field.set(field);
         }
 
-        public String getFood() {
-            return food.get();
-        }
-
-        public StringProperty foodProperty() {
-            return food;
-        }
-
-        public void setFood(String food) {
-            this.food.set(food);
-        }
-
-        public GameDesc(String name, String ip, int players, String field, String food) {
+        public GameDesc(String name, String ip, int players, String field) {
             this.name = new SimpleStringProperty(name);
             this.ip = new SimpleStringProperty(ip);
             this.players = new SimpleIntegerProperty(players);
             this.field = new SimpleStringProperty(field);
-            this.food = new SimpleStringProperty(food);
         }
 
         public static GameDesc fromGameInfo(GameInfoView gameInfo) {
             return new GameDesc(
                 gameInfo.getName(),
-                "0.0.0.0",
+                gameInfo.getIp(),
                 gameInfo.getPlayersCount(),
-                String.format("%dx%d", gameInfo.getConfig().getWidth(), gameInfo.getConfig().getHeight()),
-                Integer.toString(gameInfo.getConfig().getFoodStatic())
+                String.format("%dx%d", gameInfo.getConfig().getWidth(), gameInfo.getConfig().getHeight())
             );
         }
     }

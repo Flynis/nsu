@@ -65,7 +65,7 @@ public class Field extends AbstractField {
 
     private Snake findSnakeByPoint(Point p) {
         for(var snake : snakes.values()) {
-            for(var point: snake.points()) {
+            for(var point: snake) {
                 if(!p.equals(snake.getHead()) && p.equals(point)) {
                     return snake;
                 }
@@ -77,7 +77,7 @@ public class Field extends AbstractField {
     private void removeDestroyedSnakes() {
         for(var snake : snakes.values()) {
             if(snake.state() == Snake.State.DESTROYED) {
-                for(var point : snake.points()) {
+                for(var point : snake) {
                     if(point.equals(snake.getHead())) {
                         continue;
                     }
@@ -153,7 +153,7 @@ public class Field extends AbstractField {
         logger.debug("Snake: {}", points);
         Snake snake = new Snake(points.head, points.tail, id);
         snakes.put(id, snake);
-        fillPoints(snake.points(), Tile.SNAKE);
+        fillPoints(snake, Tile.SNAKE);
     }
 
     private StartSnake placeSnake() {

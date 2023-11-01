@@ -20,7 +20,7 @@ import ru.dyakun.snake.game.entity.SnakeView;
 import ru.dyakun.snake.game.event.GameEvent;
 import ru.dyakun.snake.game.field.GameField;
 import ru.dyakun.snake.game.field.Tile;
-import ru.dyakun.snake.gui.base.SceneName;
+import ru.dyakun.snake.gui.SceneName;
 import ru.dyakun.snake.protocol.Direction;
 
 import java.net.URL;
@@ -49,7 +49,7 @@ public class GameController extends AbstractController implements Initializable 
     
     public void backClick() {
         game.finishCurrentSession();
-        window.changeScene(SceneName.MENU);
+        manager.changeScene(SceneName.MENU);
     }
 
     @Override
