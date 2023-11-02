@@ -1,5 +1,7 @@
 package ru.dyakun.snake.game.tracker;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.game.entity.GameInfo;
 import ru.dyakun.snake.game.entity.GameInfoView;
 import ru.dyakun.snake.game.event.GameEvent;
@@ -17,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ActiveGamesTracker implements GameMessageListener {
+    private static final Logger logger = LoggerFactory.getLogger(ActiveGamesTracker.class);
     private record Entry(GameInfo game, LocalDateTime time) {}
     private final Map<String, Entry> games = new ConcurrentHashMap<>();
     private final List<GameEventListener> listeners = new ArrayList<>();
@@ -60,6 +63,7 @@ public class ActiveGamesTracker implements GameMessageListener {
     @Override
     public void handle(GameMessage message, InetSocketAddress sender) {
         if(message.hasAnnouncement()) {
+            logger.debug("Receive ANNOUNCEMENT");
             GameMessage.AnnouncementMsg announcementMsg = message.getAnnouncement();
             GameAnnouncement announcement = announcementMsg.getGames(0);
             GameInfo gameInfo = GameInfo.fromAnnouncement(announcement);

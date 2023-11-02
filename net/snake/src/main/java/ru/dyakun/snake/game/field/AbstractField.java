@@ -1,12 +1,16 @@
 package ru.dyakun.snake.game.field;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.game.entity.Point;
 import ru.dyakun.snake.game.entity.Snake;
+import ru.dyakun.snake.gui.controller.GameController;
 
 import java.util.Arrays;
 import java.util.Collection;
 
 public class AbstractField implements GameField {
+    private static final Logger logger = LoggerFactory.getLogger(AbstractField.class);
     protected final int width;
     protected final int height;
     private final Tile[] field;
@@ -59,6 +63,7 @@ public class AbstractField implements GameField {
     protected void set(int x, int y, Tile tile) {
         x = mod(x, width);
         y = mod(y, height);
+        logger.debug("Set ({}, {}) {}", x, y, tile);
         field[y * height + x] = tile;
         if(tile == Tile.EMPTY) {
             freeSpace++;

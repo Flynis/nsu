@@ -23,23 +23,23 @@ import java.util.List;
 
 public abstract class Member implements GameMessageListener {
     protected static final Logger logger = LoggerFactory.getLogger(Member.class);
-    protected final NodeRole role;
     protected final NetClient client;
     protected final GameTimer timer;
     protected final List<GameEventListener> listeners;
     protected GameInfo gameInfo;
 
-    protected Member(MemberParams params, NodeRole role, GameInfo gameInfo) {
-        this.role = role;
+    protected Member(MemberParams params, GameInfo gameInfo) {
         this.client = params.client();
         this.timer = params.timer();
         this.listeners = params.listeners();
         this.gameInfo = gameInfo;
+        if(gameInfo != null) {
+            client.setTimeout(gameInfo.getConfig().getDelay() / 10);
+        }
     }
 
-    protected Member(MemberParams params, NodeRole role) {
-        this(params, role, null);
-        client.setTimeout(gameInfo.getConfig().getDelay() / 10);
+    protected Member(MemberParams params) {
+        this(params, null);
     }
 
     protected void setGameInfo(GameInfo gameInfo) {
@@ -62,9 +62,7 @@ public abstract class Member implements GameMessageListener {
         client.send(MessageType.ACK, ack, address);
     }
 
-    public NodeRole getRole() {
-        return role;
-    }
+    public abstract NodeRole getRole();
 
     public GameInfo getGameInfo() {
         return gameInfo;
@@ -94,20 +92,28 @@ public abstract class Member implements GameMessageListener {
     public void handle(GameMessage message, InetSocketAddress sender) {
         try {
             if(message.hasState()) {
+                logger.debug("Receive STATE");
                 onStateMsg(message, sender);
             } else if(message.hasRoleChange()) {
+                logger.debug("Receive ROLE CHANGE");
                 onRoleChangeMsg(message, sender);
             } else if(message.hasPing()) {
+                logger.debug("Receive PING");
                 onPingMsg(message, sender);
             } else if(message.hasSteer()) {
+                logger.debug("Receive STEER");
                 onSteerMsg(message, sender);
             } else if(message.hasAck()) {
+                logger.debug("Receive ACK");
                 onAckMsg(message, sender);
             } else if(message.hasJoin()) {
+                logger.debug("Receive JOIN");
                 onJoinMsg(message, sender);
             } else if(message.hasError()) {
+                logger.debug("Receive ERROR");
                 onErrorMsg(message, sender);
             } else if(message.hasDiscover()) {
+                logger.debug("Receive DISCOVER");
                 onDiscoverMsg(message, sender);
             }
         } catch (Exception e) {

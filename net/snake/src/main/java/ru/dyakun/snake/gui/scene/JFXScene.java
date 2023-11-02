@@ -1,13 +1,13 @@
-package ru.dyakun.snake.gui;
+package ru.dyakun.snake.gui.scene;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import ru.dyakun.snake.game.Game;
-import ru.dyakun.snake.controller.SceneController;
+import ru.dyakun.snake.gui.controller.SceneController;
 
 import java.io.IOException;
 
-public class JFXScene extends javafx.scene.Scene {
+public class JFXScene extends javafx.scene.Scene implements Scene {
     public JFXScene(Parent parent) {
         super(parent);
     }
@@ -17,7 +17,7 @@ public class JFXScene extends javafx.scene.Scene {
             FXMLLoader loader = new FXMLLoader(JFXScene.class.getResource(resourcePath));
             Parent parent = loader.load();
             SceneController sceneController = loader.getController();
-            sceneController.setController(controller, window);
+            sceneController.init(controller, window);
             return new JFXScene(parent);
         } catch (IOException e) {
             throw new IllegalStateException(resourcePath, e);

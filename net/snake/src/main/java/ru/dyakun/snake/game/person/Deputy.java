@@ -9,7 +9,12 @@ import java.util.Collection;
 
 public class Deputy extends Normal {
     Deputy(Normal normal) {
-        super(normal, NodeRole.DEPUTY);
+        super(normal);
+    }
+
+    @Override
+    public NodeRole getRole() {
+        return NodeRole.DEPUTY;
     }
 
     @Override
@@ -26,7 +31,7 @@ public class Deputy extends Normal {
         }
         if(roleChangeMsg.hasReceiverRole() && roleChangeMsg.getReceiverRole() == NodeRole.VIEWER) {
             notifyListeners(GameEvent.MESSAGE, "Поражение");
-            var newMember = new Viewer(this, NodeRole.VIEWER);
+            var newMember = new Viewer(this);
             notifyChangeRoleListeners(newMember);
         }
     }

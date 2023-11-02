@@ -14,12 +14,17 @@ import java.net.InetSocketAddress;
 
 public class Normal extends Viewer {
     Normal(String nickname, GameInfo gameInfo, MemberParams params, ChangeRoleListener listener) {
-        super(NodeRole.NORMAL, nickname, gameInfo, params);
+        super(nickname, gameInfo, params);
         addChangeRoleListener(listener);
     }
 
-    protected Normal(Normal normal, NodeRole role) {
-        super(normal, role);
+    protected Normal(Normal normal) {
+        super(normal);
+    }
+
+    @Override
+    public NodeRole getRole() {
+        return NodeRole.NORMAL;
     }
 
     @Override
@@ -33,14 +38,14 @@ public class Normal extends Viewer {
         switch (newRole) {
             case VIEWER -> {
                 notifyListeners(GameEvent.MESSAGE, "Поражение");
-                var newMember = new Viewer(this, NodeRole.VIEWER);
+                var newMember = new Viewer(this);
                 notifyChangeRoleListeners(newMember);
             }
             case DEPUTY -> {
                 var newMember = new Deputy(this);
                 notifyChangeRoleListeners(newMember);
             }
-            default -> logger.error("Illegal change role from {} to {}", role, newRole);
+            default -> logger.error("Illegal change role from {} to {}", getRole(), newRole);
         }
     }
 

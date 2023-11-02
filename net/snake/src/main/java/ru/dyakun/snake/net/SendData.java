@@ -42,4 +42,9 @@ public class SendData {
     public void setSendTime(LocalDateTime sendTime) {
         this.sendTime = sendTime;
     }
+
+    @Override
+    public String toString() {
+        return String.format("SendData{ %s to %s:%d }", type, receiver.getHostName(), receiver.getPort());
+    }
 }

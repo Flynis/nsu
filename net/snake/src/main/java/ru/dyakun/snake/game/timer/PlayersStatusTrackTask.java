@@ -1,5 +1,7 @@
 package ru.dyakun.snake.game.timer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.game.person.ChangeRoleListener;
 import ru.dyakun.snake.game.person.Member;
 import ru.dyakun.snake.game.person.Viewer;
@@ -8,6 +10,7 @@ import ru.dyakun.snake.game.tracker.AbstractStatusTracker;
 import java.util.TimerTask;
 
 public class PlayersStatusTrackTask extends TimerTask implements ChangeRoleListener {
+    private static final Logger logger = LoggerFactory.getLogger(PlayersStatusTrackTask.class);
     private final AbstractStatusTracker tracker;
     private Member member;
 
@@ -21,8 +24,12 @@ public class PlayersStatusTrackTask extends TimerTask implements ChangeRoleListe
 
     @Override
     public void run() {
-        var inactive = tracker.deleteInactive();
-        member.onInactivePlayers(inactive);
+        try {
+            var inactive = tracker.deleteInactive();
+            member.onInactivePlayers(inactive);
+        } catch (Exception e) {
+            logger.error("Player track failed", e);
+        }
     }
 
     @Override

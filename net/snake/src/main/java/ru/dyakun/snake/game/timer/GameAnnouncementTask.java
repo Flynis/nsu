@@ -1,5 +1,8 @@
 package ru.dyakun.snake.game.timer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.dyakun.snake.Launcher;
 import ru.dyakun.snake.game.person.Master;
 import ru.dyakun.snake.game.util.MessageType;
 import ru.dyakun.snake.game.util.Messages;
@@ -9,6 +12,7 @@ import java.net.InetSocketAddress;
 import java.util.TimerTask;
 
 public class GameAnnouncementTask extends TimerTask {
+    private static final Logger logger = LoggerFactory.getLogger(GameAnnouncementTask.class);
     private final NetClient client;
     private final InetSocketAddress group;
     private final Master master;
@@ -21,7 +25,11 @@ public class GameAnnouncementTask extends TimerTask {
 
     @Override
     public void run() {
-        var message = Messages.announcementMessage(master.getGameInfo());
-        client.send(MessageType.ANNOUNCEMENT, message, group);
+        try {
+            var message = Messages.announcementMessage(master.getGameInfo());
+            client.send(MessageType.ANNOUNCEMENT, message, group);
+        } catch (Exception e) {
+            logger.error("Game announcement failed", e);
+        }
     }
 }

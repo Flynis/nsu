@@ -1,4 +1,4 @@
-package ru.dyakun.snake.controller;
+package ru.dyakun.snake.gui.controller;
 
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -11,7 +11,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import ru.dyakun.snake.game.entity.GameInfoView;
 import ru.dyakun.snake.game.event.GameEvent;
-import ru.dyakun.snake.gui.SceneName;
+import ru.dyakun.snake.gui.scene.SceneName;
 import ru.dyakun.snake.protocol.NodeRole;
 
 import java.net.URL;

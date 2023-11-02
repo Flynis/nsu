@@ -1,4 +1,4 @@
-package ru.dyakun.snake.controller;
+package ru.dyakun.snake.gui.controller;
 
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -7,20 +7,18 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.dyakun.snake.game.entity.GameInfoView;
 import ru.dyakun.snake.game.entity.PlayerView;
 import ru.dyakun.snake.game.entity.SnakeView;
 import ru.dyakun.snake.game.event.GameEvent;
 import ru.dyakun.snake.game.field.GameField;
 import ru.dyakun.snake.game.field.Tile;
-import ru.dyakun.snake.gui.SceneName;
+import ru.dyakun.snake.gui.scene.SceneName;
 import ru.dyakun.snake.protocol.Direction;
 
 import java.net.URL;
@@ -35,9 +33,6 @@ public class GameController extends AbstractController implements Initializable 
     public TableColumn<ScoreEntry, Integer> numberColumn;
     public TableColumn<ScoreEntry, String> nickColumn;
     public TableColumn<ScoreEntry, Integer> scoreColumn;
-    public Label gameNameLabel;
-    public Label fieldSizeLabel;
-    public Label foodLabel;
     public Canvas canvas;
 
     @Override
@@ -59,7 +54,6 @@ public class GameController extends AbstractController implements Initializable 
             case REPAINT -> {
                 var state = game.getGameState();
                 redrawField(state.getField(), game.getSnake());
-                updateGameInfo(game.getGameInfo());
                 updateScoreTable(state.getGamePlayers(), game.getPlayer());
             }
         }
@@ -77,13 +71,6 @@ public class GameController extends AbstractController implements Initializable 
         var sorted = players.stream().sorted(new PlayerComparator()).toList();
         var scores = IntStream.range(0, sorted.size()).mapToObj(i -> ScoreEntry.from(sorted.get(i), i)).toList();
         scoreTable.setItems(FXCollections.observableList(scores));
-    }
-
-    private void updateGameInfo(GameInfoView gameInfo) {
-        gameNameLabel.setText(gameInfo.getName());
-        var config = gameInfo.getConfig();
-        fieldSizeLabel.setText(String.format("%dx%d", config.getWidth(), config.getHeight()));
-        foodLabel.setText(Integer.toString(config.getFoodStatic()));
     }
 
     private void clearCanvas() {
@@ -119,10 +106,10 @@ public class GameController extends AbstractController implements Initializable 
     public void handleKey(KeyEvent keyEvent) {
         logger.debug("Pressed {}", keyEvent.getCode());
         switch (keyEvent.getCode()) {
-            case W -> game.moveSnake(Direction.UP);
-            case S -> game.moveSnake(Direction.DOWN);
-            case D -> game.moveSnake(Direction.RIGHT);
-            case A -> game.moveSnake(Direction.LEFT);
+            case W, UP -> game.moveSnake(Direction.UP);
+            case S, DOWN -> game.moveSnake(Direction.DOWN);
+            case D, RIGHT -> game.moveSnake(Direction.RIGHT);
+            case A, LEFT -> game.moveSnake(Direction.LEFT);
         }
     }
 

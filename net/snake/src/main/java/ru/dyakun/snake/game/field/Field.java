@@ -38,6 +38,10 @@ public class Field extends AbstractField {
         }
     }
 
+    public void createFood() {
+        createFood(1);
+    }
+
     private void createFood(int aliveSnakes) {
         while (foods.size() < foodStatic + aliveSnakes && freeSpace > MIN_FREE_SPACE_FOR_RANDOM) {
             int x = ThreadLocalRandom.current().nextInt(0, width);

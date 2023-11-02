@@ -1,11 +1,11 @@
-package ru.dyakun.snake.controller;
+package ru.dyakun.snake.gui.controller;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import ru.dyakun.snake.game.GameConfig;
 import ru.dyakun.snake.game.event.GameEvent;
-import ru.dyakun.snake.gui.SceneName;
+import ru.dyakun.snake.gui.scene.SceneName;
 
 import java.net.URL;
 import java.util.ResourceBundle;

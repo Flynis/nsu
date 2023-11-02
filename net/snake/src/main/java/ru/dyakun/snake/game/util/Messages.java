@@ -126,14 +126,16 @@ public class Messages {
     }
 
     public static GamePlayer gamePlayerFrom(Player player) {
-        return GamePlayer.newBuilder()
+        var builder = GamePlayer.newBuilder()
                 .setName(player.getName())
                 .setId(player.getId())
-                .setIpAddress(player.getAddress().getHostString())
-                .setPort(player.getAddress().getPort())
                 .setRole(player.getRole())
-                .setScore(player.getScore())
-                .build();
+                .setScore(player.getScore());
+        if(player.getAddress() != null) {
+            builder.setIpAddress(player.getAddress().getHostName())
+                    .setPort(player.getAddress().getPort());
+        }
+        return builder.build();
     }
 
     public static GameConfig gameConfigFrom(ru.dyakun.snake.game.GameConfig config) {

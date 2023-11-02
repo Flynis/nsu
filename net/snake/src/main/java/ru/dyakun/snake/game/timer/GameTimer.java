@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.util.*;
 
 public class GameTimer {
+    private static final int TASK_INIT_DELAY = 100;
     private final Timer timer;
     private final List<GameEventListener> listeners = new ArrayList<>();
     private GameStateUpdateTask gameStateTask;
@@ -40,9 +41,9 @@ public class GameTimer {
             throw new IllegalArgumentException("To little period");
         }
         gameStateTask = new GameStateUpdateTask(master, listeners, client);
-        timer.schedule(gameStateTask, 0, period);
+        timer.schedule(gameStateTask, TASK_INIT_DELAY, period);
         announcementTask = new GameAnnouncementTask(client, master, groupAddress);
-        timer.schedule(announcementTask, 0, announcementPeriod);
+        timer.schedule(announcementTask, TASK_INIT_DELAY, announcementPeriod);
     }
 
     public void cancelGameStateUpdate() {
@@ -57,7 +58,7 @@ public class GameTimer {
 
     public void startPing(InetSocketAddress masterAddress, int period, NetClient client) {
         pingTask = new PingTask(client, masterAddress);
-        timer.schedule(pingTask, 0, period);
+        timer.schedule(pingTask, TASK_INIT_DELAY, period);
     }
 
     public void changeMasterAddress(InetSocketAddress address) {
@@ -73,7 +74,7 @@ public class GameTimer {
 
     public void startPlayersStatusTrack(AbstractStatusTracker tracker, Member member) {
         playersStatusTrackTask = new PlayersStatusTrackTask(tracker, member);
-        timer.schedule(playersStatusTrackTask, 0, tracker.getDeleteTime());
+        timer.schedule(playersStatusTrackTask, TASK_INIT_DELAY, tracker.getDeleteTime());
     }
 
     public void cancelPlayersStatusTrack() {

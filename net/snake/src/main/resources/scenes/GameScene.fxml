@@ -8,7 +8,7 @@
 <HBox minHeight="600.0" minWidth="800.0" prefHeight="900.0" prefWidth="1600.0"
       stylesheets="@../css/global.css" styleClass="body"
       xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="ru.dyakun.snake.controller.GameController"
+      fx:controller="ru.dyakun.snake.gui.controller.GameController"
         onKeyReleased="#handleKey">
     <VBox alignment="CENTER" prefWidth="1200.0" prefHeight="900.0" minHeight="600.0" minWidth="600.0">
         <Canvas fx:id="canvas" height="800.0" width="800.0"/>
@@ -17,23 +17,6 @@
         <padding>
             <Insets top="5" right="5" bottom="5" left="5" />
         </padding>
-        <top>
-            <VBox alignment="CENTER" spacing="5.0" maxWidth="200.0" prefWidth="200.0" prefHeight="200.0" minWidth="200.0" BorderPane.alignment="TOP_CENTER">
-                <Label styleClass="header" text="Current session"/>
-                <HBox alignment="CENTER" spacing="5.0" prefHeight="35.0" prefWidth="200.0">
-                    <Label styleClass="medium-text" text="name"/>
-                    <Label fx:id="gameNameLabel" styleClass="value-text" text="Vasya"/>
-                </HBox>
-                <HBox alignment="CENTER" spacing="5.0" prefHeight="35.0" prefWidth="200.0">
-                    <Label styleClass="medium-text" text="field"/>
-                    <Label fx:id="fieldSizeLabel" styleClass="value-text" text="40x30"/>
-                </HBox>
-                <HBox alignment="CENTER" spacing="5.0" prefHeight="35.0" prefWidth="200.0">
-                    <Label styleClass="medium-text" text="food"/>
-                    <Label fx:id="foodLabel" styleClass="value-text" text="1+2x"/>
-                </HBox>
-            </VBox>
-        </top>
         <center>
             <VBox alignment="CENTER" spacing="5.0">
                 <Label styleClass="header" text="Rating" />
@@ -42,7 +25,7 @@
                         <Label styleClass="medium-text" text="No info"/>
                     </placeholder>
                     <columns>
-                        <TableColumn fx:id="numberColumn" prefWidth="30.0" text=" " editable="false" sortable="false"/>
+                        <TableColumn fx:id="numberColumn" prefWidth="100.0" text="rank" editable="false" sortable="false"/>
                         <TableColumn fx:id="nickColumn" prefWidth="150.0" text="nickname" editable="false" sortable="false"/>
                         <TableColumn fx:id="scoreColumn" prefWidth="120.0" text="score" editable="false" sortable="false"/>
                     </columns>
@@ -54,7 +37,7 @@
                 <padding>
                     <Insets top="5" right="5" bottom="5" left="5" />
                 </padding>
-                <Button minHeight="35.0" mnemonicParsing="false" prefWidth="80.0" text="Back" onAction="#backClick"/>
+                <Button minHeight="60.0" mnemonicParsing="false" prefWidth="200.0" text="BACK" onAction="#backClick"/>
             </HBox>
         </bottom>
     </BorderPane>

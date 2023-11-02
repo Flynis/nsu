@@ -7,7 +7,7 @@ module snake {
     requires protobuf.java;
 
     opens ru.dyakun.snake;
-    opens ru.dyakun.snake.gui to javafx.fxml;
-    opens ru.dyakun.snake.controller to javafx.fxml;
+    opens ru.dyakun.snake.gui.controller to javafx.fxml;
+    opens ru.dyakun.snake.gui.scene to javafx.fxml;
     opens ru.dyakun.snake.game to com.google.gson;
 }

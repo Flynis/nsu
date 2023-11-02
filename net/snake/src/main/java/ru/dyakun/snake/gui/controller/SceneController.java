@@ -1,9 +1,9 @@
-package ru.dyakun.snake.controller;
+package ru.dyakun.snake.gui.controller;
 
 import ru.dyakun.snake.game.Game;
 import ru.dyakun.snake.game.event.GameEventListener;
-import ru.dyakun.snake.gui.SceneManager;
+import ru.dyakun.snake.gui.scene.SceneManager;
 
 public interface SceneController extends GameEventListener {
-    void setController(Game controller, SceneManager manager);
+    void init(Game controller, SceneManager manager);
 }

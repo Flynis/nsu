@@ -1,6 +1,6 @@
-package ru.dyakun.snake.gui;
+package ru.dyakun.snake.gui.scene;
 
 public interface SceneManager {
     void changeScene(SceneName name);
-    void close();
+    void exit();
 }

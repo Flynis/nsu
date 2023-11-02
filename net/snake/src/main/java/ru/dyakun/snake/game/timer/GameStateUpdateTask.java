@@ -1,16 +1,20 @@
 package ru.dyakun.snake.game.timer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.game.event.GameEvent;
 import ru.dyakun.snake.game.event.GameEventListener;
 import ru.dyakun.snake.game.person.Master;
 import ru.dyakun.snake.game.util.MessageType;
 import ru.dyakun.snake.game.util.Messages;
 import ru.dyakun.snake.net.NetClient;
+import ru.dyakun.snake.protocol.NodeRole;
 
 import java.util.List;
 import java.util.TimerTask;
 
 public class GameStateUpdateTask extends TimerTask {
+    private static final Logger logger = LoggerFactory.getLogger(GameStateUpdateTask.class);
     private final List<GameEventListener> listeners;
     private final NetClient client;
     private final Master master;
@@ -29,13 +33,19 @@ public class GameStateUpdateTask extends TimerTask {
 
     @Override
     public void run() {
-        master.update();
-        var state = master.getState();
-        var players = state.getPlayers();
-        var message = Messages.stateMessage(state);
-        for(var player : players) {
-            client.send(MessageType.STATE, message, player.getAddress());
+        try {
+            master.update();
+            var state = master.getState();
+            var players = state.getPlayers();
+            var message = Messages.stateMessage(state);
+            for(var player : players) {
+                if(player.getRole() != NodeRole.MASTER) {
+                    client.send(MessageType.STATE, message, player.getAddress());
+                }
+            }
+            notifyListeners();
+        } catch (Exception e) {
+            logger.error("State update failed", e);
         }
-        notifyListeners();
     }
 }

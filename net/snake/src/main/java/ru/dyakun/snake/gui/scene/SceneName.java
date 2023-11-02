@@ -1,4 +1,4 @@
-package ru.dyakun.snake.gui;
+package ru.dyakun.snake.gui.scene;
 
 public enum SceneName {
     MENU,

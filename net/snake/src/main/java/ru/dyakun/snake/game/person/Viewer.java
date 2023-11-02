@@ -26,12 +26,8 @@ public class Viewer extends Member {
     protected InetSocketAddress masterAddress;
     private final Collection<ChangeRoleListener> changeRoleListeners;
 
-    Viewer(String nickname, GameInfo gameInfo, MemberParams params) {
-        this(NodeRole.VIEWER, nickname, gameInfo, params);
-    }
-
-    Viewer(Viewer viewer, NodeRole role) {
-        super(viewer.getParams(), role, viewer.gameInfo);
+    Viewer(Viewer viewer) {
+        super(viewer.getParams(), viewer.gameInfo);
         this.tracker = viewer.tracker;
         this.state = viewer.state;
         this.id = viewer.id;
@@ -40,13 +36,13 @@ public class Viewer extends Member {
         this.changeRoleListeners = viewer.changeRoleListeners;
     }
 
-    protected Viewer(NodeRole role, String nickname, GameInfo gameInfo, MemberParams params) {
-        super(params, role, gameInfo);
+    protected Viewer(String nickname, GameInfo gameInfo, MemberParams params) {
+        super(params, gameInfo);
         this.changeRoleListeners = new ArrayList<>();
         var master = gameInfo.findMaster();
         masterAddress = master.getAddress();
         masterId = master.getId();
-        var message = Messages.joinMessage(nickname, gameInfo.getName(), role);
+        var message = Messages.joinMessage(nickname, gameInfo.getName(), getRole());
         client.send(MessageType.JOIN, message, masterAddress);
     }
 
@@ -70,6 +66,11 @@ public class Viewer extends Member {
         for(var listener: changeRoleListeners) {
             listener.onChange(newRole);
         }
+    }
+
+    @Override
+    public NodeRole getRole() {
+        return NodeRole.VIEWER;
     }
 
     @Override

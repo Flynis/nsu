@@ -31,9 +31,10 @@ public final class Master extends Member {
     private boolean hasDeputy = false;
     private final PlayersStatusTracker tracker;
     private final IdGenerator generator;
+    private final Object lock = new Object();
 
     public Master(String nickname, GameConfig config, MemberParams params) {
-        super(params, NodeRole.MASTER);
+        super(params);
         generator = new SimpleIdGenerator();
         id = generator.next();
         var player = new Player.Builder(nickname, id).role(NodeRole.MASTER).score(0).build();
@@ -43,6 +44,7 @@ public final class Master extends Member {
         field = new Field(config, players, snakes, foods);
         try {
             field.createSnake(id);
+            field.createFood();
         } catch (SnakeCreateException e) {
             logger.info("Place snake into empty field failed");
             throw new AssertionError();
@@ -55,7 +57,7 @@ public final class Master extends Member {
     }
 
     Master(Deputy deputy) {
-        super(deputy.getParams(), NodeRole.MASTER, deputy.gameInfo);
+        super(deputy.getParams(), deputy.gameInfo);
         id = deputy.id;
         var oldState = deputy.state;
         generator = new SimpleIdGenerator(Players.maxId(oldState.getPlayers(), id));
@@ -95,10 +97,12 @@ public final class Master extends Member {
         }
         try {
             var player = new Player.Builder(nickname, newPlayerId).role(role).address(address).score(0).build();
-            if(role == NodeRole.NORMAL) {
-                field.createSnake(newPlayerId);
+            synchronized (lock) {
+                if(role == NodeRole.NORMAL) {
+                    field.createSnake(newPlayerId);
+                }
+                players.put(newPlayerId, player);
             }
-            players.put(newPlayerId, player);
             return player;
         } catch (SnakeCreateException e) {
             throw new PlayerJoinException("No space for snake", e);
@@ -112,7 +116,9 @@ public final class Master extends Member {
             return;
         }
         var snake = snakes.get(id);
-        snake.setDirection(direction);
+        synchronized (lock) {
+            snake.setDirection(direction);
+        }
     }
 
     public GameState getState() {
@@ -120,12 +126,14 @@ public final class Master extends Member {
     }
 
     public void update() {
-        state.incStateOrder();
-        field.updateField();
         var viewers = new ArrayList<Player>();
-        for(var snake : snakes.values()) {
-            if (snake.state() == Snake.State.DESTROYED) {
-                viewers.add(players.get(snake.playerId()));
+        synchronized (lock) {
+            state.incStateOrder();
+            field.updateField();
+            for(var snake : snakes.values()) {
+                if (snake.state() == Snake.State.DESTROYED) {
+                    viewers.add(players.get(snake.playerId()));
+                }
             }
         }
         for(var viewer: viewers) {
@@ -133,6 +141,11 @@ public final class Master extends Member {
             var roleChange = Messages.roleChangeMessage(null, NodeRole.VIEWER, id, viewer.getId());
             client.send(MessageType.ROLE_CHANGE, roleChange, viewer.getAddress());
         }
+    }
+
+    @Override
+    public NodeRole getRole() {
+        return NodeRole.MASTER;
     }
 
     @Override

@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane minHeight="600.0" minWidth="800.0" prefHeight="900.0" prefWidth="1600.0" styleClass="body" stylesheets="@../css/global.css" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.dyakun.snake.controller.ConnectController">
+<BorderPane minHeight="600.0" minWidth="800.0" prefHeight="900.0" prefWidth="1600.0" styleClass="body" stylesheets="@../css/global.css" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.dyakun.snake.gui.controller.ConnectController">
    <center>
       <VBox alignment="CENTER" spacing="20.0">
           <Label styleClass="header" text="Active games" />

@@ -162,13 +162,14 @@ public class Snake implements SnakeView {
     }
 
     public static class SnakeIterator implements Iterator<Point> {
-        private Point current;
+        private final Point current;
         private final Iterator<Point> pointIterator;
 
         private SnakeIterator(Deque<Point> points) {
-            pointIterator = points.descendingIterator();
+            pointIterator = points.iterator();
+            current = new Point(0 , 0);
             if(pointIterator.hasNext()) {
-                current = pointIterator.next();
+                current.set(pointIterator.next());
             }
         }
 
