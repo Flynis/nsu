@@ -3,6 +3,8 @@ package ru.dyakun.snake.game.event;
 public enum GameEvent {
     REPAINT,
     JOINED,
-    UPDATE_ACTIVE_GAMES,
+    NEW_ACTIVE_GAME,
+    UPDATE_GAME_INFO,
+    DELETE_INACTIVE_GAMES,
     MESSAGE,
 }

@@ -37,11 +37,13 @@ public class Normal extends Viewer {
         var newRole = roleChangeMsg.getReceiverRole();
         switch (newRole) {
             case VIEWER -> {
+                logger.info("Become viewer");
                 notifyListeners(GameEvent.MESSAGE, "Поражение");
                 var newMember = new Viewer(this);
                 notifyChangeRoleListeners(newMember);
             }
             case DEPUTY -> {
+                logger.info("Become deputy");
                 var newMember = new Deputy(this);
                 notifyChangeRoleListeners(newMember);
             }

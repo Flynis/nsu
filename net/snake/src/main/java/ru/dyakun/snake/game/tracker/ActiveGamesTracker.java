@@ -3,7 +3,6 @@ package ru.dyakun.snake.game.tracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.game.entity.GameInfo;
-import ru.dyakun.snake.game.entity.GameInfoView;
 import ru.dyakun.snake.game.event.GameEvent;
 import ru.dyakun.snake.game.event.GameEventListener;
 import ru.dyakun.snake.net.GameMessageListener;
@@ -14,13 +13,13 @@ import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ActiveGamesTracker implements GameMessageListener {
     private static final Logger logger = LoggerFactory.getLogger(ActiveGamesTracker.class);
-    private record Entry(GameInfo game, LocalDateTime time) {}
     private final Map<String, Entry> games = new ConcurrentHashMap<>();
     private final List<GameEventListener> listeners = new ArrayList<>();
     private final int announcementTimeToLive;
@@ -36,9 +35,9 @@ public class ActiveGamesTracker implements GameMessageListener {
         return announcementTimeToLive;
     }
 
-    private void notifyListeners() {
+    private void notifyListeners(GameEvent event, Object payload) {
         for(var listener : listeners) {
-            listener.onEvent(GameEvent.UPDATE_ACTIVE_GAMES, null);
+            listener.onEvent(event, payload);
         }
     }
 
@@ -46,18 +45,21 @@ public class ActiveGamesTracker implements GameMessageListener {
         listeners.add(listener);
     }
 
-    public List<GameInfoView> getActiveGames() {
-        return games.values().stream().map(e -> (GameInfoView)e.game).toList();
-    }
-
     public GameInfo getByName(String name) {
-        return games.get(name).game;
+        return games.get(name).getGame();
     }
 
     public void deleteInactiveGames() {
-        games.entrySet().removeIf(
-                item -> ChronoUnit.MILLIS.between(item.getValue().time, LocalDateTime.now()) > announcementTimeToLive);
-        notifyListeners();
+        Collection<String> inactive = new ArrayList<>();
+        for(var entry: games.values()) {
+            if(ChronoUnit.MILLIS.between(entry.getTime(), LocalDateTime.now()) > announcementTimeToLive) {
+                inactive.add(entry.game.getName());
+            }
+        }
+        for(var name: inactive) {
+            games.remove(name);
+            notifyListeners(GameEvent.DELETE_INACTIVE_GAMES, name);
+        }
     }
 
     @Override
@@ -67,13 +69,37 @@ public class ActiveGamesTracker implements GameMessageListener {
             GameMessage.AnnouncementMsg announcementMsg = message.getAnnouncement();
             GameAnnouncement announcement = announcementMsg.getGames(0);
             GameInfo gameInfo = GameInfo.fromAnnouncement(announcement);
-            if(games.containsKey(gameInfo.getName())) {
-                games.get(gameInfo.getName()).game.updateBy(gameInfo);
-            } else {
-                games.put(gameInfo.getName(), new Entry(gameInfo, LocalDateTime.now()));
-            }
             gameInfo.findMaster().setAddress(sender);
-            notifyListeners();
+            if(games.containsKey(gameInfo.getName())) {
+                games.get(gameInfo.getName()).update(gameInfo);
+                notifyListeners(GameEvent.UPDATE_GAME_INFO, gameInfo);
+            } else {
+                games.put(gameInfo.getName(), new Entry(gameInfo));
+                notifyListeners(GameEvent.NEW_ACTIVE_GAME, gameInfo);
+            }
+        }
+    }
+
+    private static class Entry {
+        private final GameInfo game;
+        private LocalDateTime time;
+
+        private Entry(GameInfo game) {
+            this.game = game;
+            time = LocalDateTime.now();
+        }
+
+        public GameInfo getGame() {
+            return game;
+        }
+
+        public LocalDateTime getTime() {
+            return time;
+        }
+
+        public void update(GameInfo gameInfo) {
+            gameInfo.updateBy(gameInfo);
+            time = LocalDateTime.now();
         }
     }
 }

@@ -24,13 +24,13 @@
 }
 
 .games-table .table-row-cell:odd{
-    -fx-background-color: #101010;
+    -fx-background-color: -background;
     -fx-background-insets: 0, 0 0 1 0;
     -fx-padding: 3px;
 }
 
 .games-table .table-row-cell:even{
-    -fx-background-color: #070707;
+    -fx-background-color: -background;
     -fx-background-insets: 0, 0 0 1 0;
     -fx-padding: 3px;
 }

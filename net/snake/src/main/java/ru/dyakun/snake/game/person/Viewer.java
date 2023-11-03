@@ -52,7 +52,7 @@ public class Viewer extends Member {
 
     protected boolean notMaster(InetSocketAddress sender) {
         if(!sender.equals(masterAddress)) {
-            logger.error("Unknown sender {}", sender.getHostName());
+            logger.error("Unknown sender {}", sender.getAddress().getHostAddress());
             return true;
         }
         return false;
@@ -84,8 +84,8 @@ public class Viewer extends Member {
             notifyListeners(GameEvent.JOINED, null);
         } else {
             state.updateBy(stateMsg.getState());
-            notifyListeners(GameEvent.REPAINT, null);
         }
+        notifyListeners(GameEvent.REPAINT, null);
     }
 
     @Override
@@ -99,12 +99,12 @@ public class Viewer extends Member {
 
     @Override
     protected void onPingMsg(GameMessage message, InetSocketAddress sender) {
-        logger.info("Unexpected ping from {}", sender.getHostName());
+        logger.info("Unexpected ping from {}", sender.getAddress().getHostAddress());
     }
 
     @Override
     protected void onSteerMsg(GameMessage message, InetSocketAddress sender) {
-        logger.info("Unexpected steer from {}", sender.getHostName());
+        logger.info("Unexpected steer from {}", sender.getAddress().getHostAddress());
     }
 
     @Override
@@ -112,7 +112,7 @@ public class Viewer extends Member {
         if(notMaster(sender)) return;
         if(!isConnected()) {
             id = message.getReceiverId();
-            tracker = new MasterStatusTracker(gameInfo.getConfig().getDelay() * 4 / 5, masterId);
+            tracker = new MasterStatusTracker((gameInfo.getConfig().getDelay() * 4) / 5, masterId);
             timer.startPlayersStatusTrack(tracker, this);
             int period = gameInfo.getConfig().getDelay() / 2;
             timer.startPing(masterAddress, period, client);
@@ -123,7 +123,7 @@ public class Viewer extends Member {
 
     @Override
     protected void onJoinMsg(GameMessage message, InetSocketAddress sender) {
-        logger.info("Unexpected join from {}", sender.getHostName());
+        logger.info("Unexpected join from {}", sender.getAddress().getHostAddress());
     }
 
     @Override

@@ -33,13 +33,23 @@ public class UdpNetClient implements NetClient {
         }
     }
 
+    @Override
     public void changeReceiver(InetSocketAddress current, InetSocketAddress old) {
         messageSender.changeReceiver(current, old);
     }
 
+    @Override
+    public void removeReceiver(InetSocketAddress address) {
+        messageSender.removeReceiver(address);
+    }
+
     private void notifyListeners(GameMessage message, InetSocketAddress sender) {
-        for(var listener : listeners) {
-            listener.handle(message, sender);
+        try {
+            for(var listener : listeners) {
+                listener.handle(message, sender);
+            }
+        } catch (Exception e) {
+            logger.error("Handle message failed", e);
         }
     }
 

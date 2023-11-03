@@ -32,6 +32,7 @@ public class MessageSender implements Runnable, Stoppable {
     }
 
     void changeReceiver(InetSocketAddress current, InetSocketAddress old) {
+        logger.debug("Change receive from {} to {}", old.getAddress().getHostAddress(), current.getAddress().getHostAddress());
         var resendList = new ArrayList<SendData>();
         for(var data : ackWaiters) {
             if(data.receiver().equals(old)) {
@@ -41,6 +42,11 @@ public class MessageSender implements Runnable, Stoppable {
         }
         ackWaiters.removeAll(resendList);
         queue.addAll(resendList);
+    }
+
+    void removeReceiver(InetSocketAddress address) {
+        queue.removeIf(data -> address.equals(data.receiver()));
+        ackWaiters.removeIf(data -> address.equals(data.receiver()));
     }
 
     void setTimeout(int timeout) {

@@ -1,11 +1,16 @@
 package ru.dyakun.snake.game.tracker;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.dyakun.snake.Launcher;
+
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 
 public class MasterStatusTracker extends AbstractStatusTracker {
+    private static final Logger logger = LoggerFactory.getLogger(MasterStatusTracker.class);
     private int masterId;
     private LocalDateTime time;
 
@@ -30,6 +35,7 @@ public class MasterStatusTracker extends AbstractStatusTracker {
     public Collection<Integer> deleteInactive() {
         Collection<Integer> deleted = new ArrayList<>();
         if(ChronoUnit.MILLIS.between(time, LocalDateTime.now()) > deleteTime) {
+            logger.info("Master inactive");
             deleted.add(masterId);
         }
         return deleted;

@@ -1,6 +1,5 @@
 package ru.dyakun.snake.game;
 
-import ru.dyakun.snake.game.entity.GameInfoView;
 import ru.dyakun.snake.game.entity.GameStateView;
 import ru.dyakun.snake.game.entity.PlayerView;
 import ru.dyakun.snake.game.entity.SnakeView;
@@ -46,16 +45,8 @@ public class Game implements GameMessageListener, ChangeRoleListener {
         params = new MemberParams(client, timer, listeners);
     }
 
-    public List<GameInfoView> getActiveGames() {
-        return activeGamesTracker.getActiveGames();
-    }
-
     public GameStateView getGameState() {
         return member.getGameState();
-    }
-
-    public GameInfoView getGameInfo() {
-        return member.getGameInfo();
     }
 
     public PlayerView getPlayer() {
@@ -94,6 +85,7 @@ public class Game implements GameMessageListener, ChangeRoleListener {
                 throw new IllegalStateException("Game info not found for " + game);
             }
             member = Member.createForConnect(role, nickname, gameInfo, params, this);
+            return;
         }
         throw new IllegalArgumentException("Illegal role");
     }
@@ -121,7 +113,9 @@ public class Game implements GameMessageListener, ChangeRoleListener {
 
     @Override
     public void handle(GameMessage message, InetSocketAddress sender) {
-        member.handle(message, sender);
+        if (member != null) {
+            member.handle(message, sender);
+        }
     }
 
     @Override

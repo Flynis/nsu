@@ -45,6 +45,6 @@ public class SendData {
 
     @Override
     public String toString() {
-        return String.format("SendData{ %s to %s:%d }", type, receiver.getHostName(), receiver.getPort());
+        return String.format("SendData{%s[%d] to %s:%d}", type, message.getMsgSeq(), receiver.getAddress().getHostAddress(), receiver.getPort());
     }
 }

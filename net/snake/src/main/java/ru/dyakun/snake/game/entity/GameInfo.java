@@ -77,7 +77,7 @@ public class GameInfo implements GameInfoView {
 
     @Override
     public String getIp() {
-        return findMaster().getAddress().getHostName();
+        return findMaster().getAddress().getAddress().getHostAddress();
     }
 
     public boolean isMayJoin() {

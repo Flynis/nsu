@@ -30,7 +30,7 @@ public class Players {
 
     public static Player findPlayerByAddress(Collection<Player> players, InetSocketAddress address) {
         for(var player : players) {
-            if(player.getAddress().equals(address)) {
+            if(address.equals(player.getAddress())) {
                 return player;
             }
         }

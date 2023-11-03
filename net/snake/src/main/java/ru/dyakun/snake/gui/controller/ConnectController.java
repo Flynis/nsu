@@ -16,6 +16,7 @@ import ru.dyakun.snake.protocol.NodeRole;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -28,6 +29,7 @@ public class ConnectController extends AbstractController implements Initializab
     public TextField nicknameField;
     public Label errorLabel;
     public ChoiceBox<String> choiceRole;
+    public ObservableList<GameDesc> games;
 
     private void showErrorMessage(String message) {
         errorLabel.setText(message);
@@ -77,9 +79,8 @@ public class ConnectController extends AbstractController implements Initializab
         ipColumn.setCellValueFactory(cellData -> cellData.getValue().ipProperty());
         playersColumn.setCellValueFactory(cellData -> cellData.getValue().playersProperty().asObject());
         fieldColumn.setCellValueFactory(cellData -> cellData.getValue().fieldProperty());
-        List<GameDesc> games = new ArrayList<>();
-        ObservableList<GameDesc> ol = FXCollections.observableArrayList(games);
-        gamesInfoTable.setItems(ol);
+        games = FXCollections.observableArrayList(new ArrayList<>());
+        gamesInfoTable.setItems(games);
         errorLabel.setVisible(false);
         List<String> roles = List.of("Player", "Viewer");
         choiceRole.setItems(FXCollections.observableList(roles));
@@ -89,11 +90,19 @@ public class ConnectController extends AbstractController implements Initializab
     @Override
     public void onEvent(GameEvent event, Object payload) {
         switch (event) {
-            case UPDATE_ACTIVE_GAMES -> {
-                var activeGames = game.getActiveGames();
-                var games = activeGames.stream().map(GameDesc::fromGameInfo).toList();
-                ObservableList<GameDesc> ol = FXCollections.observableArrayList(games);
-                gamesInfoTable.setItems(ol);
+            case NEW_ACTIVE_GAME -> games.add(GameDesc.fromGameInfo((GameInfoView) payload));
+            case UPDATE_GAME_INFO -> {
+                var gameInfo = (GameInfoView) payload;
+                for(var gameDesc: games) {
+                    if(gameDesc.getName().equals(gameInfo.getName())) {
+                        gameDesc.update(gameInfo);
+                        break;
+                    }
+                }
+            }
+            case DELETE_INACTIVE_GAMES -> {
+                var inactive = (String) payload;
+                games.removeIf(gameDesc -> gameDesc.getName().equals(inactive));
             }
             case JOINED -> manager.changeScene(SceneName.GAME);
             case MESSAGE -> showErrorMessage((String) payload);
@@ -161,13 +170,22 @@ public class ConnectController extends AbstractController implements Initializab
             this.field = new SimpleStringProperty(field);
         }
 
+        public void update(GameInfoView gameInfo) {
+            setPlayers(gameInfo.getPlayersCount());
+            setField(getFieldString(gameInfo));
+        }
+
         public static GameDesc fromGameInfo(GameInfoView gameInfo) {
             return new GameDesc(
                 gameInfo.getName(),
                 gameInfo.getIp(),
                 gameInfo.getPlayersCount(),
-                String.format("%dx%d", gameInfo.getConfig().getWidth(), gameInfo.getConfig().getHeight())
+                getFieldString(gameInfo)
             );
+        }
+
+        public static String getFieldString(GameInfoView gameInfo) {
+            return String.format("%dx%d", gameInfo.getConfig().getWidth(), gameInfo.getConfig().getHeight());
         }
     }
 }

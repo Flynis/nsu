@@ -92,28 +92,28 @@ public abstract class Member implements GameMessageListener {
     public void handle(GameMessage message, InetSocketAddress sender) {
         try {
             if(message.hasState()) {
-                logger.debug("Receive STATE");
+                logger.debug("Receive STATE[{}]", message.getMsgSeq());
                 onStateMsg(message, sender);
             } else if(message.hasRoleChange()) {
-                logger.debug("Receive ROLE CHANGE");
+                logger.debug("Receive ROLE CHANGE[{}]", message.getMsgSeq());
                 onRoleChangeMsg(message, sender);
             } else if(message.hasPing()) {
-                logger.debug("Receive PING");
+                logger.debug("Receive PING[{}]", message.getMsgSeq());
                 onPingMsg(message, sender);
             } else if(message.hasSteer()) {
-                logger.debug("Receive STEER");
+                logger.debug("Receive STEER[{}]", message.getMsgSeq());
                 onSteerMsg(message, sender);
             } else if(message.hasAck()) {
-                logger.debug("Receive ACK");
+                logger.debug("Receive ACK[{}]", message.getMsgSeq());
                 onAckMsg(message, sender);
             } else if(message.hasJoin()) {
-                logger.debug("Receive JOIN");
+                logger.debug("Receive JOIN[{}]", message.getMsgSeq());
                 onJoinMsg(message, sender);
             } else if(message.hasError()) {
-                logger.debug("Receive ERROR");
+                logger.debug("Receive ERROR[{}]", message.getMsgSeq());
                 onErrorMsg(message, sender);
             } else if(message.hasDiscover()) {
-                logger.debug("Receive DISCOVER");
+                logger.debug("Receive DISCOVER[{}]", message.getMsgSeq());
                 onDiscoverMsg(message, sender);
             }
         } catch (Exception e) {

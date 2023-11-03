@@ -132,7 +132,7 @@ public class Messages {
                 .setRole(player.getRole())
                 .setScore(player.getScore());
         if(player.getAddress() != null) {
-            builder.setIpAddress(player.getAddress().getHostName())
+            builder.setIpAddress(player.getAddress().getAddress().getHostAddress())
                     .setPort(player.getAddress().getPort());
         }
         return builder.build();

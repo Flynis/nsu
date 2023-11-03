@@ -51,7 +51,7 @@ public final class Master extends Member {
         }
         state = new GameState(field, new GameState.EntitiesCollections(players.values(), foods, snakes.values()));
         timer.startGameStateUpdate(this, config.getDelay(), client);
-        tracker = new PlayersStatusTracker(config.getDelay() * 4 / 5);
+        tracker = new PlayersStatusTracker((config.getDelay() * 4) / 5);
         timer.startPlayersStatusTrack(tracker, this);
         notifyListeners(GameEvent.JOINED, null);
     }
@@ -67,7 +67,7 @@ public final class Master extends Member {
         field = new Field(config, players, snakes, foods);
         state = new GameState(field, new GameState.EntitiesCollections(players.values(), foods, snakes.values()));
         timer.startGameStateUpdate(this, config.getDelay(), client);
-        tracker = new PlayersStatusTracker(config.getDelay() * 4 / 5);
+        tracker = new PlayersStatusTracker((config.getDelay() * 4) / 5);
         for(var player: players.values()) {
             if(player.getId() != id) {
                 tracker.updateStatus(player.getId());
@@ -153,7 +153,7 @@ public final class Master extends Member {
 
     @Override
     protected void onStateMsg(GameMessage message, InetSocketAddress sender) {
-        logger.info("Unexpected state msg from {}", sender.getHostName());
+        logger.info("Unexpected state msg from {}", sender.getAddress().getHostAddress());
     }
 
     @Override
@@ -217,6 +217,8 @@ public final class Master extends Member {
             var player = addPlayer(join.getPlayerName(), join.getRequestedRole(), sender);
             sendAck(id, player.getId(), sender, message);
             tracker.updateStatus(player.getId());
+            var stateMessage = Messages.stateMessage(state);
+            client.send(MessageType.STATE, stateMessage, sender);
             if(player.getRole() == NodeRole.NORMAL && !hasDeputy) {
                 setDeputy(player.getId());
             }
@@ -228,7 +230,7 @@ public final class Master extends Member {
 
     @Override
     protected void onErrorMsg(GameMessage message, InetSocketAddress sender) {
-        logger.info("Unexpected error msg from {}", sender.getHostName());
+        logger.info("Unexpected error msg from {}", sender.getAddress().getHostAddress());
     }
 
     @Override
@@ -263,7 +265,8 @@ public final class Master extends Member {
             changeDeputy();
         }
         for(var playerId : inactive) {
-            players.remove(playerId);
+            var player = players.remove(playerId);
+            client.removeReceiver(player.getAddress());
         }
     }
 

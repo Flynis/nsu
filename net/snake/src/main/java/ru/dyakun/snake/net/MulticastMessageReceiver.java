@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -18,7 +17,6 @@ public class MulticastMessageReceiver implements MessageReceiver {
     private final List<GameMessageListener> listeners = new ArrayList<>();
     private final InetSocketAddress group;
     private MulticastSocket socket = null;
-    private NetworkInterface netInterface = null;
     private boolean isRunning = false;
 
     public MulticastMessageReceiver(InetSocketAddress group) {
@@ -26,8 +24,12 @@ public class MulticastMessageReceiver implements MessageReceiver {
     }
 
     private void notifyListeners(GameMessage message, InetSocketAddress sender) {
-        for(var listener : listeners) {
-            listener.handle(message, sender);
+        try {
+            for(var listener : listeners) {
+                listener.handle(message, sender);
+            }
+        } catch (Exception e) {
+            logger.error("Handle message failed", e);
         }
     }
 
@@ -41,9 +43,8 @@ public class MulticastMessageReceiver implements MessageReceiver {
         byte[] buf = new byte[4096];
         try {
             socket = new MulticastSocket(group.getPort());
-            netInterface = getNetInterface();
-            socket.joinGroup(group, netInterface);
-            logger.debug("Joined in group [{}]", group.getHostName());
+            socket.joinGroup(group.getAddress());
+            logger.debug("Joined in group [{}]", group.getAddress().getHostAddress());
             isRunning = true;
             while(isRunning) {
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
@@ -71,7 +72,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
         logger.info("Try to stop Multicast receiver");
         isRunning = false;
         try {
-            socket.leaveGroup(group, netInterface);
+            socket.leaveGroup(group.getAddress());
             logger.debug("Leave from group");
             socket.close();
             logger.debug("Close multicast socket");
@@ -81,23 +82,5 @@ public class MulticastMessageReceiver implements MessageReceiver {
                 stop();
             }
         }
-    }
-
-    private static NetworkInterface getNetInterface() throws SocketException {
-        var interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-        logger.debug("Network interfaces count: {}", interfaces.size());
-        NetworkInterface networkInterface = null;
-        for (NetworkInterface netInterface : interfaces) {
-            if (netInterface.isUp() && !netInterface.isLoopback()) {
-                logger.debug("Interface name: {}", netInterface.getDisplayName());
-                logger.debug("\tInterface addresses: ");
-                for (InterfaceAddress addr : netInterface.getInterfaceAddresses()) {
-                    logger.debug("\t\t{}", addr.getAddress().getHostAddress());
-                }
-                networkInterface = netInterface;
-            }
-        }
-        if(networkInterface != null) return networkInterface;
-        throw new SocketException("No such network interface");
     }
 }
