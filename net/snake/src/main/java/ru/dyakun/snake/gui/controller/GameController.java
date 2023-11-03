@@ -69,7 +69,7 @@ public class GameController extends AbstractController implements Initializable 
     private void updateScoreTable(Collection<PlayerView> players, PlayerView current) {
         // TODO cur player
         var sorted = players.stream().sorted(new PlayerComparator()).toList();
-        var scores = IntStream.range(0, sorted.size()).mapToObj(i -> ScoreEntry.from(sorted.get(i), i)).toList();
+        var scores = IntStream.range(0, sorted.size()).mapToObj(i -> ScoreEntry.from(sorted.get(i), i + 1)).toList();
         scoreTable.setItems(FXCollections.observableList(scores));
     }
 
@@ -96,7 +96,7 @@ public class GameController extends AbstractController implements Initializable 
                             g.setFill(Color.RED);
                         }
                         g.fillRect(j * width, i * height, width, height);
-                        logger.debug("Draw ({}, {})", j, i);
+                        //logger.debug("Draw ({}, {})", j, i);
                     }
                 }
             }

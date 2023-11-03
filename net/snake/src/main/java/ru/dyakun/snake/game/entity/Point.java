@@ -39,8 +39,12 @@ public class Point {
     }
 
     public void add(Point p) {
-        this.x += p.x;
-        this.y += p.y;
+        add(p.x, p.y);
+    }
+
+    public void add(int x, int y) {
+        this.x += x;
+        this.y += y;
     }
 
     @Override
@@ -57,7 +61,12 @@ public class Point {
         }
     }
 
-    public void moveReverse(Point p) {
+    public void mod(int width, int height) {
+        x = Math.floorMod(x, width);
+        y = Math.floorMod(y, height);
+    }
+
+    public void moveReverseByVector(Point p) {
         if(p.x != 0 && p.y == 0) {
             if(p.x > 0) {
                 x--;
@@ -74,38 +83,21 @@ public class Point {
         }
     }
 
-    public static Direction determineDirection(Point head, Point tail) {
-        if(head.x == tail.x) {
-            if(head.y - tail.y > 0) {
-                return Direction.DOWN;
+    public void moveByVector(Point p) {
+        if(p.x != 0 && p.y == 0) {
+            if(p.x > 0) {
+                x++;
             } else {
-                return Direction.UP;
+                x--;
             }
-        } else if(head.y == tail.y) {
-            if(head.x - tail.x > 0) {
-                return Direction.RIGHT;
+        }
+        if(p.y != 0 && p.x == 0) {
+            if(p.y > 0) {
+                y++;
             } else {
-                return Direction.LEFT;
+                y--;
             }
-        } else {
-            throw new IllegalStateException("At least one coordinate must coincide between tail and head");
         }
-    }
-
-    public static Point getRelativeDisplacement(Point head, Point tail) {
-        if(tail.equals(head.x, head.y - 1)) {
-            return new Point(0, -1);
-        }
-        if(tail.equals(head.x, head.y + 1)) {
-            return new Point(0, 1);
-        }
-        if(tail.equals(head.x - 1, head.y)) {
-            return new Point(-1, 0);
-        }
-        if(tail.equals(head.x + 1, head.y)) {
-            return new Point(1, 0);
-        }
-        throw new IllegalArgumentException("Head and tail not on the same line");
     }
 
     public void incRelativeDisplacement() {

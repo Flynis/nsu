@@ -8,6 +8,7 @@ import ru.dyakun.snake.protocol.GameMessage;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -74,7 +75,8 @@ public class UdpNetClient implements NetClient {
                 socket.receive(datagramPacket);
                 logger.debug("Receive from [{}]", datagramPacket.getAddress().getHostAddress());
                 try {
-                    var message = GameMessage.parseFrom(buf);
+                    ByteBuffer buffer = ByteBuffer.wrap(buf, 0, datagramPacket.getLength());
+                    var message = GameMessage.parseFrom(buffer);
                     var sender = (InetSocketAddress) datagramPacket.getSocketAddress();
                     if(message.hasAck()) {
                         messageSender.handleAck(message, sender);

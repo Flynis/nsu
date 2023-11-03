@@ -1,5 +1,6 @@
 package ru.dyakun.snake.game.entity;
 
+import ru.dyakun.snake.game.util.Points;
 import ru.dyakun.snake.protocol.Direction;
 import ru.dyakun.snake.protocol.GameState;
 
@@ -58,11 +59,11 @@ public class Snake implements SnakeView {
         this.points = new ArrayDeque<>();
         this.tail = tail;
         points.addLast(head);
-        var relativeDisplacement = Point.getRelativeDisplacement(head, tail);
+        var relativeDisplacement = Points.getRelativeDisplacement(head, tail);
         points.addLast(relativeDisplacement);
         this.playerId = playerId;
         this.state = State.ALIVE;
-        this.direction = Point.determineDirection(head, tail);
+        this.direction = Points.determineDirection(head, tail);
     }
 
     public Snake(Deque<Point> points, Direction direction, State state, int playerId) {
@@ -70,14 +71,7 @@ public class Snake implements SnakeView {
         this.direction = direction;
         this.state = state;
         this.playerId = playerId;
-        if(points.isEmpty()) {
-            throw new IllegalStateException("Points is empty");
-        }
-        Point p = points.peekFirst();
-        for (Point point : this) {
-            p = point;
-        }
-        this.tail = new Point(p);
+        this.tail = findTail();
     }
 
     public Collection<Point> points() {
@@ -89,7 +83,7 @@ public class Snake implements SnakeView {
     }
 
     public void setDirection(Direction direction) {
-        if(this.direction != direction || direction == Direction.getReverse(this.direction)) {
+        if(this.direction != direction && direction != Direction.getReverse(this.direction)) {
             this.direction = direction;
         }
     }
@@ -120,6 +114,17 @@ public class Snake implements SnakeView {
         return tail;
     }
 
+    private Point findTail() {
+        if(points.isEmpty()) {
+            throw new IllegalStateException("Points is empty");
+        }
+        Point p = new Point(points.peekFirst());
+        for (var point : points) {
+            p.add(point);
+        }
+        return p;
+    }
+
     public Point moveHead() {
         Point head = points.pollFirst();
         Point prev = points.peekFirst();
@@ -133,7 +138,7 @@ public class Snake implements SnakeView {
             head.move(direction);
             points.addFirst(head);
         } else {
-            points.addFirst(head);
+            points.addFirst(Points.getRelativeDisplacement(newHead, head));
             points.addFirst(newHead);
         }
         return newHead;
@@ -144,11 +149,20 @@ public class Snake implements SnakeView {
         if(tail == null) {
             throw new IllegalStateException("Snake is empty");
         }
-        this.tail.moveReverse(tail);
+        this.tail.moveReverseByVector(tail);
         tail.decRelativeDisplacement();
         if(tail.isZero()) {
             points.pollLast();
         }
+    }
+
+    public void modPoints(int width, int height) {
+        Point head = points.peekFirst();
+        if(head == null) {
+            throw new IllegalStateException("Snake is empty");
+        }
+        head.mod(width, height);
+        tail.mod(width, height);
     }
 
     public static Snake from(GameState.Snake snake) {
@@ -163,28 +177,38 @@ public class Snake implements SnakeView {
 
     public static class SnakeIterator implements Iterator<Point> {
         private final Point current;
+        private final Point offset;
         private final Iterator<Point> pointIterator;
+        private boolean hasNext;
 
         private SnakeIterator(Deque<Point> points) {
-            pointIterator = points.iterator();
-            current = new Point(0 , 0);
-            if(pointIterator.hasNext()) {
-                current.set(pointIterator.next());
+            if(points.isEmpty()) {
+                throw new IllegalArgumentException("Snake is empty");
             }
+            pointIterator = points.iterator();
+            current = new Point(pointIterator.next());
+            current.add(0 , 1);
+            offset = new Point(0, -1);
+            hasNext = true;
         }
 
         @Override
         public boolean hasNext() {
-            return pointIterator.hasNext();
+            return hasNext;
         }
 
         @Override
         public Point next() {
-            var result = new Point(current);
-            if(pointIterator.hasNext()) {
-                current.add(pointIterator.next());
+            current.moveByVector(offset);
+            offset.decRelativeDisplacement();
+            if(offset.isZero()) {
+                if(pointIterator.hasNext()) {
+                    offset.set(pointIterator.next());
+                } else {
+                    hasNext = false;
+                }
             }
-            return result;
+            return current;
         }
     }
 

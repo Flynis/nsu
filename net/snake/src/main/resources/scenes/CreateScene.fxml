@@ -3,13 +3,13 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane minHeight="600.0" minWidth="800.0" prefHeight="900.0" prefWidth="1600.0" styleClass="body" stylesheets="@../css/global.css" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.dyakun.snake.gui.controller.CreateController">
+<BorderPane minHeight="600.0" minWidth="800.0" prefHeight="900.0" prefWidth="1600.0" styleClass="body" stylesheets="@../css/create.css" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.dyakun.snake.gui.controller.CreateController">
    <center>
       <VBox alignment="CENTER" spacing="20.0">
           <Label styleClass="header" text="Create game" />
           <HBox alignment="CENTER" maxHeight="100.0" maxWidth="700.0" minHeight="100.0" minWidth="700.0" prefHeight="100.0" prefWidth="700.0" spacing="15.0">
               <Label styleClass="medium-text" text="nickname:" />
-              <TextField fx:id="nicknameField" minHeight="45.0" prefWidth="300.0" />
+              <TextField fx:id="nicknameField" styleClass="focusable-field" minHeight="45.0" prefWidth="300.0" />
           </HBox>
           <Label styleClass="medium-text" text="GAME SETTINGS" />
           <GridPane alignment="CENTER" prefHeight="400.0" prefWidth="700.0" vgap="10.0" hgap="20.0">
@@ -28,10 +28,10 @@
               <Label styleClass="medium-text" text="height" GridPane.rowIndex="1"/>
               <Label styleClass="medium-text" text="food" GridPane.rowIndex="2"/>
               <Label styleClass="medium-text" text="delay" GridPane.rowIndex="3"/>
-              <TextField fx:id="widthField" editable="false" focusTraversable="false" text="40" minHeight="45.0" prefWidth="70.0" GridPane.columnIndex="1"/>
-              <TextField fx:id="heightField" editable="false" focusTraversable="false" text="40" minHeight="45.0" prefWidth="70.0" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-              <TextField fx:id="foodField" editable="false" focusTraversable="false" text="2" minHeight="45.0" prefWidth="70.0" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-              <TextField fx:id="delayField" editable="false" focusTraversable="false" text="0.5" minHeight="45.0" prefWidth="70.0" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+              <TextField fx:id="widthField" styleClass="static-field" editable="false" focusTraversable="false" text="40" minHeight="45.0" prefWidth="70.0" GridPane.columnIndex="1"/>
+              <TextField fx:id="heightField" styleClass="static-field" editable="false" focusTraversable="false" text="40" minHeight="45.0" prefWidth="70.0" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+              <TextField fx:id="foodField" styleClass="static-field" editable="false" focusTraversable="false" text="2" minHeight="45.0" prefWidth="70.0" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+              <TextField fx:id="delayField" styleClass="static-field" editable="false" focusTraversable="false" text="0.5" minHeight="45.0" prefWidth="70.0" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
               <Slider fx:id="widthSlider" majorTickUnit="10.0" min="10.0" minorTickCount="0" prefHeight="45.0" prefWidth="320.0"
                       showTickLabels="true" showTickMarks="true" snapToTicks="true" value="40.0"
                       GridPane.columnIndex="2"/>

@@ -1,0 +1,27 @@
+@import "global.css";
+
+.rating-header {
+    -fx-font-family: "Press Start 2P";
+    -fx-font-size: 36px;
+    -fx-text-fill: -tertiary;
+}
+
+.rating-table {
+    -fx-border-width: 0;
+}
+
+.rating-table .column-header .label {
+    -fx-padding: 5px;
+    -fx-font-family: "Press Start 2P";
+    -fx-text-fill: -tertiary;
+    -fx-font-size: 16px;
+}
+
+.rating-table .table-row-cell {
+    -fx-background-color: #101010;
+    -fx-background-insets: 0, 0 0 1 0;
+    -fx-padding: 3px;
+    -fx-font-family: "Press Start 2P";
+    -fx-font-size: 14px;
+    -fx-text-background-color: -foreground;
+}

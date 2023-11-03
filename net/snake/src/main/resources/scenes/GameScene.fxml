@@ -6,7 +6,7 @@
 
 <?import javafx.geometry.Insets?>
 <HBox minHeight="600.0" minWidth="800.0" prefHeight="900.0" prefWidth="1600.0"
-      stylesheets="@../css/global.css" styleClass="body"
+      stylesheets="@../css/game.css" styleClass="body"
       xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="ru.dyakun.snake.gui.controller.GameController"
         onKeyReleased="#handleKey">
@@ -18,16 +18,16 @@
             <Insets top="5" right="5" bottom="5" left="5" />
         </padding>
         <center>
-            <VBox alignment="CENTER" spacing="5.0">
-                <Label styleClass="header" text="Rating" />
-                <TableView fx:id="scoreTable" prefHeight="400.0" prefWidth="300" minHeight="300.0" minWidth="200.0">
+            <VBox alignment="CENTER" spacing="15.0">
+                <Label styleClass="rating-header" text="Rating" />
+                <TableView fx:id="scoreTable" styleClass="rating-table" prefHeight="400.0" prefWidth="300" minHeight="300.0" minWidth="200.0">
                     <placeholder>
                         <Label styleClass="medium-text" text="No info"/>
                     </placeholder>
                     <columns>
-                        <TableColumn fx:id="numberColumn" prefWidth="100.0" text="rank" editable="false" sortable="false"/>
-                        <TableColumn fx:id="nickColumn" prefWidth="150.0" text="nickname" editable="false" sortable="false"/>
-                        <TableColumn fx:id="scoreColumn" prefWidth="120.0" text="score" editable="false" sortable="false"/>
+                        <TableColumn fx:id="numberColumn" styleClass="align-center" prefWidth="100.0" text="rank" editable="false" sortable="false" reorderable="false"/>
+                        <TableColumn fx:id="nickColumn" styleClass="align-center" prefWidth="150.0" text="nickname" editable="false" sortable="false" reorderable="false"/>
+                        <TableColumn fx:id="scoreColumn" styleClass="align-center" prefWidth="120.0" text="score" editable="false" sortable="false" reorderable="false"/>
                     </columns>
                 </TableView>
             </VBox>

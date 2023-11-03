@@ -1,0 +1,41 @@
+@import "global.css";
+
+.games-table {
+    -fx-border-width: 2;
+    -fx-border-color: -primary;
+}
+
+.games-table .column-header .label {
+    -fx-padding: 5px;
+    -fx-font-family: "Press Start 2P";
+    -fx-text-fill: -tertiary;
+    -fx-font-size: 16px;
+}
+
+.games-table .table-row-cell {
+    -fx-font-family: "Press Start 2P";
+    -fx-font-size: 14px;
+    -fx-text-background-color: -foreground;
+}
+
+.games-table .table-row-cell:hover {
+    -fx-background-color: -background;
+    -fx-text-background-color: -tertiary;
+}
+
+.games-table .table-row-cell:odd{
+    -fx-background-color: #101010;
+    -fx-background-insets: 0, 0 0 1 0;
+    -fx-padding: 3px;
+}
+
+.games-table .table-row-cell:even{
+    -fx-background-color: #070707;
+    -fx-background-insets: 0, 0 0 1 0;
+    -fx-padding: 3px;
+}
+
+.games-table .table-row-cell:selected {
+    -fx-background-color: -tertiary;
+    -fx-text-background-color: -background;
+}

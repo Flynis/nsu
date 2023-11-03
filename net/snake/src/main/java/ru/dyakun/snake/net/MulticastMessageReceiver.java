@@ -7,6 +7,7 @@ import ru.dyakun.snake.protocol.GameMessage;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,9 +50,11 @@ public class MulticastMessageReceiver implements MessageReceiver {
                 socket.receive(datagramPacket);
                 logger.debug("Receive from [{}]", datagramPacket.getAddress().getHostAddress());
                 try {
-                    notifyListeners(GameMessage.parseFrom(buf), (InetSocketAddress) datagramPacket.getSocketAddress());
+                    ByteBuffer buffer = ByteBuffer.wrap(buf, 0, datagramPacket.getLength());
+                    var message = GameMessage.parseFrom(buffer);
+                    notifyListeners(message, (InetSocketAddress) datagramPacket.getSocketAddress());
                 } catch (InvalidProtocolBufferException e) {
-                    logger.info("Receive broken protobuf");
+                    logger.info("Receive broken protobuf", e);
                 }
             }
         } catch (SocketException e) {

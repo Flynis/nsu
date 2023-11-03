@@ -138,6 +138,9 @@ public final class Master extends Member {
         }
         for(var viewer: viewers) {
             snakes.remove(viewer.getId());
+            if(viewer.getId() == id) {
+                continue;
+            }
             var roleChange = Messages.roleChangeMessage(null, NodeRole.VIEWER, id, viewer.getId());
             client.send(MessageType.ROLE_CHANGE, roleChange, viewer.getAddress());
         }

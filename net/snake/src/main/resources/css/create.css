@@ -1,0 +1,10 @@
+@import "global.css";
+
+.static-field {
+    -fx-background-color: -background;
+    -fx-border-width: 2;
+    -fx-border-color: -primary;
+    -fx-text-fill: -foreground;
+    -fx-font-family: "Press Start 2P";
+    -fx-font-size: 16px;
+}

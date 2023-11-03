@@ -30,10 +30,6 @@
     -fx-text-fill: -tertiary;
 }
 
-.canvas {
-    -fx-background-color: #00000011;
-}
-
 .medium-text {
     -fx-font-family: "Press Start 2P";
     -fx-font-size: 18px;
@@ -68,7 +64,7 @@
     -fx-text-fill: -background;
 }
 
-.text-field {
+.focusable-field {
     -fx-background-color: -background;
     -fx-border-width: 2;
     -fx-border-color: -primary;
@@ -77,11 +73,11 @@
     -fx-font-size: 16px;
 }
 
-.text-field:hover {
+.focusable-field:hover {
     -fx-border-color: -tertiary;
 }
 
-.text-field:focused {
+.focusable-field:focused {
     -fx-background-color: -primary;
     -fx-border-color: -tertiary;
     -fx-text-fill: -background;
@@ -146,48 +142,8 @@
     -fx-background-color: transparent;
 }
 
-.table-view {
-    -fx-border-width: 2;
-    -fx-border-color: -primary;
-}
-
-.table-view .column-header .label {
-    -fx-padding: 5px;
-    -fx-font-family: "Press Start 2P";
-    -fx-text-fill: -tertiary;
-    -fx-font-size: 16px;
-}
-
 .table-view .table-cell{
     -fx-border-color: transparent;
-}
-
-.table-row-cell {
-    -fx-font-family: "Press Start 2P";
-    -fx-font-size: 14px;
-    -fx-text-background-color: -foreground;
-}
-
-.table-row-cell:hover {
-    -fx-background-color: -background;
-    -fx-text-background-color: -tertiary;
-}
-
-.table-row-cell:odd{
-    -fx-background-color: #101010;
-    -fx-background-insets: 0, 0 0 1 0;
-    -fx-padding: 3px;
-}
-
-.table-row-cell:even{
-    -fx-background-color: #000000;
-    -fx-background-insets: 0, 0 0 1 0;
-    -fx-padding: 3px;
-}
-
-.table-row-cell:selected {
-    -fx-background-color: -tertiary;
-    -fx-text-background-color: -background;
 }
 
 .table-view .virtual-flow .scroll-bar:vertical,

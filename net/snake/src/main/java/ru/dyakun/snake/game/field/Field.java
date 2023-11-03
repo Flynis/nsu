@@ -6,6 +6,7 @@ import ru.dyakun.snake.game.GameConfig;
 import ru.dyakun.snake.game.entity.Player;
 import ru.dyakun.snake.game.entity.Point;
 import ru.dyakun.snake.game.entity.Snake;
+import ru.dyakun.snake.game.util.Points;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -43,6 +44,9 @@ public class Field extends AbstractField {
     }
 
     private void createFood(int aliveSnakes) {
+        if(aliveSnakes < 0) {
+            throw new IllegalArgumentException("Alive snakes must be positive");
+        }
         while (foods.size() < foodStatic + aliveSnakes && freeSpace > MIN_FREE_SPACE_FOR_RANDOM) {
             int x = ThreadLocalRandom.current().nextInt(0, width);
             int y = ThreadLocalRandom.current().nextInt(0, height);
@@ -50,7 +54,7 @@ public class Field extends AbstractField {
         }
         for(int i = 0; i < height; i++) {
             for(int j = 0; j < width; j++) {
-                if(foods.size() == foodStatic + aliveSnakes || freeSpace == 0) {
+                if(foods.size() >= foodStatic + aliveSnakes || freeSpace == 0) {
                     return;
                 }
                 setFood(j, i);
@@ -69,8 +73,11 @@ public class Field extends AbstractField {
 
     private Snake findSnakeByPoint(Point p) {
         for(var snake : snakes.values()) {
-            for(var point: snake) {
-                if(!p.equals(snake.getHead()) && p.equals(point)) {
+            var iterator = snake.iterator();
+            iterator.next(); // skip head
+            while (iterator.hasNext()) {
+                var point = iterator.next();
+                if(p.equals(point)) {
                     return snake;
                 }
             }
@@ -81,13 +88,15 @@ public class Field extends AbstractField {
     private void removeDestroyedSnakes() {
         for(var snake : snakes.values()) {
             if(snake.state() == Snake.State.DESTROYED) {
-                for(var point : snake) {
-                    if(point.equals(snake.getHead())) {
-                        continue;
-                    }
+                var iterator = snake.iterator();
+                iterator.next(); // skip head
+                while (iterator.hasNext()) {
+                    var point = iterator.next();
                     var rand = ThreadLocalRandom.current().nextInt(2);
                     if(rand == 1) {
                         set(point.x, point.y, Tile.FOOD);
+                        logger.debug("Created food ({}, {})", point.x, point.y);
+                        foods.add(new Point(point.x, point.y));
                     } else {
                         set(point.x, point.y, Tile.EMPTY);
                     }
@@ -110,6 +119,8 @@ public class Field extends AbstractField {
                 set(tail.x, tail.y, Tile.EMPTY);
                 snake.moveTail();
             }
+            snake.modPoints(width, height);
+            logger.debug("Snake {}", snake.points());
         }
         for(var snake: snakes.values()) {
             var head = snake.getHead();
@@ -117,17 +128,17 @@ public class Field extends AbstractField {
                 case SNAKE -> {
                     var enemy = findSnakeByPoint(head);
                     if (enemy == null) {
-                        logger.error("Snake point not found");
-                        continue;
+                        throw new IllegalStateException("Enemy snake point not found");
                     }
                     if(enemy.playerId() != snake.playerId()) {
                         players.get(enemy.playerId()).addScore(1);
                     }
                     snake.setState(Snake.State.DESTROYED);
+                    aliveSnakes--;
                 }
                 case FOOD -> {
                     players.get(snake.playerId()).addScore(1);
-                    eatenFoods.add(new Point(head.x, head.y));
+                    eatenFoods.add(Points.find(foods, head));
                     if(isHeadsCollided(snake)) {
                         snake.setState(Snake.State.DESTROYED);
                     } else {

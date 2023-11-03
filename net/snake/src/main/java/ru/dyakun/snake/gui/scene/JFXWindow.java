@@ -1,8 +1,11 @@
 package ru.dyakun.snake.gui.scene;
 
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.InputStream;
 
 public class JFXWindow implements Window {
     private static final Logger logger = LoggerFactory.getLogger(JFXWindow.class);
@@ -12,9 +15,13 @@ public class JFXWindow implements Window {
         logger.info("Initialize window");
         this.stage = stage;
         stage.setTitle("snake");
-        /*InputStream iconStream = getClass().getResourceAsStream("/icon.png");
+        InputStream iconStream = getClass().getResourceAsStream("/images/icon.png");
+        if(iconStream == null) {
+            logger.error("Icon not found");
+            return;
+        }
         Image image = new Image(iconStream);
-        primaryStage.getIcons().add(image);*/
+        stage.getIcons().add(image);
     }
 
     @Override
