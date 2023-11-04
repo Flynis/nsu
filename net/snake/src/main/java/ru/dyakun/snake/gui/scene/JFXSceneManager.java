@@ -12,6 +12,7 @@ public class JFXSceneManager implements SceneManager {
     private final Map<SceneName, Scene> scenes = new EnumMap<>(SceneName.class);
     private final Game game;
     private final Window window;
+    private SceneName current;
 
     public JFXSceneManager(Game game, SceneFactory factory, Window window) {
         this.game = game;
@@ -26,7 +27,13 @@ public class JFXSceneManager implements SceneManager {
     @Override
     public void changeScene(SceneName name) {
         logger.info("Change scene to {}", name);
+        current = name;
         window.setScene(scenes.get(name));
+    }
+
+    @Override
+    public SceneName current() {
+        return current;
     }
 
     @Override

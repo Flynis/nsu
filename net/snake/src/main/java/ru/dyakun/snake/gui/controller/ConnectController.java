@@ -1,5 +1,6 @@
 package ru.dyakun.snake.gui.controller;
 
+import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -16,7 +17,6 @@ import ru.dyakun.snake.protocol.NodeRole;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -89,6 +89,7 @@ public class ConnectController extends AbstractController implements Initializab
 
     @Override
     public void onEvent(GameEvent event, Object payload) {
+        if(manager.current() != SceneName.CONNECT) return;
         switch (event) {
             case NEW_ACTIVE_GAME -> games.add(GameDesc.fromGameInfo((GameInfoView) payload));
             case UPDATE_GAME_INFO -> {
@@ -104,7 +105,7 @@ public class ConnectController extends AbstractController implements Initializab
                 var inactive = (String) payload;
                 games.removeIf(gameDesc -> gameDesc.getName().equals(inactive));
             }
-            case JOINED -> manager.changeScene(SceneName.GAME);
+            case JOINED -> Platform.runLater(()-> manager.changeScene(SceneName.GAME));
             case MESSAGE -> showErrorMessage((String) payload);
         }
     }

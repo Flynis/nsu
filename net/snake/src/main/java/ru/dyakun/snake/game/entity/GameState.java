@@ -66,6 +66,8 @@ public class GameState implements GameStateView {
     public static GameState from(ru.dyakun.snake.protocol.GameState gameState, GameConfig config) {
         var collections = collectionsFrom(gameState);
         var field = new StaticField(config.getWidth(), config.getHeight());
+        System.out.println(collections.snakes);
+        System.out.println(collections.foods);
         field.fillBy(collections.snakes, collections.foods);
         return new GameState(field, gameState.getStateOrder(), collections);
     }

@@ -74,6 +74,11 @@ public class Snake implements SnakeView {
         this.tail = findTail();
     }
 
+    @Override
+    public String toString() {
+        return String.format("Snake{%d, points: %s}", playerId, points.toString());
+    }
+
     public Collection<Point> points() {
         return points;
     }
@@ -236,7 +241,7 @@ public class Snake implements SnakeView {
         }
 
         public void addPoint(Point p) {
-            points.addFirst(p);
+            points.addLast(p);
         }
 
         public Snake build() {

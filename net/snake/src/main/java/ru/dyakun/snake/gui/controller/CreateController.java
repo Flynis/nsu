@@ -59,6 +59,7 @@ public class CreateController extends AbstractController implements Initializabl
 
     @Override
     public void onEvent(GameEvent event, Object payload) {
+        if(manager.current() != SceneName.CREATE) return;
         if (event == GameEvent.JOINED) {
             manager.changeScene(SceneName.GAME);
         }

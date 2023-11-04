@@ -26,7 +26,9 @@ public class UdpNetClient implements NetClient {
         try {
             socket = new DatagramSocket();
             messageSender = new MessageSender(pending, socket);
-            new Thread(messageSender).start();
+            var thread = new Thread(messageSender);
+            thread.setName("Sender");
+            thread.start();
         } catch (SocketException e) {
             logger.error("Udp socket create failed");
             throw new IllegalStateException(e);
@@ -83,7 +85,7 @@ public class UdpNetClient implements NetClient {
             while (isRunning) {
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
                 socket.receive(datagramPacket);
-                logger.debug("Receive from [{}]", datagramPacket.getAddress().getHostAddress());
+                logger.debug("Receive from [{}] {}b", datagramPacket.getAddress().getHostAddress(), datagramPacket.getLength());
                 try {
                     ByteBuffer buffer = ByteBuffer.wrap(buf, 0, datagramPacket.getLength());
                     var message = GameMessage.parseFrom(buffer);
@@ -100,6 +102,8 @@ public class UdpNetClient implements NetClient {
             logger.debug("Socket", e);
         } catch (IOException e) {
             logger.error("Udp receive failed", e);
+        } catch (Exception e) {
+            logger.error("Fatal error in udp receiver", e);
         }
         logger.info("Udp receiver successfully stopped");
     }

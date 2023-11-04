@@ -49,7 +49,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
             while(isRunning) {
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
                 socket.receive(datagramPacket);
-                logger.debug("Receive from [{}]", datagramPacket.getAddress().getHostAddress());
+                logger.debug("Receive from [{}] {}b", datagramPacket.getAddress().getHostAddress(), datagramPacket.getLength());
                 try {
                     ByteBuffer buffer = ByteBuffer.wrap(buf, 0, datagramPacket.getLength());
                     var message = GameMessage.parseFrom(buffer);
@@ -62,6 +62,8 @@ public class MulticastMessageReceiver implements MessageReceiver {
             logger.debug("Socket", e);
         } catch (IOException e) {
             logger.error("Multicast receive failed", e);
+        } catch (Exception e) {
+            logger.error("Fatal error in multicast receiver", e);
         }
         logger.info("Multicast receiver successfully stopped");
     }

@@ -97,6 +97,14 @@ public class MessageSender implements Runnable, Stoppable {
 
     @Override
     public void stop() {
+        while (!queue.isEmpty()) {
+            try {
+                ackWaiters.clear();
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                logger.error("Interrupted last messages send");
+            }
+        }
         isRunning = false;
     }
 }

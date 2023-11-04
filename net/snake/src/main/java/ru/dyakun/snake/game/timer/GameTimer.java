@@ -1,5 +1,7 @@
 package ru.dyakun.snake.game.timer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.game.person.Master;
 import ru.dyakun.snake.game.person.Member;
 import ru.dyakun.snake.game.tracker.AbstractStatusTracker;
@@ -11,6 +13,7 @@ import java.net.InetSocketAddress;
 import java.util.*;
 
 public class GameTimer {
+    private static final Logger logger = LoggerFactory.getLogger(GameTimer.class);
     private static final int TASK_INIT_DELAY = 100;
     private final Timer timer;
     private final List<GameEventListener> listeners = new ArrayList<>();
@@ -42,7 +45,9 @@ public class GameTimer {
         }
         gameStateTask = new GameStateUpdateTask(master, listeners, client);
         timer.schedule(gameStateTask, TASK_INIT_DELAY, period);
+        logger.info("Start game state update");
         announcementTask = new GameAnnouncementTask(client, master, groupAddress);
+        logger.info("Start game announcement");
         timer.schedule(announcementTask, TASK_INIT_DELAY, announcementPeriod);
     }
 
@@ -52,13 +57,16 @@ public class GameTimer {
         }
         announcementTask.cancel();
         announcementTask = null;
+        logger.info("Cancel game announcement");
         gameStateTask.cancel();
         gameStateTask = null;
+        logger.info("Cancel game state update");
     }
 
     public void startPing(InetSocketAddress masterAddress, int period, NetClient client) {
         pingTask = new PingTask(client, masterAddress);
         timer.schedule(pingTask, TASK_INIT_DELAY, period);
+        logger.info("Start ping");
     }
 
     public void changeMasterAddress(InetSocketAddress address) {
@@ -69,18 +77,21 @@ public class GameTimer {
         if(pingTask != null) {
             pingTask.cancel();
             pingTask = null;
+            logger.info("Cancel ping");
         }
     }
 
     public void startPlayersStatusTrack(AbstractStatusTracker tracker, Member member) {
         playersStatusTrackTask = new PlayersStatusTrackTask(tracker, member);
         timer.schedule(playersStatusTrackTask, TASK_INIT_DELAY, tracker.getDeleteTime());
+        logger.info("Start players status track");
     }
 
     public void cancelPlayersStatusTrack() {
         if(playersStatusTrackTask != null) {
             playersStatusTrackTask.cancel();
             playersStatusTrackTask = null;
+            logger.info("Cancel players status track");
         }
     }
 

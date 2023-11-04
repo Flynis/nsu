@@ -49,6 +49,7 @@ public class GameController extends AbstractController implements Initializable 
 
     @Override
     public void onEvent(GameEvent event, Object payload) {
+        if(manager.current() != SceneName.GAME) return;
         // TODO handle payload
         switch (event) {
             case REPAINT -> {
@@ -68,7 +69,7 @@ public class GameController extends AbstractController implements Initializable 
 
     private void updateScoreTable(Collection<PlayerView> players, PlayerView current) {
         // TODO cur player
-        var sorted = players.stream().sorted(new PlayerComparator()).toList();
+        var sorted = players.stream().sorted(new PlayerComparator().reversed()).toList();
         var scores = IntStream.range(0, sorted.size()).mapToObj(i -> ScoreEntry.from(sorted.get(i), i + 1)).toList();
         scoreTable.setItems(FXCollections.observableList(scores));
     }

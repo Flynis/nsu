@@ -36,11 +36,15 @@ public class Game implements GameMessageListener, ChangeRoleListener {
         client = new UdpNetClient();
         client.addMessageListener(activeGamesTracker);
         client.addMessageListener(this);
-        new Thread(client).start();
+        var clientThread = new Thread(client);
+        clientThread.setName("Udp receiver");
+        clientThread.start();
         announcementReceiver = new MulticastMessageReceiver(groupAddress);
         announcementReceiver.addMessageListener(activeGamesTracker);
         announcementReceiver.addMessageListener(this);
-        new Thread(announcementReceiver).start();
+        var announceThread = new Thread(announcementReceiver);
+        announceThread.setName("Multicast receiver");
+        announceThread.start();
         timer = new GameTimer(activeGamesTracker, config.getAnnouncementPeriod(), groupAddress);
         params = new MemberParams(client, timer, listeners);
     }
