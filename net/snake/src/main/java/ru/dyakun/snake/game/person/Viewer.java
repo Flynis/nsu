@@ -130,7 +130,6 @@ public class Viewer extends Member {
     protected void onErrorMsg(GameMessage message, InetSocketAddress sender) {
         if(notMaster(sender)) return;
         sendAck(id, masterId, sender, message);
-        tracker.updateStatus(masterId);
         var errorMsg = message.getError();
         notifyListeners(GameEvent.MESSAGE, errorMsg.getErrorMessage());
     }

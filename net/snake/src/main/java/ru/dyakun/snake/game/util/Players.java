@@ -55,4 +55,13 @@ public class Players {
         }
         return max;
     }
+
+    public static boolean contains(Collection<Player> players, String nickname) {
+        for(var player: players) {
+            if (player.getName().equals(nickname)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

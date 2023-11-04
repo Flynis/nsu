@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
 
@@ -18,6 +19,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
     private final InetSocketAddress group;
     private MulticastSocket socket = null;
     private boolean isRunning = false;
+    private final List<NetworkInterface> interfaces = new ArrayList<>();
 
     public MulticastMessageReceiver(InetSocketAddress group) {
         this.group = Objects.requireNonNull(group);
@@ -38,13 +40,34 @@ public class MulticastMessageReceiver implements MessageReceiver {
         listeners.add(listener);
     }
 
+    private void join() throws IOException {
+        socket = new MulticastSocket(group.getPort());
+        Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+        while (networkInterfaces.hasMoreElements()) {
+            NetworkInterface networkInterface = networkInterfaces.nextElement();
+            if (networkInterface.isLoopback() || !networkInterface.isUp()) continue;
+            socket.joinGroup(group, networkInterface);
+            interfaces.add(networkInterface);
+            logger.debug("Joined in group [{}] from {}", group.getAddress().getHostAddress(), networkInterface.getName());
+        }
+    }
+
+    private void leave() {
+        for(var networkInterface : interfaces) {
+            logger.debug("Leave from group on {}", networkInterface.getName());
+            try {
+                socket.leaveGroup(group, networkInterface);
+            } catch (IOException e) {
+                logger.error("Leave from group failed");
+            }
+        }
+    }
+
     @Override
     public void run() {
         byte[] buf = new byte[4096];
         try {
-            socket = new MulticastSocket(group.getPort());
-            socket.joinGroup(group.getAddress());
-            logger.debug("Joined in group [{}]", group.getAddress().getHostAddress());
+            join();
             isRunning = true;
             while(isRunning) {
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
@@ -71,18 +94,9 @@ public class MulticastMessageReceiver implements MessageReceiver {
     @Override
     public void stop() {
         if(socket == null || socket.isClosed()) return;
-        logger.info("Try to stop Multicast receiver");
         isRunning = false;
-        try {
-            socket.leaveGroup(group.getAddress());
-            logger.debug("Leave from group");
-            socket.close();
-            logger.debug("Close multicast socket");
-        } catch (IOException e) {
-            logger.error("Multicast receiver stop failed", e);
-            if(!socket.isClosed()) {
-                stop();
-            }
-        }
+        leave();
+        socket.close();
+        logger.debug("Close multicast socket");
     }
 }

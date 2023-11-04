@@ -105,8 +105,8 @@ public class ConnectController extends AbstractController implements Initializab
                 var inactive = (String) payload;
                 games.removeIf(gameDesc -> gameDesc.getName().equals(inactive));
             }
-            case JOINED -> Platform.runLater(()-> manager.changeScene(SceneName.GAME));
-            case MESSAGE -> showErrorMessage((String) payload);
+            case JOINED -> Platform.runLater(() -> manager.changeScene(SceneName.GAME));
+            case MESSAGE -> Platform.runLater(() -> showErrorMessage((String) payload));
         }
     }
 

@@ -95,6 +95,9 @@ public final class Master extends Member {
         if(role != NodeRole.NORMAL && role != NodeRole.VIEWER) {
             throw new PlayerJoinException("Illegal role: " + role);
         }
+        if(Players.contains(players.values(), nickname)) {
+            throw new PlayerJoinException("Not unique nickname " + nickname);
+        }
         try {
             var player = new Player.Builder(nickname, newPlayerId).role(role).address(address).score(0).build();
             synchronized (lock) {
@@ -223,6 +226,7 @@ public final class Master extends Member {
                 setDeputy(player.getId());
             }
         } catch (PlayerJoinException e) {
+            logger.info("Player join failed: {}", e.getMessage());
             var errorMessage = Messages.errorMessage(e.getMessage());
             client.send(MessageType.ERROR, errorMessage, sender);
         }

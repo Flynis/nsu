@@ -92,6 +92,8 @@ public class UdpNetClient implements NetClient {
                     var sender = (InetSocketAddress) datagramPacket.getSocketAddress();
                     if(message.hasAck()) {
                         messageSender.handleAck(message, sender);
+                    } else if (message.hasError()) {
+                        messageSender.handleError();
                     }
                     notifyListeners(message, sender);
                 } catch (InvalidProtocolBufferException e) {

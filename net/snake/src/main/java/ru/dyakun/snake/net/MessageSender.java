@@ -45,6 +45,7 @@ public class MessageSender implements Runnable, Stoppable {
     }
 
     void removeReceiver(InetSocketAddress address) {
+        logger.debug("Remove receiver {}", address.getAddress().getHostAddress());
         queue.removeIf(data -> address.equals(data.receiver()));
         ackWaiters.removeIf(data -> address.equals(data.receiver()));
     }
@@ -93,6 +94,10 @@ public class MessageSender implements Runnable, Stoppable {
 
     void handleAck(GameMessage message, InetSocketAddress sender) {
         ackWaiters.removeIf(data -> data.message().getMsgSeq() == message.getMsgSeq() && data.receiver().equals(sender));
+    }
+
+    void handleError() {
+        ackWaiters.removeIf(data -> data.type() == JOIN);
     }
 
     @Override
