@@ -24,7 +24,7 @@ export {
     expr2s(e: Expr) -> string;
     calculate(e: Expr, variables: Tree<string, RationalNum>) -> RationalNum;
     calculateNoVars(e: Expr) -> RationalNum;
-    parse(str: string, grammarStr: string) -> Expr;
+    parse(str: string, grammar: [PegOp]) -> Expr;
 }
 
 addExpressions(l: Expr, r: Expr) -> Expr {
@@ -106,7 +106,6 @@ specialPegActions = {
     SemanticActions(t2);
 }
 
-parse(str: string, grammarPath: string) -> Expr {
-    grammar = compilePegGrammar(grammarPath);
+parse(str: string, grammar: [PegOp]) -> Expr {
     parsic(grammar, str, specialPegActions);
 }

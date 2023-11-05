@@ -2,10 +2,15 @@ import expression;
 import rational_function;
 
 main() {
+    grammar = compilePegGrammar("#include rational_arith.lingo");
 
     input: string = "x * y * y + x / (x + y)";
 
-    expression = parse(input, "#include rational_arith.lingo");
+    identities: Tree<string, Expr> = setTreeValues(makeTree(), [
+        Pair("x", parse("2 * y", grammar)),
+    ]);
+
+    expression = parse(input, grammar);
     if (expression != flow("PARSING FAILED")) {
         println("expression: " + expr2s(expression));
         f: RationalFunc = toRationalFunction(expression);

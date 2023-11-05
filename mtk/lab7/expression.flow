@@ -1,5 +1,5 @@
 import string;
-import rational;
+import rational_number;
 import lingo/pegcode/driver;
 
 export {

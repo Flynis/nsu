@@ -1,4 +1,4 @@
-import rational;
+import rational_number;
 import expression;
 
 main() {
@@ -7,7 +7,7 @@ main() {
         Pair("y", makeRationalNumber(2, 1)),
     ]);
        
-    input: string = "10000000/3000000 * 3000000/10000000";
+    input: string = "(1/2000000) * (2000000/11111111)";
 
     expression = parse(input, "#include rational_arith.lingo");
     if (expression != flow("PARSING FAILED")) {

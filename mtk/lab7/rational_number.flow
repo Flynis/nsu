@@ -20,8 +20,6 @@ export {
 
     isZero(r: RationalNum) -> bool;
 
-    isOne(r : RationalNum) -> bool;
-
     isInf(r: RationalNum) -> bool;
 
     isNan(r: RationalNum) -> bool;
@@ -68,10 +66,6 @@ isNumber(r: RationalNum) -> bool {
 
 isZero(r: RationalNum) -> bool {
     r.m == 0 && r.n != 0;
-}
-
-isOne(r : RationalNum) -> bool {
-    r.m == 1 && r.n == 1;
 }
 
 isPlusInf(r: RationalNum) -> bool {

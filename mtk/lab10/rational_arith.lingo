@@ -1,0 +1,26 @@
+expr = ws second_priority:sec ws {:sec};
+
+second_priority = first_priority:fst subtrahend*:sub ws '+' ws second_priority:sec { Binary(buildSub(:fst, :sub),:sec, AddOp()) } |
+                 first_priority:fst subtrahend*:sub { buildSub(:fst, :sub) };
+first_priority = term:t divisor*:div ws '*' ws first_priority:fst { Binary(buildDiv(:t, :div),:fst, MulOp()) } | 
+                term:t divisor*:div { buildDiv(:t, :div) };
+
+divisor = ws '/' ws term:t {:t};
+subtrahend = ws '-' ws first_priority:fst {:fst};
+
+term = '+'? int:i {:i} |
+       '-' int:i { Neg(:i) } |
+       '+'? var:v { :v } |
+       '-' var:v { Neg(:v) } |
+       '+'? '(' expr:e ')' {:e} |
+       '-(' expr:e ')' { Neg(:e) };
+int = ('0' | (non_zero_digit digit*))$d { Int(s2i($d)) };
+var = (underscore* letter (letter | digit | underscore)*)$n { Var(:n) };
+
+underscore = '_';
+letter = 'a' - 'z' | 'A' - 'Z';
+non_zero_digit = '1' - '9';
+digit = '0'-'9';
+
+ws = s*;
+s = ' ' | '\t' | '\n' | '\r';

@@ -20,6 +20,8 @@ export {
 
     isZero(r: RationalNum) -> bool;
 
+    isOne(r : RationalNum) -> bool;
+
     isInf(r: RationalNum) -> bool;
 
     isNan(r: RationalNum) -> bool;
@@ -68,12 +70,16 @@ isZero(r: RationalNum) -> bool {
     r.m == 0 && r.n != 0;
 }
 
+isOne(r : RationalNum) -> bool {
+    r.m == 1 && r.n == 1;
+}
+
 isPlusInf(r: RationalNum) -> bool {
-    r == plusInf();
+    r.m > 0 && r.n == 0;
 }
 
 isMinusInf(r: RationalNum) -> bool {
-    r == minusInf();
+    r.m < 0 && r.n == 0;
 }
 
 isInf(r: RationalNum) -> bool {
@@ -108,11 +114,10 @@ rationalAdd(a: RationalNum, b: RationalNum) -> RationalNum {
     } else if (isMinusInf(a) || isMinusInf(b)) {
         minusInf();
     } else {
-        m1: int = a.m;
-        n1: int = a.n;
-        m2: int = b.m;
-        n2: int = b.n;
-        makeRationalNumber(m1 * n2 + m2 * n1, n1 * n2);
+        divisor = lcm(a.n, b.n);
+        ka = divisor / a.n;
+        kb = divisor / b.n;
+        makeRationalNumber(a.m * kb + b.m * ka, divisor);
     }
 }
 
@@ -134,7 +139,9 @@ rationalMul(a: RationalNum, b: RationalNum) -> RationalNum {
     } else if ((isInf(a) && isZero(b)) || (isZero(a) && isInf(b))) {
         nan();
     } else {
-        makeRationalNumber(a.m * b.m, a.n * b.n);
+        c = makeRationalNumber(a.m, b.n);
+        d = makeRationalNumber(b.m, a.n);
+        makeRationalNumber(c.m * d.m, c.n * d.n);
     }
 }
 

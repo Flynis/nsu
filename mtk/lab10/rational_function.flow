@@ -1,0 +1,48 @@
+import expression;
+import simplification;
+
+export {
+    RationalFunc : (p: Expr, q: Expr);
+
+    toRationalFunction(e: Expr) -> RationalFunc;
+
+    rfunc2s(f: RationalFunc) -> string;
+
+    simplifyRationalFunc(f: RationalFunc, identities: Tree<string, Expr>);
+}
+
+toRationalFunction(e: Expr) -> RationalFunc {
+    tmp: RationalFunc = switch(e) {
+        Binary(l, r, op): {
+            lf: RationalFunc = toRationalFunction(l);
+            rf: RationalFunc = toRationalFunction(r);
+            switch(op) {
+                AddOp(): RationalFunc(
+                    simplifyAdd(simplifyMul(lf.p, rf.q), simplifyMul(rf.p, lf.q)), 
+                    simplifyMul(lf.q, rf.q)
+                );
+                SubOp(): RationalFunc(
+                    simplifySub(simplifyMul(lf.p, rf.q), simplifyMul(rf.p, lf.q)), 
+                    simplifyMul(lf.q, rf.q)
+                );
+                MulOp(): RationalFunc(
+                    simplifyMul(lf.p, rf.p), simplifyMul(lf.q, rf.q)
+                );
+                DivOp(): RationalFunc(
+                    simplifyMul(lf.p, rf.q), simplifyMul(lf.q, rf.p)
+                );
+            };
+        }
+        default: RationalFunc(e, Int(1));
+    }
+    RationalFunc(simplify(tmp.p), simplify(tmp.q));
+}
+
+rfunc2s(f: RationalFunc) -> string {
+    expr2s(f.p) + " / " + expr2s(f.q);
+}
+
+simplifyRationalFunc(f: RationalFunc, identities: Tree<string, Expr>) {
+    
+}
+
