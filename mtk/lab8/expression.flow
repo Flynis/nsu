@@ -9,19 +9,43 @@ export {
     MulOp : ();
     DivOp : ();
 
-    Expr ::= Int, Var, Neg, Binary;
+    Expr ::= Int, Var, Neg, Binary, Rational;
+    Rational : (r : RationalNum);
     Int : (i : int);
     Var : (name: string);
     Neg : (e: Expr);
     Binary : (l : Expr, r : Expr, op : BinaryOp);
 
+    addExpressions(l: Expr, r: Expr) -> Expr;
+    subExpressions(l: Expr, r: Expr) -> Expr;
+    mulExpressions(l: Expr, r: Expr) -> Expr;
+    divExpressions(l: Expr, r: Expr) -> Expr;
+
     expr2s(e: Expr) -> string;
     calculate(e: Expr, variables: Tree<string, RationalNum>) -> RationalNum;
+    calculateNoVars(e: Expr) -> RationalNum;
     parse(str: string, grammarStr: string) -> Expr;
+}
+
+addExpressions(l: Expr, r: Expr) -> Expr {
+    Binary(l, r, AddOp());
+}
+
+subExpressions(l: Expr, r: Expr) -> Expr {
+    Binary(l, r, SubOp());
+}
+
+mulExpressions(l: Expr, r: Expr) -> Expr {
+    Binary(l, r, MulOp());
+}
+
+divExpressions(l: Expr, r: Expr) -> Expr {
+    Binary(l, r, DivOp());
 }
 
 expr2s(e: Expr) -> string {
     switch(e) {
+        Rational(r): r2s(r);
         Int(i): i2s(i);
         Var(name): name;
         Neg(expr): "-" + expr2s(expr);
@@ -40,16 +64,14 @@ expr2s(e: Expr) -> string {
 
 getVarValue(name: string, variables: Tree<string, RationalNum>) -> RationalNum {
     switch(lookupTree(variables, name)) {
-        None(): {
-            println("Unknown variable " + name);
-            nan();
-        }
+        None(): nan();        
         Some(value): value;
     }
 }
 
 calculate(e: Expr, variables: Tree<string, RationalNum>) -> RationalNum {
     switch(e) {
+        Rational(r): r;
         Int(i): i2r(i);
         Var(name): getVarValue(name, variables);
         Neg(expr): rationalMul(i2r(-1), calculate(expr, variables));
@@ -64,6 +86,10 @@ calculate(e: Expr, variables: Tree<string, RationalNum>) -> RationalNum {
             };
         }
     }
+}
+
+calculateNoVars(e: Expr) -> RationalNum {
+    calculate(e, makeTree());
 }
 
 buildSub(xs : [flow]) {
