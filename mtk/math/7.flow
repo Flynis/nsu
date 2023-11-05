@@ -1,0 +1,47 @@
+import lingo/peg;
+import lingo/pegcode/driver;
+import lingo/pegcode/parsic;
+
+Sentense ::= Assign 
+Assign: 
+Expr ::= Sum, Sub, Mul, Div, Double, Var;
+Sum: (left: Expr, right: Expr);
+Sub: (left: Expr, right: Expr);
+Mul: (left: Expr, right: Expr);
+Div: (left: Expr, right: Expr);
+Var: ()
+Double: (val: double);
+
+expr2s(e: Expr) -> string {
+    switch (e) {
+        Sum(left, right): "(" + expr2s(left) + " + " + expr2s(right) + ")";
+        Sub(left, right): "(" + expr2s(left) + " - " + expr2s(right) + ")";
+        Mul(left, right): "(" + expr2s(left) + " * " + expr2s(right) + ")";
+        Div(left, right): "(" + expr2s(left) + " / " + expr2s(right) + ")";
+        Double(val): d2s(val);
+    }
+}
+
+expr2i(e: Expr) -> int {
+    switch(e) {
+        Sum(left, right): expr2i(left) + expr2i(right);
+        Mul(left, right): expr2i(left) * expr2i(right);
+        Int(val): val;
+    }
+}
+
+s2expr(str: string) -> Expr {
+    e_gr = "#include fp_arith.lingo";
+    parsic(
+        compilePegGrammar(e_gr), 
+        str, 
+        SemanticActions(setTree(defaultPegActions.t, "CreateInt", \s -> Int(s2i(s[0]))))
+    );
+}
+
+main() {
+    expr = s2expr("((1 * 0) + ((10 + 20) * (1 * 8)))");
+    println("Result: " + i2s(expr2i(expr)));
+    println(expr2s(expr));
+    quit(0);
+}
