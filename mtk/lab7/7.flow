@@ -1,0 +1,22 @@
+import rational;
+import expression;
+
+main() {
+    variables: Tree<string, RationalNum> = setTreeValues(makeTree(), [
+        Pair("x", makeRationalNumber(1, 1)),
+        Pair("y", makeRationalNumber(2, 1)),
+    ]);
+       
+    input: string = "10000000/3000000 * 3000000/10000000";
+    expression = parse(input, "#include rational_arith.lingo");
+
+    if (expression != flow("PARSING FAILED")) {
+        println("expression: " + expr2s(expression));
+        value: RationalNum = calculate(expression, variables);
+        println("result = " + r2s(value));
+    } else {
+        println("Parsing failed");
+    }
+
+    quit(0);
+}
