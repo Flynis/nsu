@@ -19,6 +19,7 @@
         </padding>
         <center>
             <VBox alignment="CENTER" spacing="15.0">
+                <Label fx:id="messageLabel" styleClass="message" text="GAME OVER" />
                 <Label styleClass="rating-header" text="Rating" />
                 <TableView fx:id="scoreTable" styleClass="rating-table" prefHeight="400.0" prefWidth="300" minHeight="300.0" minWidth="200.0">
                     <placeholder>
@@ -26,8 +27,8 @@
                     </placeholder>
                     <columns>
                         <TableColumn fx:id="numberColumn" styleClass="align-center" prefWidth="100.0" text="rank" editable="false" sortable="false" reorderable="false"/>
-                        <TableColumn fx:id="nickColumn" styleClass="align-center" prefWidth="150.0" text="nickname" editable="false" sortable="false" reorderable="false"/>
                         <TableColumn fx:id="scoreColumn" styleClass="align-center" prefWidth="120.0" text="score" editable="false" sortable="false" reorderable="false"/>
+                        <TableColumn fx:id="nickColumn" styleClass="align-center" prefWidth="150.0" text="nickname" editable="false" sortable="false" reorderable="false"/>
                     </columns>
                 </TableView>
             </VBox>

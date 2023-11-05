@@ -58,6 +58,9 @@ public class UdpNetClient implements NetClient {
     @Override
     public void send(MessageType type, GameMessage message, InetSocketAddress receiver) {
         try {
+            if(receiver == null) {
+                throw new NullPointerException("Receiver can not be null");
+            }
             pending.put(new SendData(type, message, receiver));
         } catch (InterruptedException e) {
             logger.info("Interrupted pending put", e);

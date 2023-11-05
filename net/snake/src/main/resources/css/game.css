@@ -6,6 +6,12 @@
     -fx-text-fill: -tertiary;
 }
 
+.message {
+    -fx-font-family: "Press Start 2P";
+    -fx-font-size: 40px;
+    -fx-text-fill: #ff3333;
+}
+
 .rating-table {
     -fx-border-width: 0;
 }

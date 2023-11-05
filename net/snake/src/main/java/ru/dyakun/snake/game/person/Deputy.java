@@ -31,7 +31,7 @@ public class Deputy extends Normal {
         }
         if(roleChangeMsg.hasReceiverRole() && roleChangeMsg.getReceiverRole() == NodeRole.VIEWER) {
             logger.info("Become viewer");
-            notifyListeners(GameEvent.MESSAGE, "Поражение");
+            notifyListeners(GameEvent.MESSAGE, "YOU LOSE");
             var newMember = new Viewer(this);
             notifyChangeRoleListeners(newMember);
         }
@@ -48,6 +48,7 @@ public class Deputy extends Normal {
         logger.info("Become master");
         timer.cancelPing();
         timer.cancelPlayersStatusTrack();
+        client.removeReceiver(masterAddress);
         var newMember = new Master(this);
         notifyChangeRoleListeners(newMember);
     }

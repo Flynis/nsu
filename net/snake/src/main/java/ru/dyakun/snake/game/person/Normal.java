@@ -38,7 +38,7 @@ public class Normal extends Viewer {
         switch (newRole) {
             case VIEWER -> {
                 logger.info("Become viewer");
-                notifyListeners(GameEvent.MESSAGE, "Поражение");
+                notifyListeners(GameEvent.MESSAGE, "YOU LOSE");
                 var newMember = new Viewer(this);
                 notifyChangeRoleListeners(newMember);
             }

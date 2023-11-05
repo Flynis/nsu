@@ -57,6 +57,7 @@ public final class Master extends Member {
     }
 
     Master(Deputy deputy) {
+        // TODO delete old master
         super(deputy.getParams(), deputy.gameInfo);
         id = deputy.id;
         var oldState = deputy.state;
@@ -75,8 +76,10 @@ public final class Master extends Member {
         }
         timer.startPlayersStatusTrack(tracker, this);
         for(var player: players.values()) {
-            var roleChange = Messages.roleChangeMessage(NodeRole.MASTER, null, id, player.getId());
-            client.send(MessageType.ROLE_CHANGE, roleChange, player.getAddress());
+            if(player.getId() != id && player.getRole() != NodeRole.MASTER) {
+                var roleChange = Messages.roleChangeMessage(NodeRole.MASTER, null, id, player.getId());
+                client.send(MessageType.ROLE_CHANGE, roleChange, player.getAddress());
+            }
         }
         changeDeputy();
     }
@@ -293,6 +296,6 @@ public final class Master extends Member {
     @Override
     public void exit() {
         timer.cancelGameStateUpdate();
-        timer.cancelPing();
+        timer.cancelPlayersStatusTrack();
     }
 }

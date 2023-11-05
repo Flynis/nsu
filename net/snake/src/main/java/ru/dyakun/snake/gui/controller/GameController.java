@@ -1,5 +1,6 @@
 package ru.dyakun.snake.gui.controller;
 
+import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -7,6 +8,7 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.input.KeyEvent;
@@ -34,14 +36,21 @@ public class GameController extends AbstractController implements Initializable 
     public TableColumn<ScoreEntry, String> nickColumn;
     public TableColumn<ScoreEntry, Integer> scoreColumn;
     public Canvas canvas;
+    public Label messageLabel;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         numberColumn.setCellValueFactory(cellData -> cellData.getValue().numberProperty().asObject());
         nickColumn.setCellValueFactory(cellData -> cellData.getValue().nicknameProperty());
         scoreColumn.setCellValueFactory(cellData -> cellData.getValue().scoreProperty().asObject());
+        messageLabel.setVisible(false);
     }
-    
+
+    private void setMessage(String message) {
+        messageLabel.setText(message);
+        messageLabel.setVisible(true);
+    }
+
     public void backClick() {
         game.finishCurrentSession();
         manager.changeScene(SceneName.MENU);
@@ -50,13 +59,13 @@ public class GameController extends AbstractController implements Initializable 
     @Override
     public void onEvent(GameEvent event, Object payload) {
         if(manager.current() != SceneName.GAME) return;
-        // TODO handle payload
         switch (event) {
             case REPAINT -> {
                 var state = game.getGameState();
                 redrawField(state.getField(), game.getSnake());
                 updateScoreTable(state.getGamePlayers(), game.getPlayer());
             }
+            case MESSAGE -> Platform.runLater(() -> setMessage((String) payload));
         }
     }
 

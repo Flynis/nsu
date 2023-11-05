@@ -114,7 +114,8 @@ public class Field extends AbstractField {
                 aliveSnakes++;
             }
             var head = snake.moveHead();
-            if(get(head.x, head.y) == Tile.EMPTY) {
+            var tile = get(head.x, head.y);
+            if(tile == Tile.EMPTY || tile == Tile.SNAKE) {
                 var tail = snake.getTail();
                 set(tail.x, tail.y, Tile.EMPTY);
                 snake.moveTail();

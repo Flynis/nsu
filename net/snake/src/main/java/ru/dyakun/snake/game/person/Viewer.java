@@ -159,8 +159,19 @@ public class Viewer extends Member {
     public void onInactivePlayers(Collection<Integer> inactive) {
         if(isMasterInactive(inactive)) {
             var deputy = Players.findDeputy(state.getPlayers());
-            changeMaster(deputy.getId(), deputy.getAddress());
+            if(deputy == null) {
+                gameOver();
+            } else {
+                changeMaster(deputy.getId(), deputy.getAddress());
+            }
         }
+    }
+
+    protected void gameOver() {
+        client.removeReceiver(masterAddress);
+        timer.cancelPing();
+        timer.cancelPlayersStatusTrack();
+        notifyListeners(GameEvent.MESSAGE, "GAME OVER");
     }
 
     protected void changeMaster(int masterId, InetSocketAddress masterAddress) {
