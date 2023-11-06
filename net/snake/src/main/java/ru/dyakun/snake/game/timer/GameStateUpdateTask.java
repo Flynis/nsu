@@ -6,7 +6,6 @@ import ru.dyakun.snake.game.event.GameEvent;
 import ru.dyakun.snake.game.event.GameEventListener;
 import ru.dyakun.snake.game.person.Master;
 import ru.dyakun.snake.game.util.MessageType;
-import ru.dyakun.snake.game.util.Messages;
 import ru.dyakun.snake.net.NetClient;
 import ru.dyakun.snake.protocol.NodeRole;
 
@@ -37,7 +36,7 @@ public class GameStateUpdateTask extends TimerTask {
             master.update();
             var state = master.getState();
             var players = state.getPlayers();
-            var message = Messages.stateMessage(state);
+            var message = master.getStateMessage();
             for(var player : players) {
                 if(player.getRole() != NodeRole.MASTER) {
                     client.send(MessageType.STATE, message, player.getAddress());

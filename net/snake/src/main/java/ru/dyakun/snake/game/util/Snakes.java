@@ -15,6 +15,6 @@ public class Snakes {
                 return snake;
             }
         }
-        throw new IllegalStateException("Snake not found");
+        return null;
     }
 }

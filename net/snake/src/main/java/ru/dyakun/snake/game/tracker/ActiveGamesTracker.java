@@ -36,6 +36,7 @@ public class ActiveGamesTracker implements GameMessageListener {
     }
 
     private void notifyListeners(GameEvent event, Object payload) {
+        logger.info("Active games notify {}", event);
         for(var listener : listeners) {
             listener.onEvent(event, payload);
         }

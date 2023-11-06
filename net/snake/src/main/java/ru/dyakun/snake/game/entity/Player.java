@@ -88,7 +88,7 @@ public class Player implements PlayerView {
 
         public Builder address(String ip, int port) {
             if(ip.isBlank() || port < 1024) {
-                throw new IllegalArgumentException("Incorrect address");
+                throw new IllegalArgumentException("Incorrect address " + ip + ":" + port);
             }
             this.address = new InetSocketAddress(ip, port);
             return this;

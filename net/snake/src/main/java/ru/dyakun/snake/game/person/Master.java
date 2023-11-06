@@ -28,6 +28,7 @@ public final class Master extends Member {
     private final Field field;
     private final int id;
     private int deputyId;
+    private GameMessage stateMessage;
     private boolean hasDeputy = false;
     private final PlayersStatusTracker tracker;
     private final IdGenerator generator;
@@ -50,6 +51,7 @@ public final class Master extends Member {
             throw new AssertionError();
         }
         state = new GameState(field, new GameState.EntitiesCollections(players.values(), foods, snakes.values()));
+        stateMessage = Messages.stateMessage(state);
         timer.startGameStateUpdate(this, config.getDelay(), client);
         tracker = new PlayersStatusTracker((config.getDelay() * 4) / 5);
         timer.startPlayersStatusTrack(tracker, this);
@@ -57,16 +59,17 @@ public final class Master extends Member {
     }
 
     Master(Deputy deputy) {
-        // TODO delete old master
         super(deputy.getParams(), deputy.gameInfo);
         id = deputy.id;
         var oldState = deputy.state;
         generator = new SimpleIdGenerator(Players.maxId(oldState.getPlayers(), id));
         fillMaps(oldState.getPlayers(), oldState.getSnakes());
+        players.get(id).setRole(NodeRole.MASTER);
         var foods = oldState.getFoods();
         var config = deputy.gameInfo.getConfig();
         field = new Field(config, players, snakes, foods);
         state = new GameState(field, new GameState.EntitiesCollections(players.values(), foods, snakes.values()));
+        stateMessage = Messages.stateMessage(state);
         timer.startGameStateUpdate(this, config.getDelay(), client);
         tracker = new PlayersStatusTracker((config.getDelay() * 4) / 5);
         for(var player: players.values()) {
@@ -82,6 +85,10 @@ public final class Master extends Member {
             }
         }
         changeDeputy();
+    }
+
+    public GameMessage getStateMessage() {
+        return stateMessage;
     }
 
     private void fillMaps(Collection<Player> players, Collection<Snake> snakes) {
@@ -138,12 +145,17 @@ public final class Master extends Member {
             field.updateField();
             for(var snake : snakes.values()) {
                 if (snake.state() == Snake.State.DESTROYED) {
-                    viewers.add(players.get(snake.playerId()));
+                    var player = players.get(snake.playerId());
+                    player.setRole(NodeRole.VIEWER);
+                    viewers.add(player);
                 }
             }
+            for(var viewer: viewers) {
+                snakes.remove(viewer.getId());
+            }
+            stateMessage = Messages.stateMessage(state);
         }
         for(var viewer: viewers) {
-            snakes.remove(viewer.getId());
             if(viewer.getId() == id) {
                 continue;
             }
@@ -274,6 +286,10 @@ public final class Master extends Member {
         for(var playerId : inactive) {
             var player = players.remove(playerId);
             client.removeReceiver(player.getAddress());
+            var snake = snakes.get(playerId);
+            if(snake != null) {
+                snake.setState(Snake.State.ZOMBIE);
+            }
         }
     }
 

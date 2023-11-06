@@ -1,6 +1,9 @@
 package ru.dyakun.snake.game.person;
 
+import ru.dyakun.snake.game.entity.Snake;
 import ru.dyakun.snake.game.event.GameEvent;
+import ru.dyakun.snake.game.util.Players;
+import ru.dyakun.snake.game.util.Snakes;
 import ru.dyakun.snake.protocol.GameMessage;
 import ru.dyakun.snake.protocol.NodeRole;
 
@@ -48,8 +51,20 @@ public class Deputy extends Normal {
         logger.info("Become master");
         timer.cancelPing();
         timer.cancelPlayersStatusTrack();
-        client.removeReceiver(masterAddress);
+        removeMasterFromState();
         var newMember = new Master(this);
         notifyChangeRoleListeners(newMember);
+    }
+
+    protected void removeMasterFromState() {
+        client.removeReceiver(masterAddress);
+        var player = Players.findById(state.getPlayers(), masterId);
+        if(player != null) {
+            state.getPlayers().remove(player);
+        }
+        var snake = Snakes.findById(state.getSnakes(), masterId);
+        if(snake != null) {
+            snake.setState(Snake.State.ZOMBIE);
+        }
     }
 }
