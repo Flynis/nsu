@@ -3,12 +3,11 @@ import rational_function;
 
 main() {
 
-    input: string = "x * y * y + x / (x + y)";
-
+    input: string = "(x + y) * (y + x)";
     expression = parse(input, "#include rational_arith.lingo");
     if (expression != flow("PARSING FAILED")) {
         println("expression: " + expr2s(expression));
-        f: RationalFunc = toRationalFunction(expression);
+        f: RationalFunc = expr2rfunc(expression);
         println("rational function: " + rfunc2s(f));
     } else {
         println("Parsing failed");

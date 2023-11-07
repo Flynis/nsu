@@ -1,0 +1,59 @@
+import rational_number;
+import expression;
+import string;
+
+export {
+    Monom : (vars : Tree<string, int>);
+
+    Polynom : (monoms: Tree<Monom, RationalNum>);
+
+    r2polynom(r: RationalNum) -> Polynom;
+
+    v2polynom(v: string) -> Polynom;
+
+    addPolynoms(p: Polynom, q: Polynom) -> Polynom;
+
+    negPolynom(p: Polynom) -> Polynom;
+
+    mulPolynoms(p: Polynom, q: Polynom) -> Polynom;
+
+    isZero(p: Polynom) -> bool;
+
+    polynom2s(p: Polynom) -> string;
+}
+
+emptyMonom() -> Monom {
+    Monom(makeTree());
+}
+
+v2monom(v: string) -> Monom {
+    Monom(makeTree1(v, 1));
+}
+  
+r2polynom(r: RationalNum) -> Polynom {
+    Polynom(makeTree1(emptyMonom(), r));
+}
+
+v2polynom(v: string) -> Polynom {
+    Polynom(makeTree1(v2monom(v), r));
+}
+
+addPolynoms(p: Polynom, q: Polynom) -> Polynom {
+
+}
+
+negPolynom(p: Polynom) -> Polynom {
+
+}
+
+mulPolynoms(p: Polynom, q: Polynom) -> Polynom {
+
+}
+
+isZero(p: Polynom) -> bool {
+
+}
+
+polynom2s(p: Polynom) -> string {
+    
+}

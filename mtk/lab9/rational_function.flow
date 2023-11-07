@@ -1,41 +1,54 @@
 import expression;
-import simplification;
+import polynom;
 
 export {
-    RationalFunc : (p: Expr, q: Expr);
+    RationalFunc : (p: Polynom, q: Polynom);
 
-    toRationalFunction(e: Expr) -> RationalFunc;
+    expr2rfunc(e: Expr) -> RationalFunc;
 
     rfunc2s(f: RationalFunc) -> string;
 }
 
-toRationalFunction(e: Expr) -> RationalFunc {
-    tmp: RationalFunc = switch(e) {
+r2rfunc(r: RationalNum) -> RationalFunc {
+    RationalFunc(r2polynom(r), r2polynom(i2r(1)));
+}
+
+v2rfunc(v: string) -> RationalFunc {
+    RationalFunc(v2polynom(v), r2polynom(i2r(1)));
+}
+
+expr2rfunc(e: Expr) -> RationalFunc {
+    switch(e) {
+        Rational(r): r2rfunc(r);
+        Int(i): r2rfunc(i2r(i));
+        Var(name): v2rfunc(name);
+        Neg(expr): {
+            f: RationalFunc = expr2rfunc(expr);
+            RationalFunc(negPolynom(f.p), f.q);
+        }
         Binary(l, r, op): {
-            lf: RationalFunc = toRationalFunction(l);
-            rf: RationalFunc = toRationalFunction(r);
+            lf: RationalFunc = expr2rfunc(l);
+            rf: RationalFunc = expr2rfunc(r);
             switch(op) {
                 AddOp(): RationalFunc(
-                    simplifyAdd(simplifyMul(lf.p, rf.q), simplifyMul(rf.p, lf.q)), 
-                    simplifyMul(lf.q, rf.q)
+                    addPolynoms(mulPolynoms(lf.p, rf.q), mulPolynoms(rf.p, lf.q)), 
+                    mulPolynoms(lf.q, rf.q)
                 );
                 SubOp(): RationalFunc(
-                    simplifySub(simplifyMul(lf.p, rf.q), simplifyMul(rf.p, lf.q)), 
-                    simplifyMul(lf.q, rf.q)
+                    addPolynoms(mulPolynoms(lf.p, rf.q), negPolynom(mulPolynoms(rf.p, lf.q))), 
+                    mulPolynoms(lf.q, rf.q)
                 );
                 MulOp(): RationalFunc(
-                    simplifyMul(lf.p, rf.p), simplifyMul(lf.q, rf.q)
+                    mulPolynoms(lf.p, rf.p), mulPolynoms(lf.q, rf.q)
                 );
                 DivOp(): RationalFunc(
-                    simplifyMul(lf.p, rf.q), simplifyMul(lf.q, rf.p)
+                    mulPolynoms(lf.p, rf.q), mulPolynoms(lf.q, rf.p)
                 );
             };
         }
-        default: RationalFunc(e, Int(1));
     }
-    RationalFunc(simplify(tmp.p), simplify(tmp.q));
 }
 
 rfunc2s(f: RationalFunc) -> string {
-    expr2s(f.p) + " / " + expr2s(f.q);
+    polynom2s(f.p) + " / " + polynom2s(f.q);
 }

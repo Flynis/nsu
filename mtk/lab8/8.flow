@@ -3,7 +3,7 @@ import differentiation;
 
 main() {
 
-    input: string = "x * y * y + x / (x + y)";
+    input: string = "1/x";
 
     expression = parse(input, "#include rational_arith.lingo");
     if (expression != flow("PARSING FAILED")) {
