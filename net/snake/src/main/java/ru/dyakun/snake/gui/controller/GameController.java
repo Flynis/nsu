@@ -22,6 +22,7 @@ import ru.dyakun.snake.game.field.GameField;
 import ru.dyakun.snake.game.field.Tile;
 import ru.dyakun.snake.gui.scene.SceneName;
 import ru.dyakun.snake.protocol.Direction;
+import ru.dyakun.snake.util.AssetsPool;
 
 import java.net.URL;
 import java.util.Collection;
@@ -37,6 +38,8 @@ public class GameController extends AbstractController implements Initializable 
     public TableColumn<ScoreEntry, Integer> scoreColumn;
     public Canvas canvas;
     public Label messageLabel;
+    public Snake playerSnake;
+    public Snake enemySnake;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -44,6 +47,12 @@ public class GameController extends AbstractController implements Initializable 
         nickColumn.setCellValueFactory(cellData -> cellData.getValue().nicknameProperty());
         scoreColumn.setCellValueFactory(cellData -> cellData.getValue().scoreProperty().asObject());
         messageLabel.setVisible(false);
+        playerSnake = new Snake(
+                AssetsPool.getImage("/images/green_head.png"),
+                AssetsPool.getImage("/images/green.png"));
+        enemySnake = new Snake(
+                AssetsPool.getImage("/images/red_head.png"),
+                AssetsPool.getImage("/images/red.png"));
     }
 
     private void setMessage(String message) {
