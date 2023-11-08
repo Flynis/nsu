@@ -232,6 +232,9 @@ public final class Master extends Member {
     protected void onJoinMsg(GameMessage message, InetSocketAddress sender) {
         var join = message.getJoin();
         try {
+            if(Players.findPlayerByAddress(players.values(), sender) != null) {
+                return;
+            }
             var player = addPlayer(join.getPlayerName(), join.getRequestedRole(), sender);
             sendAck(id, player.getId(), sender, message);
             tracker.updateStatus(player.getId());
@@ -296,15 +299,15 @@ public final class Master extends Member {
     private void changeDeputy() {
         hasDeputy = false;
         var normal = Players.findByRole(players.values(), NodeRole.NORMAL);
-        if(normal == null) {
-            return;
+        if(normal != null) {
+            setDeputy(normal.getId());
         }
-        setDeputy(normal.getId());
     }
 
     public void setDeputy(int deputy) {
         deputyId = deputy;
         hasDeputy = true;
+        players.get(deputyId).setRole(NodeRole.DEPUTY);
         var roleChange = Messages.roleChangeMessage(null, NodeRole.DEPUTY, id, deputy);
         client.send(MessageType.ROLE_CHANGE, roleChange, players.get(deputy).getAddress());
     }
@@ -314,4 +317,7 @@ public final class Master extends Member {
         timer.cancelGameStateUpdate();
         timer.cancelPlayersStatusTrack();
     }
+
+    @Override
+    public void onSendError(GameMessage message) {}
 }

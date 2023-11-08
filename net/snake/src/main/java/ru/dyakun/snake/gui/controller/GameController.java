@@ -106,7 +106,6 @@ public class GameController extends AbstractController implements Initializable 
                             g.setFill(Color.RED);
                         }
                         g.fillRect(j * width, i * height, width, height);
-                        //logger.debug("Draw ({}, {})", j, i);
                     }
                 }
             }

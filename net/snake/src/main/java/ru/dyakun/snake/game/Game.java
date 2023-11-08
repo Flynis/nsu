@@ -116,9 +116,16 @@ public class Game implements GameMessageListener, ChangeRoleListener {
     }
 
     @Override
-    public void handle(GameMessage message, InetSocketAddress sender) {
+    public void onMessage(GameMessage message, InetSocketAddress sender) {
         if (member != null) {
-            member.handle(message, sender);
+            member.onMessage(message, sender);
+        }
+    }
+
+    @Override
+    public void onSendError(GameMessage message) {
+        if (member != null) {
+            member.onSendError(message);
         }
     }
 

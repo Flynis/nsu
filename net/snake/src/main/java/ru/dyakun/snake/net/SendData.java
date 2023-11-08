@@ -11,12 +11,14 @@ public class SendData {
     private final GameMessage message;
     private InetSocketAddress receiver;
     private LocalDateTime sendTime;
+    private int sendCount;
 
     SendData(MessageType type, GameMessage message, InetSocketAddress receiver) {
         this.type = type;
         this.message = message;
         this.receiver = receiver;
         this.sendTime = null;
+        this.sendCount = 0;
     }
 
     public MessageType type() {
@@ -35,6 +37,10 @@ public class SendData {
         return sendTime;
     }
 
+    public int sendCount() {
+        return sendCount;
+    }
+
     public void setReceiver(InetSocketAddress receiver) {
         this.receiver = receiver;
     }
@@ -43,8 +49,17 @@ public class SendData {
         this.sendTime = sendTime;
     }
 
+    public void incSendCount() {
+        sendCount++;
+    }
+
     @Override
     public String toString() {
-        return String.format("SendData{%s[%d] to %s:%d}", type, message.getMsgSeq(), receiver.getAddress().getHostAddress(), receiver.getPort());
+        return String.format("SendData{%s[%d %d] to %s:%d}",
+                type,
+                message.getMsgSeq(),
+                sendCount,
+                receiver.getAddress().getHostAddress(),
+                receiver.getPort());
     }
 }

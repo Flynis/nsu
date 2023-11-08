@@ -89,7 +89,7 @@ public abstract class Member implements GameMessageListener {
     }
 
     @Override
-    public void handle(GameMessage message, InetSocketAddress sender) {
+    public void onMessage(GameMessage message, InetSocketAddress sender) {
         try {
             if(message.hasState()) {
                 logger.debug("Receive STATE[{}]", message.getMsgSeq());

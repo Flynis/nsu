@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -20,15 +21,28 @@ import static ru.dyakun.snake.game.util.MessageType.*;
 
 public class MessageSender implements Runnable, Stoppable {
     private static final Logger logger = LoggerFactory.getLogger(MessageSender.class);
+    private static final int MAX_SEND_COUNT = 5;
     private final BlockingQueue<SendData> queue;
     private final Queue<SendData> ackWaiters = new ConcurrentLinkedDeque<>();
+    private final List<GameMessageListener> listeners;
     private final DatagramSocket socket;
     private boolean isRunning = false;
     private long timeout = 10000;
 
-    MessageSender(BlockingQueue<SendData> queue, DatagramSocket socket) {
+    MessageSender(BlockingQueue<SendData> queue, List<GameMessageListener> listeners, DatagramSocket socket) {
         this.queue = queue;
+        this.listeners = listeners;
         this.socket = socket;
+    }
+
+    private void notifyListenersOnError(GameMessage message) {
+        try {
+            for(var listener : listeners) {
+                listener.onSendError(message);
+            }
+        } catch (Exception e) {
+            logger.error("On send error handle failed", e);
+        }
     }
 
     void changeReceiver(InetSocketAddress current, InetSocketAddress old) {
@@ -67,6 +81,7 @@ public class MessageSender implements Runnable, Stoppable {
                 var type = sendData.type();
                 if(type != ACK && type != ANNOUNCEMENT && type != DISCOVER) {
                     sendData.setSendTime(LocalDateTime.now());
+                    sendData.incSendCount();
                     ackWaiters.add(sendData);
                 }
                 byte[] buf = sendData.message().toByteArray();
@@ -84,6 +99,10 @@ public class MessageSender implements Runnable, Stoppable {
     private void resend() {
         var resendList = new ArrayList<SendData>();
         for(var data : ackWaiters) {
+            if(data.sendCount() == MAX_SEND_COUNT) {
+                notifyListenersOnError(data.message());
+                return;
+            }
             if(ChronoUnit.MILLIS.between(data.sendTime(), LocalDateTime.now()) > timeout) {
                 resendList.add(data);
             }

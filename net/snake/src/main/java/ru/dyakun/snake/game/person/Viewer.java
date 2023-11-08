@@ -194,4 +194,11 @@ public class Viewer extends Member {
         timer.cancelPing();
         timer.cancelPlayersStatusTrack();
     }
+
+    @Override
+    public void onSendError(GameMessage message) {
+        if(message.hasJoin()) {
+            notifyListeners(GameEvent.MESSAGE, "Game host is not responding");
+        }
+    }
 }

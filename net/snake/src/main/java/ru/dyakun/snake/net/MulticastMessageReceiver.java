@@ -28,7 +28,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
     private void notifyListeners(GameMessage message, InetSocketAddress sender) {
         try {
             for(var listener : listeners) {
-                listener.handle(message, sender);
+                listener.onMessage(message, sender);
             }
         } catch (Exception e) {
             logger.error("Handle message failed", e);

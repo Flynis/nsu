@@ -64,7 +64,7 @@ public class ActiveGamesTracker implements GameMessageListener {
     }
 
     @Override
-    public void handle(GameMessage message, InetSocketAddress sender) {
+    public void onMessage(GameMessage message, InetSocketAddress sender) {
         if(message.hasAnnouncement()) {
             logger.debug("Receive ANNOUNCEMENT");
             GameMessage.AnnouncementMsg announcementMsg = message.getAnnouncement();
@@ -80,6 +80,9 @@ public class ActiveGamesTracker implements GameMessageListener {
             }
         }
     }
+
+    @Override
+    public void onSendError(GameMessage message) {}
 
     private static class Entry {
         private final GameInfo game;

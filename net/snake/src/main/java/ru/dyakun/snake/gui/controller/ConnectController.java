@@ -89,9 +89,11 @@ public class ConnectController extends AbstractController implements Initializab
 
     @Override
     public void onEvent(GameEvent event, Object payload) {
-        if(manager.current() != SceneName.CONNECT) return;
         switch (event) {
-            case NEW_ACTIVE_GAME -> games.add(GameDesc.fromGameInfo((GameInfoView) payload));
+            case NEW_ACTIVE_GAME -> {
+                games.add(GameDesc.fromGameInfo((GameInfoView) payload));
+                Platform.runLater(() -> gamesInfoTable.refresh());
+            }
             case UPDATE_GAME_INFO -> {
                 var gameInfo = (GameInfoView) payload;
                 for(var gameDesc: games) {
@@ -100,11 +102,15 @@ public class ConnectController extends AbstractController implements Initializab
                         break;
                     }
                 }
+                Platform.runLater(() -> gamesInfoTable.refresh());
             }
             case DELETE_INACTIVE_GAMES -> {
                 var inactive = (String) payload;
                 games.removeIf(gameDesc -> gameDesc.getName().equals(inactive));
             }
+        }
+        if(manager.current() != SceneName.CONNECT) return;
+        switch (event) {
             case JOINED -> Platform.runLater(() -> manager.changeScene(SceneName.GAME));
             case MESSAGE -> Platform.runLater(() -> showErrorMessage((String) payload));
         }

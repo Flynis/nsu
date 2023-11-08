@@ -123,8 +123,10 @@ public class Snake implements SnakeView {
         if(points.isEmpty()) {
             throw new IllegalStateException("Points is empty");
         }
-        Point p = new Point(points.peekFirst());
-        for (var point : points) {
+        var iter = points.iterator();
+        Point p = new Point(iter.next());
+        while (iter.hasNext()) {
+            var point = iter.next();
             p.add(point);
         }
         return p;

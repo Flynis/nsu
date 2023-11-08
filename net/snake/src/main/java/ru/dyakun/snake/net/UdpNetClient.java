@@ -25,7 +25,7 @@ public class UdpNetClient implements NetClient {
     public UdpNetClient() {
         try {
             socket = new DatagramSocket();
-            messageSender = new MessageSender(pending, socket);
+            messageSender = new MessageSender(pending, listeners, socket);
             var thread = new Thread(messageSender);
             thread.setName("Sender");
             thread.start();
@@ -48,10 +48,10 @@ public class UdpNetClient implements NetClient {
     private void notifyListeners(GameMessage message, InetSocketAddress sender) {
         try {
             for(var listener : listeners) {
-                listener.handle(message, sender);
+                listener.onMessage(message, sender);
             }
         } catch (Exception e) {
-            logger.error("Handle message failed", e);
+            logger.error("On message handle failed", e);
         }
     }
 
