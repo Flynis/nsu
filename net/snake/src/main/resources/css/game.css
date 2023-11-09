@@ -24,10 +24,25 @@
 }
 
 .rating-table .table-row-cell {
-    -fx-background-color: #101010;
+    -fx-background-color: -background;
     -fx-background-insets: 0, 0 0 1 0;
     -fx-padding: 3px;
     -fx-font-family: "Press Start 2P";
     -fx-font-size: 14px;
+    -fx-text-background-color: -foreground;
+}
+
+.rating-table .table-row-cell:hover {
+    -fx-background-color: -background;
+    -fx-text-background-color: -foreground;
+}
+
+.rating-table .table-row-cell:selected {
+    -fx-background-color: -background;
+    -fx-text-background-color: -foreground;
+}
+
+.rating-table .table-row-cell:focused {
+    -fx-background-color: -background;
     -fx-text-background-color: -foreground;
 }

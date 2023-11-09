@@ -148,6 +148,11 @@ public class Viewer extends Member {
     }
 
     @Override
+    public Collection<SnakeView> getSnakes() {
+        return state.getSnakes().stream().map(s -> (SnakeView)s).toList();
+    }
+
+    @Override
     public GameStateView getGameState() {
         return state;
     }

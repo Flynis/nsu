@@ -8,9 +8,11 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
 import org.slf4j.Logger;
@@ -19,7 +21,6 @@ import ru.dyakun.snake.game.entity.PlayerView;
 import ru.dyakun.snake.game.entity.SnakeView;
 import ru.dyakun.snake.game.event.GameEvent;
 import ru.dyakun.snake.game.field.GameField;
-import ru.dyakun.snake.game.field.Tile;
 import ru.dyakun.snake.gui.scene.SceneName;
 import ru.dyakun.snake.protocol.Direction;
 import ru.dyakun.snake.util.AssetsPool;
@@ -60,21 +61,24 @@ public class GameController extends AbstractController implements Initializable 
         messageLabel.setVisible(true);
     }
 
-    public void backClick() {
-        game.finishCurrentSession();
+    public void leaveClick() {
+        game.leave();
         manager.changeScene(SceneName.MENU);
     }
 
     @Override
     public void onEvent(GameEvent event, Object payload) {
-        if(manager.current() != SceneName.GAME) return;
         switch (event) {
             case REPAINT -> {
                 var state = game.getGameState();
-                redrawField(state.getField(), game.getSnake());
+                redrawField(state.getField(), game.getSnake(), game.getSnakes());
                 updateScoreTable(state.getGamePlayers(), game.getPlayer());
             }
-            case MESSAGE -> Platform.runLater(() -> setMessage((String) payload));
+            case MESSAGE -> {
+                if(manager.current() == SceneName.GAME) {
+                    Platform.runLater(() -> setMessage((String) payload));
+                }
+            }
         }
     }
 
@@ -88,7 +92,8 @@ public class GameController extends AbstractController implements Initializable 
     private void updateScoreTable(Collection<PlayerView> players, PlayerView current) {
         // TODO cur player
         var sorted = players.stream().sorted(new PlayerComparator().reversed()).toList();
-        var scores = IntStream.range(0, sorted.size()).mapToObj(i -> ScoreEntry.from(sorted.get(i), i + 1)).toList();
+        var scores = IntStream.range(0, sorted.size())
+                .mapToObj(i -> ScoreEntry.from(sorted.get(i), i + 1)).toList();
         scoreTable.setItems(FXCollections.observableList(scores));
     }
 
@@ -98,27 +103,43 @@ public class GameController extends AbstractController implements Initializable 
         g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
 
-    private void redrawField(GameField field, SnakeView current) {
-        // TODO cur snake
+    private void drawSnakeRandom(Image image, int x, int y, int width, int height, GraphicsContext g) {
+        var random = Direction.random();
+        drawSnakeTile(image, x, y, width, height, random, g);
+    }
+
+    private void drawSnakeTile(Image image, int x, int y, int width, int height, Direction direction, GraphicsContext g) {
+        var degrees = Direction.toDegrees(direction);
+        g.save();
+        g.rotate(degrees);
+        g.drawImage(image, x, y, width, height);
+        g.restore();
+    }
+
+    private void redrawField(GameField field, SnakeView current, Collection<SnakeView> snakes) {
         clearCanvas();
         var g = canvas.getGraphicsContext2D();
         int width = (int)canvas.getWidth() / field.getWidth();
         int height = (int)canvas.getHeight() / field.getHeight();
+        var apple = AssetsPool.getImage("/images/apple.png");
         for(int i = 0; i < field.getHeight(); i++) {
             for(int j = 0; j < field.getWidth(); j++) {
                 var tile = field.getTile(j, i);
                 switch (tile) {
-                    case FOOD, SNAKE -> {
-                        if(tile == Tile.FOOD) {
-                            g.setFill(Color.YELLOW);
-                        } else {
-                            g.setFill(Color.RED);
-                        }
-                        g.fillRect(j * width, i * height, width, height);
-                    }
+                    case FOOD -> g.drawImage(apple, j * width, i * height, width, height);
+                    case SNAKE -> drawSnakeRandom(enemySnake.body(), j * width, i * height, width, height, g);
                 }
             }
         }
+        for(var point: current) {
+            drawSnakeRandom(playerSnake.body(), point.x * width, point.y * height, width, height, g);
+        }
+        for(var snake: snakes) {
+            var head = snake.getHead();
+            drawSnakeTile(enemySnake.head(), head.x * width, head.y * height, width, height, snake.getDirection(), g);
+        }
+        var head = current.getHead();
+        drawSnakeTile(playerSnake.head(), head.x * width, head.y * height, width, height, current.getDirection(), g);
     }
 
     public void handleKey(KeyEvent keyEvent) {

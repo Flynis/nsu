@@ -238,7 +238,6 @@ public final class Master extends Member {
             var player = addPlayer(join.getPlayerName(), join.getRequestedRole(), sender);
             sendAck(id, player.getId(), sender, message);
             tracker.updateStatus(player.getId());
-            var stateMessage = Messages.stateMessage(state);
             client.send(MessageType.STATE, stateMessage, sender);
             if(player.getRole() == NodeRole.NORMAL && !hasDeputy) {
                 setDeputy(player.getId());
@@ -269,6 +268,11 @@ public final class Master extends Member {
     @Override
     public SnakeView getSnake() {
         return snakes.get(id);
+    }
+
+    @Override
+    public Collection<SnakeView> getSnakes() {
+        return snakes.values().stream().map(s -> (SnakeView)s).toList();
     }
 
     @Override

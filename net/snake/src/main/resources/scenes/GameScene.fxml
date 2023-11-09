@@ -21,7 +21,7 @@
             <VBox alignment="CENTER" spacing="15.0">
                 <Label fx:id="messageLabel" styleClass="message" text="GAME OVER" />
                 <Label styleClass="rating-header" text="Rating" />
-                <TableView fx:id="scoreTable" styleClass="rating-table" prefHeight="400.0" prefWidth="300" minHeight="300.0" minWidth="200.0">
+                <TableView fx:id="scoreTable" styleClass="rating-table" prefHeight="500.0" prefWidth="300" minHeight="300.0" minWidth="200.0">
                     <placeholder>
                         <Label styleClass="medium-text" text="No info"/>
                     </placeholder>
@@ -38,7 +38,7 @@
                 <padding>
                     <Insets top="5" right="5" bottom="5" left="5" />
                 </padding>
-                <Button minHeight="60.0" mnemonicParsing="false" prefWidth="200.0" text="BACK" onAction="#backClick"/>
+                <Button minHeight="60.0" mnemonicParsing="false" prefWidth="200.0" text="LEAVE" onAction="#leaveClick"/>
             </HBox>
         </bottom>
     </BorderPane>

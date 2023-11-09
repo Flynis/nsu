@@ -3,6 +3,8 @@
 
 package ru.dyakun.snake.protocol;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Protobuf enum {@code protocol.Direction}
  */
@@ -91,13 +93,26 @@ public enum Direction
   }
 
   public static Direction getReverse(Direction direction) {
-    switch (direction) {
-      case UP -> { return DOWN; }
-      case DOWN -> { return UP; }
-      case LEFT -> { return RIGHT; }
-      case RIGHT -> { return LEFT; }
-      default -> throw new IllegalArgumentException("Unknown direction");
-    }
+    return switch (direction) {
+      case UP -> DOWN;
+      case DOWN -> UP;
+      case LEFT -> RIGHT;
+      case RIGHT -> LEFT;
+    };
+  }
+
+  public static double toDegrees(Direction direction) {
+    return switch (direction) {
+      case UP -> 0.0;
+      case LEFT -> 90.0;
+      case DOWN -> 180.0;
+      case RIGHT -> 270.0;
+    };
+  }
+
+  public static Direction random() {
+    var r = ThreadLocalRandom.current().nextInt(values().length);
+    return forNumber(r + 1);
   }
 
   /**

@@ -45,7 +45,7 @@ public class ConnectController extends AbstractController implements Initializab
     }
 
     public void backClick(ActionEvent ignored) {
-        game.finishCurrentSession();
+        game.leave();
         manager.changeScene(SceneName.MENU);
     }
 

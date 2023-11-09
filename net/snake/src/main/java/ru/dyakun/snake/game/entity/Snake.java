@@ -115,6 +115,11 @@ public class Snake implements SnakeView {
         return points.peekFirst();
     }
 
+    @Override
+    public Direction getDirection() {
+        return direction;
+    }
+
     public Point getTail() {
         return tail;
     }
