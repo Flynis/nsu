@@ -1,9 +1,10 @@
 import rational_number;
 import expression;
 import string;
+import mytree_util;
 
 export {
-    Monom : (vars : Tree<string, int>);
+    Monom : (vars: Tree<string, int>);
 
     Polynom : (monoms: Tree<Monom, RationalNum>);
 
@@ -17,8 +18,6 @@ export {
 
     mulPolynoms(p: Polynom, q: Polynom) -> Polynom;
 
-    isZero(p: Polynom) -> bool;
-
     polynom2s(p: Polynom) -> string;
 }
 
@@ -26,8 +25,39 @@ emptyMonom() -> Monom {
     Monom(makeTree());
 }
 
+isEmptyMonom(m: Monom) -> bool {
+    foldTree(m.vars, true, \name, power, acc -> acc && power == 0);
+}
+
 v2monom(v: string) -> Monom {
     Monom(makeTree1(v, 1));
+}
+
+mulMonoms(a: Monom, b: Monom) -> Monom {
+    Monom(mergeTreeCustom(a.vars, b.vars, \var, ia, ib -> ia + ib));
+}
+
+cmpMonoms(a: Monom, b: Monom) -> int {
+    if(equalTreesKeys(a.vars, b.vars)) {
+        0;
+    } else {
+        if(a.vars > b.vars) 1 else -1;
+    }
+}
+
+monom2s(m: Monom) -> string {
+    foldTree(m.vars, "", \name, power, acc -> {
+        if(power == 0) {
+            acc;
+        } else {
+            tmp: string = if (acc == "") acc else acc + "*";
+            if(power == 1) {
+                tmp + name;
+            } else {
+                tmp + name + "^" + i2s(power);
+            }
+        }
+    });
 }
   
 r2polynom(r: RationalNum) -> Polynom {
@@ -35,25 +65,51 @@ r2polynom(r: RationalNum) -> Polynom {
 }
 
 v2polynom(v: string) -> Polynom {
-    Polynom(makeTree1(v2monom(v), r));
+    Polynom(makeTree1(v2monom(v), i2r(1)));
 }
 
 addPolynoms(p: Polynom, q: Polynom) -> Polynom {
-
+    println("p = " + polynom2raws(p));
+    println("q = " + polynom2raws(q));
+    add = Polynom(myMergeTree(p.monoms, q.monoms, \m, a, b -> rationalAdd(a, b), cmpMonoms));
+    println("add = " + polynom2raws(add));
+    add;
 }
 
 negPolynom(p: Polynom) -> Polynom {
+    Polynom(mapTree(p.monoms, \v-> rationalNeg(v)));
+}
 
+mulMonomToPolynom(m: Monom, c: RationalNum, p: Polynom) -> Polynom {
+    Polynom(foldTree(p.monoms, makeTree(), \k, v, t -> setTree(t, mulMonoms(m, k), rationalMul(c, v))));
 }
 
 mulPolynoms(p: Polynom, q: Polynom) -> Polynom {
-
+    zero = r2polynom(i2r(0));
+    t = foldTree(p.monoms, zero, \kp, vp, acc -> addPolynoms(acc, mulMonomToPolynom(kp, vp, q)));
+    Polynom(filterTree(t.monoms, \monom, c -> !isZero(c)));
 }
 
-isZero(p: Polynom) -> bool {
+isZeroPolynom(p: Polynom) -> bool {
+    foldTree(p.monoms, true, \k, v, acc -> acc && isZero(v));
+}
 
+polynom2raws(p: Polynom) -> string {
+    foldTree(p.monoms, "", \monom, c, acc -> acc + " + " + r2s(c) + "*" + monom2s(monom));
 }
 
 polynom2s(p: Polynom) -> string {
-    
+    str = foldTree(p.monoms, "", \monom, c, acc -> {
+        ms: string = monom2s(monom);
+        k: string = if (isOne(c) && ms != "") ms else if(ms == "") r2s(c) else r2s(c) + "*" + ms;  
+        if(rsign(c) > 0) {
+            if (acc == "") acc + k else acc + " + " + k;
+        } else if(isZero(c)) {
+            acc;
+        } else {
+            acc + " " + k;
+        }
+    });
+    if (str == "") "0" else str;
 }
+

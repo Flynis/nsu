@@ -1,0 +1,136 @@
+import ds/tree;
+
+export {
+	equalTreesKeys(t1: Tree<?, ??>, t2: Tree<?, ??>) -> bool;
+
+    myMergeTree(t1: Tree<?, ??>, t2: Tree<?, ??>, fn: (?, ??, ??) -> ??, cmp: (?, ?) -> int) -> Tree<?, ??>;
+}
+
+equalTreesKeys(t1: Tree<?, ??>, t2: Tree<?, ??>) -> bool {
+	t1 == t2 || (sizeTree(t1) == sizeTree(t2) 
+		&& foldTree(t1, true, \k1, v1, acc -> acc && isSome(lookupTree(t2, k1))));
+}
+
+myMergeTree(t1: Tree<?, ??>, t2: Tree<?, ??>, fn: (?, ??, ??) -> ??, cmp: (?, ?) -> int) -> Tree<?, ??> {
+	foldTree(t2, t1, \k, v, acc -> {
+		vv = eitherMap(
+			myLookupTree(acc, k, cmp),
+			\v2 -> fn(k, v, v2),
+			v
+		);
+		mySetTree(acc, k, vv, cmp);
+	});
+}
+
+myLookupTree(set: Tree<?, ??>, key: ?, cmp: (?, ?) -> int) -> Maybe<??> {
+	switch (set : Tree) {
+		TreeNode(k, v, l, r, depth): {
+			c = cmp(key, k);
+			if (c < 0) {
+				myLookupTree(l, key, cmp);
+			} else if (c == 0) {
+				Some(v);
+			} else {
+				myLookupTree(r, key, cmp);
+			}
+		}
+		TreeEmpty():
+			None();
+	}
+}
+
+mySetTree(set: Tree<?, ??>, key: ?, value: ??, cmp: (?, ?) -> int) -> Tree<?, ??> {
+	switch (set : Tree) {
+		TreeNode(k, v, left, right, depth): {
+			c = cmp(key, k);
+			if (c < 0) {
+				_rebalancedTree(k, v, mySetTree(left, key, value, cmp), right);
+			} else if (c == 0) {
+				// Update the value of this node
+				TreeNode(k, value, left, right, depth);
+			} else {
+				_rebalancedTree(k, v, left, mySetTree(right, key, value, cmp));
+			}
+		}
+		TreeEmpty(): {
+			TreeNode(key, value, TreeEmpty(), TreeEmpty(), 1);
+		}
+	}
+}
+
+_mkTreeNode(k : ?, v : ??, left : Tree<?, ??>, right : Tree<?, ??>) -> TreeNode<?, ??> {
+	TreeNode(k, v, left, right, max(_treeDepth(left), _treeDepth(right)) + 1);
+}
+
+_rebalancedTree(k : ?, v : ??, left : Tree<?, ??>, right : Tree<?, ??>) -> Tree<?, ??> {
+	leftDepth = _treeDepth(left);
+	rightDepth = _treeDepth(right);
+
+	balance = leftDepth - rightDepth;
+
+	composed = TreeNode(k, v, left, right, max(leftDepth, rightDepth) + 1);
+
+	if (balance == -1 || balance == 0 || balance == 1) {
+		composed;
+	} else if (balance < 0) {
+		// Right-right or right-left?
+		switch (right : Tree) {
+			TreeEmpty(): composed;
+			TreeNode(rk, rv, rl, rr, rdepth): {
+				_treeLeftRotation(
+					if (_treeDepth(rl) < _treeDepth(rr)) composed else _mkTreeNode(k, v, left, _treeRightRotation(right))
+				);
+			}
+		}
+	} else {
+		// Left-left or left-right?
+		switch (left : Tree) {
+			TreeEmpty(): composed;
+			TreeNode(lk, lv, ll, lr, ldepth): {
+				_treeRightRotation(
+					if (_treeDepth(ll) < _treeDepth(lr)) _mkTreeNode(k, v, _treeLeftRotation(left), right) else composed
+				);
+			}
+		}
+	}
+}
+
+_treeDepth(tree : Tree<?, ??>) -> int {
+	switch (tree : Tree) {
+		TreeEmpty(): 0;
+		TreeNode(__, __, __, __, depth): depth;
+	}
+}
+
+_treeRightRotation(tree : Tree<?, ??>) -> Tree<?, ??> {
+	switch (tree : Tree) {
+		TreeEmpty(): tree;
+		TreeNode(k, v, left, right, depth): {
+			switch (left : Tree) {
+				TreeEmpty(): {
+					tree;
+				}
+				TreeNode(ck, cv, cleft, cright, cdepth): {
+					_mkTreeNode(ck, cv, cleft, _mkTreeNode(k, v, cright, right));
+				}
+			}
+		}
+	}
+}
+
+_treeLeftRotation(tree : Tree<?, ??>) -> Tree<?, ??> {
+	switch (tree : Tree) {
+		TreeEmpty(): tree;
+		TreeNode(k, v, left, right, depth): {
+			switch (right : Tree) {
+				TreeEmpty(): {
+					tree;
+				}
+				TreeNode(ck, cv, cleft, cright, cdepth): {
+					_mkTreeNode(ck, cv, _mkTreeNode(k, v, left, cleft), cright);
+				}
+			}
+		}
+	}
+}
+

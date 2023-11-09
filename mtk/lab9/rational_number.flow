@@ -34,6 +34,8 @@ export {
 
     rationalDiv(a: RationalNum, b: RationalNum) -> RationalNum;
 
+    rationalNeg(r: RationalNum) -> RationalNum;
+
     r2s(r: RationalNum) -> string;
 }
 
@@ -71,7 +73,7 @@ isZero(r: RationalNum) -> bool {
 }
 
 isOne(r : RationalNum) -> bool {
-    r.m == 1 && r.n == 1;
+    (r.m == 1 || r.m == -1) && r.n == 1;
 }
 
 isPlusInf(r: RationalNum) -> bool {
@@ -161,4 +163,8 @@ rationalDiv(a: RationalNum, b: RationalNum) -> RationalNum {
     } else {
         rationalMul(a, RationalNum(b.n, b.m));
     }
+}
+
+rationalNeg(r: RationalNum) -> RationalNum {
+    RationalNum(-r.m, r.n);
 }
