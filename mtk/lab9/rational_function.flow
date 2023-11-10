@@ -50,5 +50,5 @@ expr2rfunc(e: Expr) -> RationalFunc {
 }
 
 rfunc2s(f: RationalFunc) -> string {
-    polynom2s(f.p) + " / " + polynom2s(f.q);
+    "(" + polynom2s(f.p) + ") / (" + polynom2s(f.q) + ")";
 }

@@ -101,13 +101,15 @@ polynom2raws(p: Polynom) -> string {
 polynom2s(p: Polynom) -> string {
     str = foldTree(p.monoms, "", \monom, c, acc -> {
         ms: string = monom2s(monom);
-        k: string = if (isOne(c) && ms != "") ms else if(ms == "") r2s(c) else r2s(c) + "*" + ms;  
+        k: string = if (isOne(c) && ms != "") {
+                if(rsign(c) < 0) "-" + ms else ms;
+            } else if(ms == "") r2s(c) else r2s(c) + "*" + ms;  
         if(rsign(c) > 0) {
-            if (acc == "") acc + k else acc + " + " + k;
+            if (acc == "") acc + k else acc + "+" + k;
         } else if(isZero(c)) {
             acc;
         } else {
-            acc + " " + k;
+            acc + k;
         }
     });
     if (str == "") "0" else str;
