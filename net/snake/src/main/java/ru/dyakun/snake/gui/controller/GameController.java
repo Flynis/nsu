@@ -36,6 +36,7 @@ public class GameController extends AbstractController implements Initializable 
     public Label messageLabel;
     public StackPane canvasParent;
     private GameCanvas canvas;
+    private PlayerView player;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -45,6 +46,20 @@ public class GameController extends AbstractController implements Initializable 
         messageLabel.setVisible(false);
         canvas = new GameCanvas();
         canvas.setParent(canvasParent);
+        scoreTable.setRowFactory((TableView<ScoreEntry> row) -> new TableRow<>() {
+            @Override
+            public void updateItem(ScoreEntry entry, boolean empty) {
+                setStyle("");
+                super.updateItem(entry, empty);
+                if (entry == null || empty) {
+                    setStyle("");
+                } else {
+                    if(entry.getNickname().equals(player.getName())) {
+                        setStyle("-fx-text-background-color: #33ff33");
+                    }
+                }
+            }
+        });
     }
 
     private void setMessage(String message) {
@@ -62,8 +77,8 @@ public class GameController extends AbstractController implements Initializable 
         switch (event) {
             case REPAINT -> {
                 var state = game.getGameState();
-                canvas.drawState(state, game.getSnake());
                 updateScoreTable(state.getGamePlayers(), game.getPlayer());
+                canvas.drawState(state, game.getSnake());
             }
             case MESSAGE -> {
                 if(manager.current() == SceneName.GAME) {
@@ -81,16 +96,11 @@ public class GameController extends AbstractController implements Initializable 
     }
 
     private void updateScoreTable(Collection<PlayerView> players, PlayerView current) {
-        // TODO cur player
+        player = current;
         var sorted = players.stream().sorted(new PlayerComparator().reversed()).toList();
         var scores = IntStream.range(0, sorted.size())
                 .mapToObj(i -> ScoreEntry.from(sorted.get(i), i + 1)).toList();
         scoreTable.setItems(FXCollections.observableList(scores));
-        for(var node : scoreTable.lookupAll("TableRow")) {
-            if(node instanceof TableRow<?> row) {
-                row.getStyleClass().add("highlight");
-            }
-        }
     }
 
     public void handleKey(KeyEvent keyEvent) {

@@ -23,11 +23,6 @@
     -fx-font-size: 16px;
 }
 
-.rating-table .table-row-cell .highlight {
-    -fx-background-color: -background;
-    -fx-text-background-color: #ff3333;
-}
-
 .rating-table .table-row-cell {
     -fx-background-color: -background;
     -fx-background-insets: 0, 0 0 1 0;

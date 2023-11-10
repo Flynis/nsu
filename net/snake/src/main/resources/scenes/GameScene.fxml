@@ -13,7 +13,7 @@
         <padding>
             <Insets top="30" right="30" bottom="30" left="30" />
         </padding>
-        <StackPane fx:id="canvasParent" maxWidth="Infinity" maxHeight="Infinity" minHeight="500.0" minWidth="500.0"/>
+        <StackPane fx:id="canvasParent" maxWidth="Infinity" maxHeight="Infinity" prefHeight="2000.0" minHeight="500.0" minWidth="500.0"/>
     </VBox>
     <BorderPane prefHeight="900.0" prefWidth="400.0" minHeight="600.0" minWidth="200.0">
         <padding>

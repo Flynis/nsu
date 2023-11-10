@@ -13,12 +13,16 @@ public class AssetsPool {
             return images.get(path);
         } else {
             try {
-                Image image = new Image(path);
+                var url = AssetsPool.class.getResource(path);
+                if(url == null) {
+                    throw new IllegalArgumentException("Resource not found " + path);
+                }
+                Image image = new Image(url.toExternalForm());
                 images.put(path, image);
                 return image;
             }
             catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Incorrect name", e);
+                throw new IllegalArgumentException("Incorrect path " + path, e);
             }
         }
     }

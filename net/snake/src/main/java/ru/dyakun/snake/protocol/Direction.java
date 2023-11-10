@@ -104,9 +104,9 @@ public enum Direction
   public static double toDegrees(Direction direction) {
     return switch (direction) {
       case UP -> 0.0;
-      case LEFT -> 90.0;
+      case RIGHT -> 90.0;
       case DOWN -> 180.0;
-      case RIGHT -> 270.0;
+      case LEFT -> 270.0;
     };
   }
 

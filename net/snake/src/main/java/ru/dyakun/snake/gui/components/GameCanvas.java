@@ -3,6 +3,7 @@ package ru.dyakun.snake.gui.components;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
+import javafx.scene.transform.Rotate;
 import ru.dyakun.snake.game.entity.GameStateView;
 import ru.dyakun.snake.game.entity.SnakeView;
 import ru.dyakun.snake.game.field.GameField;
@@ -38,8 +39,18 @@ public class GameCanvas extends ResizableCanvas {
 
     private void clear() {
         var g = getGraphicsContext2D();
-        g.setFill(Color.BLACK);
+        g.setFill(Color.web("#080808"));
         g.fillRect(0, 0, getWidth(), getHeight());
+    }
+
+    private void drawRotatedImage(GraphicsContext g, Image image, double angle, int x, int y, int width, int height) {
+        g.save();
+        var centerX = x + width / 2;
+        var centerY = y + height / 2;
+        Rotate r = new Rotate(angle, centerX, centerY);
+        g.setTransform(r.getMxx(), r.getMyx(), r.getMxy(), r.getMyy(), r.getTx(), r.getTy());
+        g.drawImage(image, x, y, width, height);
+        g.restore();
     }
 
     private void drawSnakeRandom(Image image, int x, int y, int width, int height, GraphicsContext g) {
@@ -49,10 +60,19 @@ public class GameCanvas extends ResizableCanvas {
 
     private void drawSnakeTile(Image image, int x, int y, int width, int height, Direction direction, GraphicsContext g) {
         var degrees = Direction.toDegrees(direction);
-        g.save();
-        g.rotate(degrees);
-        g.drawImage(image, x, y, width, height);
-        g.restore();
+        if(width > height) {
+            if(direction == Direction.UP || direction == Direction.DOWN) {
+                drawRotatedImage(g, image, degrees, x, y, width, height);
+            } else {
+                drawRotatedImage(g, image, degrees, x, y, height, width);
+            }
+        } else {
+            if(direction == Direction.UP || direction == Direction.DOWN) {
+                drawRotatedImage(g, image, degrees, x, y, height, width);
+            } else {
+                drawRotatedImage(g, image, degrees, x, y, width, height);
+            }
+        }
     }
 
     private void redrawField(GameField field, SnakeView current, Collection<SnakeView> snakes) {
