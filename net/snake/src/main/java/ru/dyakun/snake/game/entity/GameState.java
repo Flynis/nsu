@@ -48,6 +48,11 @@ public class GameState implements GameStateView {
     }
 
     @Override
+    public Collection<SnakeView> getSnakesView() {
+        return getSnakes().stream().map(s -> (SnakeView)s).toList();
+    }
+
+    @Override
     public GameField getField() {
         return field;
     }

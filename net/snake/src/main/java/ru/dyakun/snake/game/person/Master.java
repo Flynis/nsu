@@ -271,11 +271,6 @@ public final class Master extends Member {
     }
 
     @Override
-    public Collection<SnakeView> getSnakes() {
-        return snakes.values().stream().map(s -> (SnakeView)s).toList();
-    }
-
-    @Override
     public GameStateView getGameState() {
         return state;
     }

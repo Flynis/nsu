@@ -17,7 +17,6 @@ import ru.dyakun.snake.protocol.NodeRole;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class Game implements GameMessageListener, ChangeRoleListener {
@@ -60,10 +59,6 @@ public class Game implements GameMessageListener, ChangeRoleListener {
 
     public SnakeView getSnake() {
         return member.getSnake();
-    }
-
-    public Collection<SnakeView> getSnakes() {
-        return member.getSnakes();
     }
 
     public void addGameEventListener(GameEventListener listener) {

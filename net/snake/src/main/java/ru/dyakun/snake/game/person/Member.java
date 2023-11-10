@@ -134,8 +134,6 @@ public abstract class Member implements GameMessageListener {
 
     public abstract SnakeView getSnake();
 
-    public abstract Collection<SnakeView> getSnakes();
-
     public abstract GameStateView getGameState();
 
     public abstract void moveSnake(Direction direction);

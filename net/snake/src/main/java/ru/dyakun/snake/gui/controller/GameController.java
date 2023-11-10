@@ -7,23 +7,19 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.Initializable;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
-import javafx.scene.image.Image;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.paint.Color;
+import javafx.scene.layout.StackPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.dyakun.snake.game.entity.PlayerView;
-import ru.dyakun.snake.game.entity.SnakeView;
 import ru.dyakun.snake.game.event.GameEvent;
-import ru.dyakun.snake.game.field.GameField;
+import ru.dyakun.snake.gui.components.GameCanvas;
 import ru.dyakun.snake.gui.scene.SceneName;
 import ru.dyakun.snake.protocol.Direction;
-import ru.dyakun.snake.util.AssetsPool;
 
 import java.net.URL;
 import java.util.Collection;
@@ -37,10 +33,9 @@ public class GameController extends AbstractController implements Initializable 
     public TableColumn<ScoreEntry, Integer> numberColumn;
     public TableColumn<ScoreEntry, String> nickColumn;
     public TableColumn<ScoreEntry, Integer> scoreColumn;
-    public Canvas canvas;
     public Label messageLabel;
-    public Snake playerSnake;
-    public Snake enemySnake;
+    public StackPane canvasParent;
+    private GameCanvas canvas;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -48,12 +43,8 @@ public class GameController extends AbstractController implements Initializable 
         nickColumn.setCellValueFactory(cellData -> cellData.getValue().nicknameProperty());
         scoreColumn.setCellValueFactory(cellData -> cellData.getValue().scoreProperty().asObject());
         messageLabel.setVisible(false);
-        playerSnake = new Snake(
-                AssetsPool.getImage("/images/green_head.png"),
-                AssetsPool.getImage("/images/green.png"));
-        enemySnake = new Snake(
-                AssetsPool.getImage("/images/red_head.png"),
-                AssetsPool.getImage("/images/red.png"));
+        canvas = new GameCanvas();
+        canvas.setParent(canvasParent);
     }
 
     private void setMessage(String message) {
@@ -71,7 +62,7 @@ public class GameController extends AbstractController implements Initializable 
         switch (event) {
             case REPAINT -> {
                 var state = game.getGameState();
-                redrawField(state.getField(), game.getSnake(), game.getSnakes());
+                canvas.drawState(state, game.getSnake());
                 updateScoreTable(state.getGamePlayers(), game.getPlayer());
             }
             case MESSAGE -> {
@@ -95,51 +86,11 @@ public class GameController extends AbstractController implements Initializable 
         var scores = IntStream.range(0, sorted.size())
                 .mapToObj(i -> ScoreEntry.from(sorted.get(i), i + 1)).toList();
         scoreTable.setItems(FXCollections.observableList(scores));
-    }
-
-    private void clearCanvas() {
-        var g = canvas.getGraphicsContext2D();
-        g.setFill(Color.BLACK);
-        g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-    }
-
-    private void drawSnakeRandom(Image image, int x, int y, int width, int height, GraphicsContext g) {
-        var random = Direction.random();
-        drawSnakeTile(image, x, y, width, height, random, g);
-    }
-
-    private void drawSnakeTile(Image image, int x, int y, int width, int height, Direction direction, GraphicsContext g) {
-        var degrees = Direction.toDegrees(direction);
-        g.save();
-        g.rotate(degrees);
-        g.drawImage(image, x, y, width, height);
-        g.restore();
-    }
-
-    private void redrawField(GameField field, SnakeView current, Collection<SnakeView> snakes) {
-        clearCanvas();
-        var g = canvas.getGraphicsContext2D();
-        int width = (int)canvas.getWidth() / field.getWidth();
-        int height = (int)canvas.getHeight() / field.getHeight();
-        var apple = AssetsPool.getImage("/images/apple.png");
-        for(int i = 0; i < field.getHeight(); i++) {
-            for(int j = 0; j < field.getWidth(); j++) {
-                var tile = field.getTile(j, i);
-                switch (tile) {
-                    case FOOD -> g.drawImage(apple, j * width, i * height, width, height);
-                    case SNAKE -> drawSnakeRandom(enemySnake.body(), j * width, i * height, width, height, g);
-                }
+        for(var node : scoreTable.lookupAll("TableRow")) {
+            if(node instanceof TableRow<?> row) {
+                row.getStyleClass().add("highlight");
             }
         }
-        for(var point: current) {
-            drawSnakeRandom(playerSnake.body(), point.x * width, point.y * height, width, height, g);
-        }
-        for(var snake: snakes) {
-            var head = snake.getHead();
-            drawSnakeTile(enemySnake.head(), head.x * width, head.y * height, width, height, snake.getDirection(), g);
-        }
-        var head = current.getHead();
-        drawSnakeTile(playerSnake.head(), head.x * width, head.y * height, width, height, current.getDirection(), g);
     }
 
     public void handleKey(KeyEvent keyEvent) {
