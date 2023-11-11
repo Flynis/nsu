@@ -43,8 +43,10 @@ public class GameStateUpdateTask extends TimerTask {
                 }
             }
             notifyListeners();
-        } catch (Exception e) {
+        } catch (NullPointerException e) {
             logger.error("State update failed", e);
+        } catch (Exception e) {
+            logger.error("State update failed {}", e.getMessage(), e);
         }
     }
 }

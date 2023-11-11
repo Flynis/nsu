@@ -81,6 +81,7 @@ public class ConnectController extends AbstractController implements Initializab
         fieldColumn.setCellValueFactory(cellData -> cellData.getValue().fieldProperty());
         games = FXCollections.observableArrayList(new ArrayList<>());
         gamesInfoTable.setItems(games);
+        gamesInfoTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         errorLabel.setVisible(false);
         List<String> roles = List.of("Player", "Viewer");
         choiceRole.setItems(FXCollections.observableList(roles));

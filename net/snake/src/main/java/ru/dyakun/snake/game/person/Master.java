@@ -139,28 +139,36 @@ public final class Master extends Member {
     }
 
     public void update() {
-        var viewers = new ArrayList<Player>();
+        var viewers = new ArrayList<Integer>();
         synchronized (lock) {
             state.incStateOrder();
             field.updateField();
             for(var snake : snakes.values()) {
                 if (snake.state() == Snake.State.DESTROYED) {
+                    viewers.add(snake.playerId());
                     var player = players.get(snake.playerId());
-                    player.setRole(NodeRole.VIEWER);
-                    viewers.add(player);
+                    if(player != null && player.getRole() != NodeRole.MASTER) {
+                        player.setRole(NodeRole.VIEWER);
+                    }
                 }
             }
             for(var viewer: viewers) {
-                snakes.remove(viewer.getId());
+                snakes.remove(viewer);
             }
             stateMessage = Messages.stateMessage(state);
         }
         for(var viewer: viewers) {
-            if(viewer.getId() == id) {
+            if(viewer == id) {
                 continue;
             }
-            var roleChange = Messages.roleChangeMessage(null, NodeRole.VIEWER, id, viewer.getId());
-            client.send(MessageType.ROLE_CHANGE, roleChange, viewer.getAddress());
+            var player = players.get(viewer);
+            if(player != null) {
+                var roleChange = Messages.roleChangeMessage(null, NodeRole.VIEWER, id, viewer);
+                client.send(MessageType.ROLE_CHANGE, roleChange, player.getAddress());
+            }
+        }
+        if(viewers.contains(id)) {
+            notifyListeners(GameEvent.MESSAGE, "YOU LOSE");
         }
     }
 

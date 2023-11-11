@@ -6,11 +6,9 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
+import javafx.event.Event;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import org.slf4j.Logger;
@@ -36,7 +34,6 @@ public class GameController extends AbstractController implements Initializable 
     public Label messageLabel;
     public StackPane canvasParent;
     private GameCanvas canvas;
-    private PlayerView player;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -46,6 +43,7 @@ public class GameController extends AbstractController implements Initializable 
         messageLabel.setVisible(false);
         canvas = new GameCanvas();
         canvas.setParent(canvasParent);
+        scoreTable.addEventFilter(KeyEvent.KEY_PRESSED, Event::consume);
         scoreTable.setRowFactory((TableView<ScoreEntry> row) -> new TableRow<>() {
             @Override
             public void updateItem(ScoreEntry entry, boolean empty) {
@@ -54,7 +52,8 @@ public class GameController extends AbstractController implements Initializable 
                 if (entry == null || empty) {
                     setStyle("");
                 } else {
-                    if(entry.getNickname().equals(player.getName())) {
+                    var player = game.getPlayer();
+                    if(player != null && entry.getNickname().equals(player.getName())) {
                         setStyle("-fx-text-background-color: #33ff33");
                     }
                 }
@@ -77,14 +76,16 @@ public class GameController extends AbstractController implements Initializable 
         switch (event) {
             case REPAINT -> {
                 var state = game.getGameState();
-                updateScoreTable(state.getGamePlayers(), game.getPlayer());
+                updateScoreTable(state.getGamePlayers());
                 canvas.drawState(state, game.getSnake());
+                Platform.runLater(() -> scoreTable.refresh());
             }
             case MESSAGE -> {
                 if(manager.current() == SceneName.GAME) {
                     Platform.runLater(() -> setMessage((String) payload));
                 }
             }
+            case JOINED -> scoreTable.setItems(FXCollections.emptyObservableList());
         }
     }
 
@@ -95,8 +96,7 @@ public class GameController extends AbstractController implements Initializable 
         }
     }
 
-    private void updateScoreTable(Collection<PlayerView> players, PlayerView current) {
-        player = current;
+    private void updateScoreTable(Collection<PlayerView> players) {
         var sorted = players.stream().sorted(new PlayerComparator().reversed()).toList();
         var scores = IntStream.range(0, sorted.size())
                 .mapToObj(i -> ScoreEntry.from(sorted.get(i), i + 1)).toList();

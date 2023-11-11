@@ -116,8 +116,10 @@ public abstract class Member implements GameMessageListener {
                 logger.debug("Receive DISCOVER[{}]", message.getMsgSeq());
                 onDiscoverMsg(message, sender);
             }
+        } catch (NullPointerException e) {
+            logger.error("Member message handle failed", e);
         } catch (Exception e) {
-            logger.error("Person message handle failed", e);
+            logger.error("Member message handle failed {}", e.getMessage(), e);
         }
     }
 

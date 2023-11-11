@@ -51,6 +51,7 @@ public class Snake implements SnakeView {
 
     private final Deque<Point> points;
     private Direction direction;
+    private Direction prevDirection;
     private State state;
     private final int playerId;
     private final Point tail;
@@ -64,11 +65,13 @@ public class Snake implements SnakeView {
         this.playerId = playerId;
         this.state = State.ALIVE;
         this.direction = Points.determineDirection(head, tail);
+        this.prevDirection = direction;
     }
 
     public Snake(Deque<Point> points, Direction direction, State state, int playerId) {
         this.points = points;
         this.direction = direction;
+        this.prevDirection = direction;
         this.state = state;
         this.playerId = playerId;
         this.tail = findTail();
@@ -87,8 +90,15 @@ public class Snake implements SnakeView {
         return direction;
     }
 
+    private boolean isValidNewDirection(Direction current, Direction direction) {
+        return switch (current) {
+            case LEFT, RIGHT -> direction == Direction.UP || direction == Direction.DOWN;
+            case UP, DOWN -> direction == Direction.LEFT || direction == Direction.RIGHT;
+        };
+    }
+
     public void setDirection(Direction direction) {
-        if(this.direction != direction && direction != Direction.getReverse(this.direction)) {
+        if(isValidNewDirection(prevDirection, direction)) {
             this.direction = direction;
         }
     }
@@ -153,6 +163,7 @@ public class Snake implements SnakeView {
             points.addFirst(Points.getRelativeDisplacement(newHead, head));
             points.addFirst(newHead);
         }
+        prevDirection = direction;
         return newHead;
     }
 
