@@ -1,0 +1,70 @@
+import expression;
+
+export {
+    MapRule : (from: Expr, to: Expr);
+
+    rule2s(r: MapRule) -> string;
+
+    applyRule(e: Expr, r: MapRule) -> Maybe<Expr>;
+}
+
+rule2s(r: MapRule) -> string {
+    expr2s(r.from) + " -> " + expr2s(r.to);
+}
+
+mergeTreeArrayUnique(t1: Tree<?, [??]>, t2: Tree<?, [??]>) -> Tree<?, [??]> {
+    mergeTreeCustom(t1, t2, \key, arr1, arr2 -> {
+        set2array(buildSet(concat(arr1, arr2)));
+    });
+}
+
+match(e: Expr, rfrom: Expr, m: Tree<string, [Expr]>) -> Maybe<Tree<string, [Expr]>> {
+    switch (rfrom) {
+        Var(name): Some(treePushToArrayUnique(m, name, e));
+        Neg(rule): {
+            switch(e) {
+                Neg(expr): match(expr, rule, m);
+                default: None();
+            }
+        }
+        Binary(lrule, rrule, oprule): {
+            switch(e) {
+                Binary(l, r, op): {
+                    if(op == oprule) {
+                        ml = match(l, lrule, m);
+                        mr = match(r, rrule, m);
+                        maybeMap2(mergeTreeArrayUnique)(ml, mr);
+                    } else {
+                        None();
+                    }
+                }
+                default: None();
+            }
+        }
+        default: if(e == rfrom) Some(m) else None();
+    }
+}
+
+isRawMapCorrect(m: Tree<string, [Expr]>) -> bool {
+    foldTree(m, true, \key, arr, ret -> ret && length(arr) == 1);
+}
+
+mapRule(rtree: Tree<string, Expr>, to: Expr) -> Expr {
+    switch(to) {
+        Var(name): lookupTreeDef(rtree, name, to);
+        Neg(rule): Neg(mapRule(rtree, rule));
+        Binary(l, r, op): Binary(mapRule(rtree, l), mapRule(rtree, r), op);
+        default: to;
+    }
+}
+
+applyRule(e: Expr, r: MapRule) -> Maybe<Expr> {
+    m = match(e, r.from, makeTree());
+    if(eitherMap(m, isRawMapCorrect, false)) {
+        mtree = either(m, makeTree());
+        rtree = mapTree(mtree, \arr -> arr[0]);
+        Some(mapRule(rtree, r.to));
+    } else {
+        None();
+    }
+}

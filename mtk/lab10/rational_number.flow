@@ -2,95 +2,95 @@ import string;
 import math/math;
 
 export {
-    RationalNum : (m: int, n: int);
+    RNumber : (m: int, n: int);
 
-    makeRationalNumber(m: int, n: int) -> RationalNum;
+    makeRNumber(m: int, n: int) -> RNumber;
 
-    i2r(i: int) -> RationalNum;
+    i2r(i: int) -> RNumber;
 
-    nan() -> RationalNum;
+    nan() -> RNumber;
 
-    plusInf() -> RationalNum;
+    plusInf() -> RNumber;
 
-    minusInf() -> RationalNum;
+    minusInf() -> RNumber;
 
-    rsign(r: RationalNum) -> int;
+    rsign(r: RNumber) -> int;
 
-    isNumber(r: RationalNum) -> bool;
+    isNumber(r: RNumber) -> bool;
 
-    isZero(r: RationalNum) -> bool;
+    isZero(r: RNumber) -> bool;
 
-    isOne(r : RationalNum) -> bool;
+    isPlusInf(r: RNumber) -> bool;
 
-    isInf(r: RationalNum) -> bool;
+    isMinusInf(r: RNumber) -> bool;
 
-    isNan(r: RationalNum) -> bool;
+    isInf(r: RNumber) -> bool;
 
-    rationalAdd(a: RationalNum, b: RationalNum) -> RationalNum;
+    isNan(r: RNumber) -> bool;
 
-    rationalSub(a: RationalNum, b: RationalNum) -> RationalNum;
+    addRNumbers(a: RNumber, b: RNumber) -> RNumber;
 
-    rationalMul(a: RationalNum, b: RationalNum) -> RationalNum;
+    subRNumbers(a: RNumber, b: RNumber) -> RNumber;
 
-    rationalDiv(a: RationalNum, b: RationalNum) -> RationalNum;
+    mulRNumbers(a: RNumber, b: RNumber) -> RNumber;
 
-    r2s(r: RationalNum) -> string;
+    divRNumbers(a: RNumber, b: RNumber) -> RNumber;
+
+    negRNumber(r: RNumber) -> RNumber;
+
+    r2s(r: RNumber) -> string;
 }
 
-makeRationalNumber(m: int, n: int) -> RationalNum {
+makeRNumber(m: int, n: int) -> RNumber {
     divisor: int = gcd(iabs(m), iabs(n));
-    RationalNum(isign(m) * isign(n) * iabs(m) / divisor, iabs(n) / divisor);
+    RNumber(isign(m) * isign(n) * iabs(m) / divisor, iabs(n) / divisor);
 }
 
-i2r(i: int) -> RationalNum {
-    RationalNum(i, 1);
+i2r(i: int) -> RNumber {
+    RNumber(i, 1);
 }
 
-rsign(r: RationalNum) -> int {
+rsign(r: RNumber) -> int {
     isign(r.m);
 }
 
-plusInf() -> RationalNum {
-    RationalNum(1, 0);
+plusInf() -> RNumber {
+    RNumber(1, 0);
 }
     
-minusInf() -> RationalNum {
-    RationalNum(-1, 0);
+minusInf() -> RNumber {
+    RNumber(-1, 0);
 }
     
-nan() -> RationalNum {
-    RationalNum(0, 0);
+nan() -> RNumber {
+    RNumber(0, 0);
 }
 
-isNumber(r: RationalNum) -> bool {
+isNumber(r: RNumber) -> bool {
     r.n != 0;    
 }
 
-isZero(r: RationalNum) -> bool {
+isZero(r: RNumber) -> bool {
     r.m == 0 && r.n != 0;
 }
 
-isOne(r : RationalNum) -> bool {
-    r.m == 1 && r.n == 1;
-}
-
-isPlusInf(r: RationalNum) -> bool {
+isPlusInf(r: RNumber) -> bool {
     r.m > 0 && r.n == 0;
 }
 
-isMinusInf(r: RationalNum) -> bool {
+isMinusInf(r: RNumber) -> bool {
     r.m < 0 && r.n == 0;
 }
 
-isInf(r: RationalNum) -> bool {
-    isPlusInf(r) || isMinusInf(r);
+isInf(r: RNumber) -> bool {
+    r.m != 0 && r.n == 0;
 }
 
-isNan(r: RationalNum) -> bool {
+isNan(r: RNumber) -> bool {
     r == nan();
 }
 
-r2s(r: RationalNum) -> string {
+r2s(r: RNumber) -> string {
     if (isPlusInf(r)) {
         "+inf";
     } else if (isMinusInf(r)) {
@@ -100,11 +100,15 @@ r2s(r: RationalNum) -> string {
     } else if (r.n == 1) {
         i2s(r.m);
     } else {
-        i2s(r.m) + "/" + i2s(r.n);
+        if(r.m > 0) {
+            "(" + i2s(r.m) + "/" + i2s(r.n) + ")";
+        } else {
+            "-(" + i2s(iabs(r.m)) + "/" + i2s(r.n) + ")";
+        }
     }
 }
 
-rationalAdd(a: RationalNum, b: RationalNum) -> RationalNum {
+addRNumbers(a: RNumber, b: RNumber) -> RNumber {
     if (isNan(a) || isNan(b)) {
         nan();
     } else if ((isPlusInf(a) && isMinusInf(b)) || (isMinusInf(a) && isPlusInf(b))) {
@@ -117,15 +121,15 @@ rationalAdd(a: RationalNum, b: RationalNum) -> RationalNum {
         divisor = lcm(a.n, b.n);
         ka = divisor / a.n;
         kb = divisor / b.n;
-        makeRationalNumber(a.m * kb + b.m * ka, divisor);
+        makeRNumber(a.m * ka + b.m * kb, divisor);
     }
 }
 
-rationalSub(a: RationalNum, b: RationalNum) -> RationalNum {
-    rationalAdd(a, RationalNum(-b.m, b.n));
+subRNumbers(a: RNumber, b: RNumber) -> RNumber {
+    addRNumbers(a, RNumber(-b.m, b.n));
 }
 
-rationalMul(a: RationalNum, b: RationalNum) -> RationalNum {
+mulRNumbers(a: RNumber, b: RNumber) -> RNumber {
     if (isNan(a) || isNan(b)) {
         nan();
     } else if ((isPlusInf(a) && rsign(b) > 0) || (isPlusInf(b) && rsign(a) > 0)) {
@@ -139,13 +143,13 @@ rationalMul(a: RationalNum, b: RationalNum) -> RationalNum {
     } else if ((isInf(a) && isZero(b)) || (isZero(a) && isInf(b))) {
         nan();
     } else {
-        c = makeRationalNumber(a.m, b.n);
-        d = makeRationalNumber(b.m, a.n);
-        makeRationalNumber(c.m * d.m, c.n * d.n);
+        c = makeRNumber(a.m, b.n);
+        d = makeRNumber(b.m, a.n);
+        makeRNumber(c.m * d.m, c.n * d.n);
     }
 }
 
-rationalDiv(a: RationalNum, b: RationalNum) -> RationalNum {
+divRNumbers(a: RNumber, b: RNumber) -> RNumber {
     if (isNumber(a) && isZero(b)) {
         if (rsign(a) > 0) {
             plusInf();
@@ -159,6 +163,10 @@ rationalDiv(a: RationalNum, b: RationalNum) -> RationalNum {
     } else if (isNan(a) || isNan(b)) {
         nan();
     } else {
-        rationalMul(a, RationalNum(b.n, b.m));
+        mulRNumbers(a, RNumber(b.n, b.m));
     }
+}
+
+negRNumber(r: RNumber) -> RNumber {
+    RNumber(-r.m, r.n);
 }

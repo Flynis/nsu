@@ -1,0 +1,103 @@
+import rational_number;
+import string;
+import monom;
+import mytree_util;
+
+export {
+    Polynom : (monoms: Tree<Monom, RNumber>);
+
+    r2polynom(r: RNumber) -> Polynom;
+
+    var2polynom(name: string) -> Polynom;
+
+    addPolynoms(p: Polynom, q: Polynom) -> Polynom;
+
+    mulPolynoms(p: Polynom, q: Polynom) -> Polynom;
+
+    negPolynom(p: Polynom) -> Polynom;
+
+    polynom2r(p: Polynom) -> Maybe<RNumber>;
+
+    mulPolynomByRnumber(p: Polynom, r: RNumber) -> Polynom;
+
+    polynom2s(p: Polynom) -> string;
+}
+  
+r2polynom(r: RNumber) -> Polynom {
+    Polynom(makeTree1(makeMonom(), r));
+}
+
+var2polynom(name: string) -> Polynom {
+    Polynom(makeTree1(var2monom(name), i2r(1)));
+}
+
+shortenPolynom(p: Polynom) -> Polynom {
+    const = foldTree(p.monoms, i2r(0), \monom, k, sum -> if(isEmptyMonom(monom)) addRNumbers(sum, k) else sum);
+    filtered = filterTree(p.monoms, \monom, k -> !isZero(k) && !isEmptyMonom(monom));
+    if(isZero(const)) {
+        Polynom(filtered);
+    } else {
+        Polynom(setTree(filtered, makeMonom(), const));
+    }
+}
+
+addPolynoms(p: Polynom, q: Polynom) -> Polynom {
+    //println("p = " + polynom2sRaw(p));
+    //println("q = " + polynom2sRaw(q));
+    sum = Polynom(myMergeTree(p.monoms, q.monoms, \monom, a, b -> addRNumbers(a, b), cmpMonoms));
+    //println("sum = " + polynom2sRaw(sum));
+    shortenPolynom(sum);
+}
+
+mulPolynomByMonom(p: Polynom, m0: Monom, k0: RNumber) -> Polynom {
+    Polynom(foldTree(p.monoms, makeTree(), \m, k, tree -> setTree(tree, mulMonoms(m0, m), mulRNumbers(k0, k))));
+}
+
+mulPolynoms(p: Polynom, q: Polynom) -> Polynom {
+    zero = r2polynom(i2r(0));
+    mul = foldTree(p.monoms, zero, \monom, k, sum -> addPolynoms(sum, mulPolynomByMonom(q, monom, k)));
+    shortenPolynom(mul);
+}
+
+negPolynom(p: Polynom) -> Polynom {
+    Polynom(mapTree(p.monoms, \k -> negRNumber(k)));
+}
+
+polynom2r(p: Polynom) -> Maybe<RNumber> {
+    foldTree(p.monoms, Some(i2r(0)), \m, k, sum -> {
+        maybeBind(sum, \s -> if (isEmptyMonom(m)) Some(addRNumbers(s, k)) else None()); 
+    });
+}
+
+mulPolynomByRnumber(p: Polynom, r: RNumber) -> Polynom {
+    Polynom(mapTree(p.monoms, \k -> mulRNumbers(r, k)));
+}
+
+polynom2sRaw(p: Polynom) -> string {
+    foldTree(p.monoms, "", \monom, k, str -> str + " + " + r2s(k) + "*" + monom2s(monom));
+}
+
+polynom2s(p: Polynom) -> string {
+    val: Maybe<RNumber> = polynom2r(p);
+    result: string = switch(val) {
+        Some(r): r2s(r);
+        None(): {
+            foldTree(p.monoms, "", \monom, k, str -> {
+                ms: string = monom2s(monom);
+                if(isZero(k)) {
+                    str;
+                } else if(k == RNumber(1, 1)) {
+                    if(str == "") ms else str + "+" + ms;
+                } else if(k == RNumber(-1, 1)) {
+                    str + "-" + ms;
+                } else if(rsign(k) > 0) {
+                    add: string = if(ms == "1") r2s(k) else r2s(k) + "*" + ms;
+                    if(str == "") add else str + "+" + add;
+                } else {
+                    if(ms == "1") str + r2s(k) else str + r2s(k) + "*" + ms;
+                }
+            });
+        }
+    };
+    "(" + result + ")";
+}

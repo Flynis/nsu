@@ -1,111 +1,107 @@
-import expression;
 import rational_number;
+import expression;
+import expression_set;
+import rule;
 
 export {
-    simplifyAdd(l: Expr, r: Expr) -> Expr;
-    
-    simplifySub(l: Expr, r: Expr) -> Expr;
-    
-    simplifyMul(l: Expr, r: Expr) -> Expr;
-    
-    simplifyDiv(l: Expr, r: Expr) -> Expr;
-    
-    simplifyBinary(l: Expr, r: Expr, op: BinaryOp) -> Expr;
-    
-    simplifyNeg(e: Expr) -> Expr;
-    
-    simplify(e: Expr) -> Expr;
+    simplify(e: Expr, rules: Set<MapRule>) -> Expr;
 }
 
-simplifyAdd(l: Expr, r: Expr) -> Expr {
-    lValue: RationalNum = calculateNoVars(l);
-    rValue: RationalNum = calculateNoVars(r);
-    if (!isNan(lValue) && !isNan(rValue)) {
-        Rational(rationalAdd(lValue, rValue));
-    } else if (isZero(lValue)) {
-        r;
-    } else if (isZero(rValue)) {
-        l;
-    } else if (l == Neg(r) || r == Neg(l)) {
-        Int(0);
-    } else {
-        addExpressions(l, r);
-    }
-}
-
-simplifySub(l: Expr, r: Expr) -> Expr {
-    lValue: RationalNum = calculateNoVars(l);
-    rValue: RationalNum = calculateNoVars(r);
-    if (!isNan(lValue) && !isNan(rValue)) {
-        Rational(rationalSub(lValue, rValue));
-    } else if (isZero(lValue)) {
-        Neg(r);
-    } else if (isZero(rValue)) {
-        l;
-    } else if (l == r) {
-        Int(0);
-    } else {
-        subExpressions(l, r);
-    }
-}
-
-simplifyMul(l: Expr, r: Expr) -> Expr {
-    lValue: RationalNum = calculateNoVars(l);
-    rValue: RationalNum = calculateNoVars(r);
-    if (!isNan(lValue) && !isNan(rValue)) {
-        Rational(rationalMul(lValue, rValue));
-    } else if (isZero(lValue) || isZero(rValue)) {
-        Int(0);
-    } else if (isOne(rValue)) {
-        l;
-    } else if (isOne(lValue)) {
-        r;
-    } else {
-        mulExpressions(l, r);
-    }
-}
-
-simplifyDiv(l: Expr, r: Expr) -> Expr {
-    lValue: RationalNum = calculateNoVars(l);
-    rValue: RationalNum = calculateNoVars(r);
-    if (!isNan(lValue) && !isNan(rValue)) {
-        Rational(rationalDiv(lValue, rValue));
-    } else if (isOne(rValue)) {
-        l;
-    } else if (isZero(lValue)) {
-        Int(0);
-    } else {
-        divExpressions(l, r);
-    }
-}
-
-simplifyBinary(l: Expr, r: Expr, op: BinaryOp) -> Expr {
-    switch(op) {
-        AddOp(): simplifyAdd(l, r);
-        SubOp(): simplifySub(l, r);
-        MulOp(): simplifyMul(l, r);
-        DivOp(): simplifyDiv(l, r);
-    };
-}
-
-simplifyNeg(e: Expr) -> Expr {
-    value: RationalNum = calculateNoVars(e);
-    if (value != nan()) {
-        Rational(rationalMul(i2r(-1), value));
-    } else {
-        Neg(e);
-    }
-}
-
-simplify(e: Expr) -> Expr {
+calcConst(e: Expr) -> Expr {
     switch(e) {
-        Neg(expr): simplifyNeg(expr);
-        Binary(l, r, op): {
-            ls: Expr = simplify(l);
-            rs: Expr = simplify(r);
-            simplifyBinary(ls, rs, op);
+        Neg(expr): {
+            v = calculateNoVars(expr);
+            if (!isNan(v)) {
+                Const(negRNumber(v));
+            } else {
+                Neg(calcConst(expr));
+            }
+        }
+        Binary(l, r, op):  {
+            lv = calculateNoVars(l);
+            rv = calculateNoVars(r);
+            if (!isNan(lv) && !isNan(rv)) {
+                result = switch(op) {
+                    AddOp() : addRNumbers(lv, rv);
+                    SubOp() : subRNumbers(lv, rv); 
+                    MulOp() : mulRNumbers(lv, rv);
+                    DivOp() : divRNumbers(lv, rv);
+                }
+                Const(result);
+            } else {
+                Binary(calcConst(l), calcConst(r), op);
+            }
         }
         default: e;
     }
 }
 
+applyBinaryOp(a: [Expr], b: [Expr], op: BinaryOp) -> [Expr] {
+    fold(a, [], \acc, exprA -> {
+        applied = fold(b, [], \arr, exprB -> {
+            arrayPush(arr, Binary(exprA, exprB, op));
+        });
+        concat(acc, applied);
+    });
+}
+
+makeNegative(es: [Expr]) -> [Expr] {
+    map(es, \e -> Neg(e));
+}
+
+searchAndSimplify(e: Expr, r: Set<MapRule>) -> [Expr] {
+    //println("searchsimplify " + expr2s(e));
+    switch(e) {
+        Neg(operand): {
+            form = searchMinFormsByRules(operand, r);
+            //println("searchsimplify neg " + i2s(length(form)));
+            makeNegative(form);
+        }
+        Binary(le, re, op): {
+            lform = searchMinFormsByRules(le, r);
+            rform = searchMinFormsByRules(re, r);
+            //println("searchsimplify binary " + i2s(length(lform)) + " " + i2s(length(rform)));
+            applyBinaryOp(lform, rform, op);
+        }
+        default: [e];
+    }
+}
+
+applyRulesToSet(es: ExpressionsSet, r: Set<MapRule>) -> [Expr] {      
+    if (hasNextElement(es)) {
+        curExpr = getCurrentElement(es);
+        //println(expr2s(curExpr));
+
+        tmp1 = searchAndSimplify(curExpr, r);
+        //println("tmp1 " + i2s(length(tmp1)));
+
+        tmp2 = fold(tmp1, es, \s, e -> tryToAppendElement(s, e));
+
+        newFoundForms = foldSet(r, tmp2, \acc, rule -> {
+            newForm = applyRule(curExpr, rule);
+            eitherMap(newForm, \f -> tryToAppendElement(acc, calcConst(f)), acc);
+        });
+
+        applyRulesToSet(newFoundForms, r);
+    } else {
+        es.elements;
+    }
+}
+
+applyRules(es: [Expr], r: Set<MapRule>) -> [Expr] {
+    //println("applyrules " + i2s(length(es)));
+    applyRulesToSet(makeExpressionsSet(es), r);
+}
+
+searchMinFormsByRules(e: Expr, r: Set<MapRule>) -> [Expr] {
+    //("searchbyrules " + expr2s(e));
+    applyRules(searchAndSimplify(e, r), r);
+}
+
+simplify(e: Expr, r: Set<MapRule>) -> Expr {    
+    //println("simplify " + expr2s(e));
+    e1 = calcConst(e);
+    minimalForms = searchMinFormsByRules(e1, r);
+    e2 = minimalForms[length(minimalForms) - 1];
+    calcConst(e2);
+}

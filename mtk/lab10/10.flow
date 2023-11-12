@@ -1,23 +1,27 @@
 import expression;
+import rule;
 import rational_function;
+import simplification;
 
 main() {
-    grammar = compilePegGrammar("#include rational_arith.lingo");
 
-    input: string = "x * y * y + x / (x + y)";
+    input: string = "-(-x) + 0 + x/x";
 
-    identities: Tree<string, Expr> = setTreeValues(makeTree(), [
-        Pair("x", parse("2 * y", grammar)),
-    ]);
+    rawRules: [Pair<string, string>] = [
+        Pair("a + 0", "a"),
+        Pair("-(-a)", "a"),
+        Pair("a/a", "1")
+    ];
 
-    expression = parse(input, grammar);
-    if (expression != flow("PARSING FAILED")) {
-        println("expression: " + expr2s(expression));
-        f: RationalFunc = toRationalFunction(expression);
-        println("rational function: " + rfunc2s(f));
-    } else {
-        println("Parsing failed");
-    }
+    expression = parse(input);
+    rules: Set<MapRule> = buildSet(map(rawRules, \pair -> MapRule(parse(pair.first), parse(pair.second))));
 
+    println("expression: " + expr2s(expression));
+    iterSet(rules, \rule -> println(rule2s(rule)));
+    simplified = simplify(expression, rules);
+    println("simplified: " + expr2s(simplified));
+    f: RFunc = expr2rfunc(simplified);
+    println("simplified rational function: " + rfunc2s(f));
+    
     quit(0);
 }
