@@ -9,6 +9,7 @@ import ru.dyakun.snake.protocol.GameMessage;
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -88,7 +89,7 @@ public class UdpNetClient implements NetClient {
             while (isRunning) {
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
                 socket.receive(datagramPacket);
-                logger.debug("Receive from [{}] {}b", datagramPacket.getAddress().getHostAddress(), datagramPacket.getLength());
+                logger.debug("Receive from [{}] {}b {}", datagramPacket.getAddress().getHostAddress(), datagramPacket.getLength(), LocalDateTime.now());
                 try {
                     ByteBuffer buffer = ByteBuffer.wrap(buf, 0, datagramPacket.getLength());
                     var message = GameMessage.parseFrom(buffer);

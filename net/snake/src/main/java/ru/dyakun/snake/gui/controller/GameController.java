@@ -76,6 +76,7 @@ public class GameController extends AbstractController implements Initializable 
         switch (event) {
             case REPAINT -> {
                 var state = game.getGameState();
+                if(state == null) return;
                 updateScoreTable(state.getGamePlayers());
                 canvas.drawState(state, game.getSnake());
                 Platform.runLater(() -> scoreTable.refresh());

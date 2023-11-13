@@ -53,7 +53,9 @@ public final class Master extends Member {
         state = new GameState(field, new GameState.EntitiesCollections(players.values(), foods, snakes.values()));
         stateMessage = Messages.stateMessage(state);
         timer.startGameStateUpdate(this, config.getDelay(), client);
-        tracker = new PlayersStatusTracker((config.getDelay() * 4) / 5);
+        var deleteTime = (config.getDelay() * 4) / 5;
+        logger.debug("Delete time {}", deleteTime);
+        tracker = new PlayersStatusTracker(deleteTime);
         timer.startPlayersStatusTrack(tracker, this);
         notifyListeners(GameEvent.JOINED, null);
     }
@@ -116,6 +118,7 @@ public final class Master extends Member {
                 }
                 players.put(newPlayerId, player);
             }
+            logger.debug("New player {} [{} {}]", player.getName(), player.getRole(), player.getId());
             return player;
         } catch (SnakeCreateException e) {
             throw new PlayerJoinException("No space for snake", e);
@@ -290,6 +293,7 @@ public final class Master extends Member {
 
     @Override
     public void onInactivePlayers(Collection<Integer> inactive) {
+        logger.debug("Inactive players {}", inactive);
         if(inactive.contains(deputyId)) {
             changeDeputy();
         }

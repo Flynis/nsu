@@ -50,7 +50,10 @@ public class Game implements GameMessageListener, ChangeRoleListener {
     }
 
     public GameStateView getGameState() {
-        return member.getGameState();
+        if(member != null) {
+            return member.getGameState();
+        }
+        return null;
     }
 
     public PlayerView getPlayer() {

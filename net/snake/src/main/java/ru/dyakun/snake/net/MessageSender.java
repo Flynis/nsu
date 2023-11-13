@@ -85,7 +85,7 @@ public class MessageSender implements Runnable, Stoppable {
                     ackWaiters.add(sendData);
                 }
                 byte[] buf = sendData.message().toByteArray();
-                logger.debug("Send {} {}b", sendData, buf.length);
+                logger.debug("Send {} {}b {}", sendData, buf.length, LocalDateTime.now());
                 DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length, sendData.receiver());
                 socket.send(datagramPacket);
             }
