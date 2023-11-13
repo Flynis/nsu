@@ -5,12 +5,15 @@ import simplification;
 
 main() {
 
-    input: string = "-(-x) + 0 + x/x";
+    input: string = "(a * b) * c";
 
     rawRules: [Pair<string, string>] = [
         Pair("a + 0", "a"),
         Pair("-(-a)", "a"),
-        Pair("a/a", "1")
+        Pair("a/a", "1"),
+        Pair("a + (-a)", "0"),
+        Pair("(a + b) + c", "a + (b + c)"),
+        Pair("(a * b) * c", "a * (b * c)")
     ];
 
     expression = parse(input);
