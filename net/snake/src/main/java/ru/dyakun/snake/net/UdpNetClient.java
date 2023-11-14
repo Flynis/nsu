@@ -19,7 +19,7 @@ public class UdpNetClient implements NetClient {
     private static final Logger logger = LoggerFactory.getLogger(UdpNetClient.class);
     private final DatagramSocket socket;
     private final List<GameMessageListener> listeners = new ArrayList<>();
-    private final BlockingQueue<SendData> pending = new ArrayBlockingQueue<>(30);
+    private final BlockingQueue<SendData> pending = new ArrayBlockingQueue<>(512);
     private final MessageSender messageSender;
     private boolean isRunning = false;
 

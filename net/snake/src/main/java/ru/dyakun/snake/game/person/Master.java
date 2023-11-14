@@ -16,6 +16,7 @@ import ru.dyakun.snake.util.IdGenerator;
 import ru.dyakun.snake.util.SimpleIdGenerator;
 
 import java.net.InetSocketAddress;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -293,7 +294,7 @@ public final class Master extends Member {
 
     @Override
     public void onInactivePlayers(Collection<Integer> inactive) {
-        logger.debug("Inactive players {}", inactive);
+        logger.debug("Inactive players {} {}", LocalDateTime.now(), inactive);
         if(inactive.contains(deputyId)) {
             changeDeputy();
         }

@@ -49,6 +49,7 @@ public class MulticastMessageReceiver implements MessageReceiver {
             socket.joinGroup(group, networkInterface);
             interfaces.add(networkInterface);
             logger.debug("Joined in group [{}] from {}", group.getAddress().getHostAddress(), networkInterface.getName());
+            networkInterface.inetAddresses().forEach(address -> logger.debug("Address: {}", address.getHostAddress()));
         }
     }
 

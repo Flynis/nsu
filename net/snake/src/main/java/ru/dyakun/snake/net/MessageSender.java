@@ -21,13 +21,13 @@ import static ru.dyakun.snake.game.util.MessageType.*;
 
 public class MessageSender implements Runnable, Stoppable {
     private static final Logger logger = LoggerFactory.getLogger(MessageSender.class);
-    private static final int MAX_SEND_COUNT = 5;
+    private static final int MAX_SEND_COUNT = 10;
     private final BlockingQueue<SendData> queue;
     private final Queue<SendData> ackWaiters = new ConcurrentLinkedDeque<>();
     private final List<GameMessageListener> listeners;
     private final DatagramSocket socket;
     private boolean isRunning = false;
-    private long timeout = 10000;
+    private long timeout = 100;
 
     MessageSender(BlockingQueue<SendData> queue, List<GameMessageListener> listeners, DatagramSocket socket) {
         this.queue = queue;
@@ -65,6 +65,7 @@ public class MessageSender implements Runnable, Stoppable {
     }
 
     void setTimeout(int timeout) {
+        logger.debug("Change timeout to {}", timeout);
         this.timeout = timeout;
     }
 
