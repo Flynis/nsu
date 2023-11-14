@@ -5,7 +5,7 @@ import simplification;
 
 main() {
 
-    input: string = "(a * b) * c";
+    input: string = "(x*x - y*y) / (a*a - b*b)";
 
     rawRules: [Pair<string, string>] = [
         Pair("a + 0", "a"),
@@ -13,7 +13,8 @@ main() {
         Pair("a/a", "1"),
         Pair("a + (-a)", "0"),
         Pair("(a + b) + c", "a + (b + c)"),
-        Pair("(a * b) * c", "a * (b * c)")
+        Pair("(a * b) * c", "a * (b * c)"),
+        Pair("x*x - y*y", "(x - y)*(x + y)")
     ];
 
     expression = parse(input);

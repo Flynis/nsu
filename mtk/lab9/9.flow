@@ -3,7 +3,7 @@ import rational_function;
 
 main() {
 
-    input: string = "(x + y) * (x - 1) / x + 1/y"; 
+    input: string = "(((4 * (a * a)) - 9) * ((1 / ((2 * a) - 3)) - (1 / ((2 * a) + 3))))"; 
 
     expression = parse(input, "#include rational_arith.lingo");
     if (expression != flow("PARSING FAILED")) {
