@@ -47,7 +47,7 @@ public class Viewer extends Member {
     }
 
     protected boolean isConnected() {
-        return state != null;
+        return tracker != null;
     }
 
     protected boolean notMaster(InetSocketAddress sender) {
@@ -112,7 +112,7 @@ public class Viewer extends Member {
         if(notMaster(sender)) return;
         if(!isConnected()) {
             id = message.getReceiverId();
-            tracker = new MasterStatusTracker((gameInfo.getConfig().getDelay() * 4) / 5, masterId);
+            tracker = new MasterStatusTracker((gameInfo.getConfig().getDelay() * 2), masterId); // * 4) / 5
             timer.startPlayersStatusTrack(tracker, this);
             int period = gameInfo.getConfig().getDelay() / 2;
             timer.startPing(masterAddress, period, client);
@@ -128,7 +128,7 @@ public class Viewer extends Member {
 
     @Override
     protected void onErrorMsg(GameMessage message, InetSocketAddress sender) {
-        if(notMaster(sender)) return;
+        if(notMaster(sender) || isConnected()) return;
         sendAck(id, masterId, sender, message);
         var errorMsg = message.getError();
         notifyListeners(GameEvent.MESSAGE, errorMsg.getErrorMessage());

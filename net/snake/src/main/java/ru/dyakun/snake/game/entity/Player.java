@@ -87,6 +87,7 @@ public class Player implements PlayerView {
         }
 
         public Builder address(String ip, int port) {
+            if(role == NodeRole.MASTER) return this;
             if(ip.isBlank() || port < 1024) {
                 throw new IllegalArgumentException("Incorrect address " + ip + ":" + port);
             }

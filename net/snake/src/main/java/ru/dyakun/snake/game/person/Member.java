@@ -34,7 +34,7 @@ public abstract class Member implements GameMessageListener {
         this.listeners = params.listeners();
         this.gameInfo = gameInfo;
         if(gameInfo != null) {
-            client.setTimeout(gameInfo.getConfig().getDelay() / 10);
+            client.setTimeout(gameInfo.getConfig().getDelay() / 3);
         }
     }
 
@@ -45,7 +45,7 @@ public abstract class Member implements GameMessageListener {
     protected void setGameInfo(GameInfo gameInfo) {
         if(this.gameInfo == null) {
             this.gameInfo = gameInfo;
-            client.setTimeout(gameInfo.getConfig().getDelay() / 10);
+            client.setTimeout(gameInfo.getConfig().getDelay() / 3);
         } else {
             throw new IllegalStateException("Game info is already assigned");
         }

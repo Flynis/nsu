@@ -54,7 +54,7 @@ public final class Master extends Member {
         state = new GameState(field, new GameState.EntitiesCollections(players.values(), foods, snakes.values()));
         stateMessage = Messages.stateMessage(state);
         timer.startGameStateUpdate(this, config.getDelay(), client);
-        var deleteTime = (config.getDelay() * 4) / 5;
+        var deleteTime = (config.getDelay() * 2); // * 4) / 5
         logger.debug("Delete time {}", deleteTime);
         tracker = new PlayersStatusTracker(deleteTime);
         timer.startPlayersStatusTrack(tracker, this);
@@ -62,19 +62,22 @@ public final class Master extends Member {
     }
 
     Master(Deputy deputy) {
-        super(deputy.getParams(), deputy.gameInfo);
+        super(deputy.getParams());
         id = deputy.id;
         var oldState = deputy.state;
-        generator = new SimpleIdGenerator(Players.maxId(oldState.getPlayers(), id));
+        generator = new SimpleIdGenerator(1 + Players.maxId(oldState.getPlayers(), id));
         fillMaps(oldState.getPlayers(), oldState.getSnakes());
-        players.get(id).setRole(NodeRole.MASTER);
+        var self = players.get(id);
+        self.setRole(NodeRole.MASTER);
+        self.setAddress(null);
         var foods = oldState.getFoods();
         var config = deputy.gameInfo.getConfig();
+        setGameInfo(new GameInfo.Builder(config, deputy.getGameInfo().getName()).setPlayers(players.values()).mayJoin(true).build());
         field = new Field(config, players, snakes, foods);
         state = new GameState(field, new GameState.EntitiesCollections(players.values(), foods, snakes.values()));
         stateMessage = Messages.stateMessage(state);
         timer.startGameStateUpdate(this, config.getDelay(), client);
-        tracker = new PlayersStatusTracker((config.getDelay() * 4) / 5);
+        tracker = new PlayersStatusTracker((config.getDelay() * 2)); // * 4) / 5
         for(var player: players.values()) {
             if(player.getId() != id) {
                 tracker.updateStatus(player.getId());

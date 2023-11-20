@@ -131,10 +131,13 @@ public class Field extends AbstractField {
                     if (enemy == null) {
                         throw new IllegalStateException("Enemy snake point not found");
                     }
-                    if(enemy.playerId() != snake.playerId()) {
+                    snake.setState(Snake.State.DESTROYED);
+                    if(snake.state() != Snake.State.ZOMBIE) {
+                        break;
+                    }
+                    if (enemy.playerId() != snake.playerId()) {
                         players.get(enemy.playerId()).addScore(1);
                     }
-                    snake.setState(Snake.State.DESTROYED);
                     aliveSnakes--;
                 }
                 case FOOD -> {

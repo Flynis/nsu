@@ -86,7 +86,10 @@ public class GameController extends AbstractController implements Initializable 
                     Platform.runLater(() -> setMessage((String) payload));
                 }
             }
-            case JOINED -> scoreTable.setItems(FXCollections.emptyObservableList());
+            case JOINED -> {
+                scoreTable.setItems(FXCollections.emptyObservableList());
+                Platform.runLater(() -> messageLabel.setVisible(false));
+            }
         }
     }
 

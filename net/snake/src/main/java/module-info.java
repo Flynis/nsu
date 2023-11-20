@@ -1,4 +1,4 @@
-module snake {
+module ru.dyakun.snake {
     requires javafx.graphics;
     requires javafx.controls;
     requires javafx.fxml;
