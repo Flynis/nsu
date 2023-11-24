@@ -16,6 +16,8 @@ public class Main {
             if(args.length == 1) {
                 port = Integer.parseInt(args[0]);
             }
+            Proxy proxy = new Proxy(port);
+            proxy.listen();
         } catch (NumberFormatException e) {
             logger.error("Incorrect port: " + port);
         } catch (Exception e) {

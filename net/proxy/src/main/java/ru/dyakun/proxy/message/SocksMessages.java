@@ -34,9 +34,20 @@ public class SocksMessages {
             }
             case DOMAIN_NAME -> {
                 String domainName = (String) addr;
-                yield domainName.getBytes(StandardCharsets.US_ASCII);
+                byte[] name = domainName.getBytes(StandardCharsets.US_ASCII);
+                byte[] bytes = new byte[name.length + 1];
+                bytes[0] = (byte) name.length;
+                System.arraycopy(name, 0, bytes, 1, name.length);
+                yield bytes;
             }
         };
+    }
+
+    public static ByteBuffer buildReplyMsg(ReplyCode code) {
+        if (code == ReplyCode.SUCCEEDED) {
+            throw new IllegalArgumentException("Too few arguments for SUCCEEDED");
+        }
+        return buildReplyMsg(code, AddressType.DOMAIN_NAME, "", 0);
     }
 
     public static ByteBuffer buildReplyMsg(ReplyCode code, AddressType type, Object bndAddr, int bndPort) {

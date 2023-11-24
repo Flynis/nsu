@@ -2,6 +2,7 @@ package ru.dyakun.proxy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.dyakun.proxy.connection.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -15,9 +16,9 @@ import static java.nio.channels.SelectionKey.*;
 public class Proxy {
     private static final Logger logger = LoggerFactory.getLogger(Proxy.class);
     private final Selector selector;
-    private final ServerSocketChannel socket;
     private final Queue<ChangeKeyOpsRequest> changeRequests = new ArrayDeque<>();
     private DatagramChannel dnsChannel;
+    private boolean running = false;
 
     public Proxy(int port) {
         if(port < 0 || port > 65535) {
@@ -25,10 +26,11 @@ public class Proxy {
         }
         try {
             selector = Selector.open();
-            socket = ServerSocketChannel.open();
+            ServerSocketChannel socket = ServerSocketChannel.open();
             socket.bind(new InetSocketAddress(port));
             socket.configureBlocking(false);
-            socket.register(selector, OP_ACCEPT);
+            var mainConnection = new MainProxyConnection(socket, selector, changeRequests::add);
+            socket.register(selector, OP_ACCEPT, mainConnection);
         } catch (IOException | IllegalArgumentException e) {
             throw new IllegalStateException("Proxy initialize failed");
         }
@@ -36,7 +38,8 @@ public class Proxy {
 
     public void listen() {
         logger.info("Start listening");
-        while (true) {
+        running = true;
+        while (running) {
             try {
                 changeKeyOps();
                 selector.select();
@@ -48,6 +51,7 @@ public class Proxy {
                     if(key.isAcceptable()) accept(key);
                     else if(key.isReadable()) read(key);
                     else if(key.isWritable()) write(key);
+                    else if(key.isConnectable()) connect(key);
                 }
             } catch (CancelledKeyException e) {
                 logger.debug("Canceled key", e);
@@ -73,50 +77,59 @@ public class Proxy {
     }
 
     private void accept(SelectionKey key) {
+        AcceptableConnection connection = (AcceptableConnection) key.attachment();
         try {
-            ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
-
+            connection.accept();
         } catch (IOException e) {
+            if(!(connection instanceof MainProxyConnection)) {
+                connection.close();
+            }
             logger.warn("Failed to accept a connection", e);
         }
     }
 
     private void read(SelectionKey key) {
-        Connection connection = (Connection) key.attachment();
+        ReadWriteConnection connection = (ReadWriteConnection) key.attachment();
         try {
             connection.receive();
-            while (connection.hasCompletedMessage()) {
-                receivedDataListener.accept(new ReceivedData(connection.getId(), connection.nextCompletedMessage()));
-            }
         } catch (IOException e) {
-            connectionEventListener.accept(new ConnectionEvent(connection.getId(), ConnectionEventTag.DISCONNECT));
+            disconnect(connection);
         }
     }
 
     private void write(SelectionKey key) {
-        Connection connection = (Connection) key.attachment();
+        ReadWriteConnection connection = (ReadWriteConnection) key.attachment();
         try {
             connection.send();
         } catch (IOException e) {
-            connectionEventListener.accept(new ConnectionEvent(connection.getId(), ConnectionEventTag.DISCONNECT));
+            disconnect(connection);
         }
     }
 
-    public void send(long id, String data) {
-        Connection connection = connections.get(id);
-        connection.addMessageToSend(data);
+    private void connect(SelectionKey key) {
+        ConnectableConnection connection = (ConnectableConnection) key.attachment();
+        try {
+            connection.connect();
+        } catch (IOException e) {
+            disconnect(connection);
+        }
     }
 
-    public void disconnect(long id) {
-        Connection connection = connections.remove(id);
-        if(connection != null) {
-            try {
-                connection.close();
-                logger.info("Connection with {} was successfully closed", id);
-            } catch (IOException e) {
-                logger.error("Failed to close connection with {}", id, e);
-            }
+    public void stop() {
+        if(!running) return;
+        running = false;
+        try {
+            ConnectionTable.getInstance().clear();
+            selector.close();
+        } catch (IOException e) {
+            logger.warn("Selector close failed", e);
         }
+    }
+
+    public void disconnect(Connection connection) {
+        ConnectionTable.getInstance().remove(connection);
+        connection.close();
+        logger.info("Connection with {} was successfully closed", connection.getAddress());
     }
 
 }

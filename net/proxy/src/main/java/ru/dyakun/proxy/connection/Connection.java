@@ -6,6 +6,10 @@ public interface Connection {
 
     UUID getId();
 
+    boolean isClosed();
+
     void close();
+
+    String getAddress();
 
 }

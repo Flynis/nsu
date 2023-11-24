@@ -52,7 +52,7 @@ public class RequestMsg {
             byte version = buffer.get();
             byte cmd = buffer.get();
             RequestCommand command = RequestCommand.fromNumber(UnsignedNumbers.getUnsignedByte(cmd));
-            byte reserved = buffer.get();
+            byte ignoredReserved = buffer.get();
             byte atyp = buffer.get();
             AddressType type = AddressType.fromNumber(UnsignedNumbers.getUnsignedByte(atyp));
             Object dstAddress;
@@ -79,6 +79,24 @@ public class RequestMsg {
         } catch (BufferUnderflowException | UnknownHostException e) {
             throw new MessageParseException("Request msg parse failed", e);
         }
+    }
+
+    @Override
+    public String toString() {
+        int ver = UnsignedNumbers.getUnsignedByte(version);
+        String addr = switch (addressType) {
+            case IPV4, IPV6 -> {
+                InetAddress inetAddress = (InetAddress) dstAddress;
+                yield inetAddress.getHostAddress();
+            }
+            case DOMAIN_NAME -> (String) dstAddress;
+        };
+        return String.format("Request[ver%d cmd=%d a.typ=%d dst.Addr=%s dst.port=%d]",
+                ver,
+                command.getNumber(),
+                addressType.getNumber(),
+                addr,
+                dstPort);
     }
 
 }
