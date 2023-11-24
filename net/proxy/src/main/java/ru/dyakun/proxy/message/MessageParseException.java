@@ -6,4 +6,8 @@ public class MessageParseException extends Exception {
         super(message);
     }
 
+    public MessageParseException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
 }

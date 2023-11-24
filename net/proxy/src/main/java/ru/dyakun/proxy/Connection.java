@@ -3,29 +3,22 @@ package ru.dyakun.proxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayDeque;
+import java.util.Queue;
+import java.util.function.Consumer;
+
 public class Connection {
     private static final Logger logger = LoggerFactory.getLogger(Connection.class);
-
-    public static final long RESERVED_ID = -1;
-
-    private final long id;
     private final Selector selector;
     private final SocketChannel channel;
-
-    private final ByteBuffer readBuffer = ByteBuffer.allocate(Constants.BUFFER_SIZE);
-    private final Queue<String> completedMessages = new ArrayDeque<>();
+    private final ByteBuffer readBuffer = ByteBuffer.allocate(4096);
     private final Queue<ByteBuffer> messagesToWrite = new ArrayDeque<>();
     private final Consumer<ChangeKeyOpsRequest> changeKeyOpsRequests;
 
-    public Connection(long id, @NotNull Selector selector, @NotNull SocketChannel channel, @NotNull Consumer<ChangeKeyOpsRequest> changeKeyOpsRequests) {
-        this.id = id;
-        this.selector = selector;
-        this.channel = channel;
-        this.changeKeyOpsRequests = changeKeyOpsRequests;
-    }
-
-    public Connection(@NotNull Selector selector, @NotNull SocketChannel channel, @NotNull Consumer<ChangeKeyOpsRequest> changeKeyOpsRequests) {
-        this.id = RESERVED_ID;
+    public Connection(Selector selector, SocketChannel channel, Consumer<ChangeKeyOpsRequest> changeKeyOpsRequests) {
         this.selector = selector;
         this.channel = channel;
         this.changeKeyOpsRequests = changeKeyOpsRequests;

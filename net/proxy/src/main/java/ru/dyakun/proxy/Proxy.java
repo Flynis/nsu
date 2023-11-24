@@ -6,7 +6,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
+import java.util.ArrayDeque;
 import java.util.Iterator;
+import java.util.Queue;
 
 import static java.nio.channels.SelectionKey.*;
 
@@ -14,6 +16,8 @@ public class Proxy {
     private static final Logger logger = LoggerFactory.getLogger(Proxy.class);
     private final Selector selector;
     private final ServerSocketChannel socket;
+    private final Queue<ChangeKeyOpsRequest> changeRequests = new ArrayDeque<>();
+    private DatagramChannel dnsChannel;
 
     public Proxy(int port) {
         if(port < 0 || port > 65535) {
@@ -34,14 +38,7 @@ public class Proxy {
         logger.info("Start listening");
         while (true) {
             try {
-                ChangeKeyOpsRequest request;
-                while ((request = changeRequests.poll()) != null) {
-                    SelectionKey key = request.key();
-                    if (key.isValid()) {
-                        logger.debug("Switch key op {} to {}", ((Connection)key.attachment()).getId(), request.ops());
-                        key.interestOps(request.ops());
-                    }
-                }
+                changeKeyOps();
                 selector.select();
                 Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
                 while(keys.hasNext()) {
@@ -64,24 +61,24 @@ public class Proxy {
         }
     }
 
-    private void accept(SelectionKey key) {
-        try {
-            ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
-            SocketChannel channel = serverSocketChannel.accept();
-            channel.configureBlocking(false);
-            long id = getID();
-            Connection connection = new Connection(id, selector, channel, changeRequests::add);
-            channel.register(selector, SelectionKey.OP_READ, connection);
-            connections.putIfAbsent(id, connection);
-            logger.info("Connection established from client {}: {}", id, channel.getRemoteAddress().toString());
-        } catch (IOException e) {
-            logger.warn("Failed to accept a connection", e);
+    private void changeKeyOps() {
+        while (!changeRequests.isEmpty()) {
+            var request = changeRequests.poll();
+            SelectionKey key = request.key();
+            if (key.isValid()) {
+                logger.debug("Switch key op {} to {}", ((Connection)key.attachment()).getId(), request.ops());
+                key.interestOps(request.ops());
+            }
         }
     }
 
-    private long getID() {
-        nextID++;
-        return nextID;
+    private void accept(SelectionKey key) {
+        try {
+            ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
+
+        } catch (IOException e) {
+            logger.warn("Failed to accept a connection", e);
+        }
     }
 
     private void read(SelectionKey key) {
@@ -105,13 +102,11 @@ public class Proxy {
         }
     }
 
-    @Override
     public void send(long id, String data) {
         Connection connection = connections.get(id);
         connection.addMessageToSend(data);
     }
 
-    @Override
     public void disconnect(long id) {
         Connection connection = connections.remove(id);
         if(connection != null) {
