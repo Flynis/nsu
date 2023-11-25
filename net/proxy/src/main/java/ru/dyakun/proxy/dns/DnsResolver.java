@@ -30,7 +30,7 @@ public class DnsResolver implements ConnectionListener {
     public void resolve(String domain, ResolveExpectant expectant) throws ResolveException {
         InetAddress address = resolved.get(domain);
         if(address != null) {
-            expectant.onResolve(domain, address);
+            expectant.onResolve(address);
             return;
         }
         expectants.add(new Entry(domain, expectant));
@@ -72,7 +72,7 @@ public class DnsResolver implements ConnectionListener {
                         resolved.put(domain, address);
                         expectants.removeIf(e -> {
                             if(e.domain.equals(domain)) {
-                                e.expectant.onResolve(domain, address);
+                                e.expectant.onResolve(address);
                                 return true;
                             }
                             return false;

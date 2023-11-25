@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 
 public class SocksMessages {
     public static final int NO_AUTHENTICATION_REQUIRED = 0;
+    public static final int NO_ACCEPTABLE_METHODS = 255;
     public static final int VERSION = 5;
 
     public static byte[] parseByteArray(ByteBuffer buffer) {

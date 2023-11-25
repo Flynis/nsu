@@ -2,7 +2,6 @@ package ru.dyakun.proxy.message;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 public class HandshakeMsg {
     private final byte version;
@@ -15,10 +14,6 @@ public class HandshakeMsg {
 
     public byte getVersion() {
         return version;
-    }
-
-    public byte[] getMethods() {
-        return methods;
     }
 
     public static HandshakeMsg parseFrom(ByteBuffer buffer) throws MessageParseException {
@@ -34,7 +29,7 @@ public class HandshakeMsg {
     @Override
     public String toString() {
         int ver = UnsignedNumbers.getUnsignedByte(version);
-        return String.format("Handshake[ver%d nmethods=%d", ver, methods.length);
+        return String.format("Handshake[ver%d methods=%d", ver, methods.length);
     }
 
 }

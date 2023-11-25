@@ -37,14 +37,20 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
                 case HANDSHAKE -> {
                     HandshakeMsg msg = HandshakeMsg.parseFrom(inputBuffer);
                     if (msg.getVersion() != SocksMessages.VERSION) {
-                        throw new IOException("Unsupported version");
+                        var reply = SocksMessages.buildHandshakeReplyMsg(SocksMessages.NO_ACCEPTABLE_METHODS);
+                        requestSend(reply);
+                    } else {
+                        var reply = SocksMessages.buildHandshakeReplyMsg(SocksMessages.NO_AUTHENTICATION_REQUIRED);
+                        requestSend(reply);
+                        state = ConnectionState.REQUEST;
                     }
-                    var reply = SocksMessages.buildHandshakeReplyMsg(SocksMessages.NO_AUTHENTICATION_REQUIRED);
-                    requestSend(reply);
-                    state = ConnectionState.REQUEST;
                 }
                 case REQUEST -> {
                     RequestMsg msg = RequestMsg.parseFrom(inputBuffer);
+                    if(msg.getVersion() != SocksMessages.VERSION) {
+                        sendErrorReply(SOCKS_SERVER_FAILURE);
+                        break;
+                    }
                     if (msg.getCommand() != RequestCommand.CONNECT) {
                         sendErrorReply(COMMAND_NOT_SUPPORTED);
                         break;
@@ -80,6 +86,10 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
         requestSend(reply);
     }
 
+    public void destFailedConnect() {
+        sendErrorReply(HOST_UNREACHABLE);
+    }
+
     private void connectToDesiredAddress(InetAddress dstAddress) throws IOException {
         UUID id = ConnectionTable.getInstance().getFreeId();
         var params = new ConnectionParams(id, selector, changeRequests);
@@ -89,7 +99,7 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
     }
 
     @Override
-    public void onResolve(String domain, InetAddress address) {
+    public void onResolve(InetAddress address) {
         try {
             connectToDesiredAddress(address);
         } catch (IOException e) {
@@ -99,6 +109,7 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
 
     @Override
     public void onException(Exception e) {
+        logger.info("Domain name resolve failed", e);
         sendErrorReply(HOST_UNREACHABLE);
     }
 

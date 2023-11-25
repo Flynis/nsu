@@ -86,6 +86,7 @@ public class Proxy {
         AcceptableConnection connection = (AcceptableConnection) key.attachment();
         try {
             connection.accept();
+            ConnectionTable.getInstance().updateTime(connection.getId());
         } catch (IOException e) {
             if(!(connection instanceof MainProxyConnection)) {
                 disconnect(connection);
@@ -98,6 +99,7 @@ public class Proxy {
         ReadWriteConnection connection = (ReadWriteConnection) key.attachment();
         try {
             connection.receive();
+            ConnectionTable.getInstance().updateTime(connection.getId());
         } catch (IOException e) {
             disconnect(connection);
         }
@@ -107,6 +109,7 @@ public class Proxy {
         ReadWriteConnection connection = (ReadWriteConnection) key.attachment();
         try {
             connection.send();
+            ConnectionTable.getInstance().updateTime(connection.getId());
         } catch (IOException e) {
             disconnect(connection);
         }
@@ -116,6 +119,7 @@ public class Proxy {
         ConnectableConnection connection = (ConnectableConnection) key.attachment();
         try {
             connection.connect();
+            ConnectionTable.getInstance().updateTime(connection.getId());
         } catch (IOException e) {
             disconnect(connection);
         }

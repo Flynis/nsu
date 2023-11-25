@@ -1,6 +1,5 @@
 package ru.dyakun.proxy.connection;
 
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -17,7 +16,6 @@ public class TcpRedirectConnection extends AbstractTcpConnection implements Conn
         socket.configureBlocking(false);
     }
 
-    @Override
     public void requestConnect(InetSocketAddress address) throws IOException {
         socket.register(selector, OP_CONNECT, this);
         socket.connect(address);
@@ -26,10 +24,15 @@ public class TcpRedirectConnection extends AbstractTcpConnection implements Conn
 
     @Override
     public void connect() throws IOException {
-        if(socket.finishConnect()) {
-            SelectionKey key = getSelectionKey();
-            key.interestOps(OP_WRITE);
-            destination.destFinishConnect();
+        try {
+            if(socket.finishConnect()) {
+                SelectionKey key = getSelectionKey();
+                key.interestOps(OP_WRITE);
+                destination.destFinishConnect();
+            }
+        } catch (IOException e) {
+            destination.destFailedConnect();
+            throw e;
         }
     }
 

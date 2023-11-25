@@ -4,7 +4,7 @@ import java.net.InetAddress;
 
 public interface ResolveExpectant {
 
-    void onResolve(String domain, InetAddress address);
+    void onResolve(InetAddress address);
 
     void onException(Exception e);
 

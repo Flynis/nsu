@@ -53,8 +53,8 @@ public class RequestMsg {
             byte cmd = buffer.get();
             RequestCommand command = RequestCommand.fromNumber(UnsignedNumbers.getUnsignedByte(cmd));
             byte ignoredReserved = buffer.get();
-            byte atyp = buffer.get();
-            AddressType type = AddressType.fromNumber(UnsignedNumbers.getUnsignedByte(atyp));
+            byte addrType = buffer.get();
+            AddressType type = AddressType.fromNumber(UnsignedNumbers.getUnsignedByte(addrType));
             Object dstAddress;
             switch (type) {
                 case IPV4 -> {
