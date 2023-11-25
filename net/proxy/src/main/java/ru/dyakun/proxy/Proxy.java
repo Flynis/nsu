@@ -3,6 +3,7 @@ package ru.dyakun.proxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.dyakun.proxy.connection.*;
+import ru.dyakun.proxy.dns.DnsResolver;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -11,13 +12,11 @@ import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
 
-import static java.nio.channels.SelectionKey.*;
-
 public class Proxy {
     private static final Logger logger = LoggerFactory.getLogger(Proxy.class);
+    private static final int SELECT_TIMEOUT = 10 * 1000; // ms
     private final Selector selector;
-    private final Queue<ChangeKeyOpsRequest> changeRequests = new ArrayDeque<>();
-    private DatagramChannel dnsChannel;
+    private final Queue<ChangeOpReq> changeRequests = new ArrayDeque<>();
     private boolean running = false;
 
     public Proxy(int port) {
@@ -26,11 +25,15 @@ public class Proxy {
         }
         try {
             selector = Selector.open();
-            ServerSocketChannel socket = ServerSocketChannel.open();
-            socket.bind(new InetSocketAddress(port));
-            socket.configureBlocking(false);
-            var mainConnection = new MainProxyConnection(socket, selector, changeRequests::add);
-            socket.register(selector, OP_ACCEPT, mainConnection);
+            var id = ConnectionTable.getInstance().getFreeId();
+            var params = new ConnectionParams(id, selector, changeRequests::add);
+            var address = new InetSocketAddress(port);
+            var mainConnection = new MainProxyConnection(address, params);
+            ConnectionTable.getInstance().add(id, mainConnection);
+            var dnsId = ConnectionTable.getInstance().getFreeId();
+            var dnsParams = new ConnectionParams(dnsId, selector, changeRequests::add);
+            var dnsConnection = DnsResolver.init(dnsParams);
+            ConnectionTable.getInstance().add(dnsId, dnsConnection);
         } catch (IOException | IllegalArgumentException e) {
             throw new IllegalStateException("Proxy initialize failed");
         }
@@ -42,7 +45,7 @@ public class Proxy {
         while (running) {
             try {
                 changeKeyOps();
-                selector.select();
+                selector.select(SELECT_TIMEOUT);
                 Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
                 while(keys.hasNext()) {
                     SelectionKey key = keys.next();
@@ -53,6 +56,9 @@ public class Proxy {
                     else if(key.isWritable()) write(key);
                     else if(key.isConnectable()) connect(key);
                 }
+                var table =  ConnectionTable.getInstance();
+                table.removeClosed();
+                table.removeInactive();
             } catch (CancelledKeyException e) {
                 logger.debug("Canceled key", e);
             } catch (ClosedSelectorException e) {
@@ -82,7 +88,7 @@ public class Proxy {
             connection.accept();
         } catch (IOException e) {
             if(!(connection instanceof MainProxyConnection)) {
-                connection.close();
+                disconnect(connection);
             }
             logger.warn("Failed to accept a connection", e);
         }
@@ -129,7 +135,7 @@ public class Proxy {
     public void disconnect(Connection connection) {
         ConnectionTable.getInstance().remove(connection);
         connection.close();
-        logger.info("Connection with {} was successfully closed", connection.getAddress());
+        logger.info("Connection with {} successfully closed", connection.getAddress());
     }
 
 }

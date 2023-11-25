@@ -1,8 +1,7 @@
 package ru.dyakun.proxy.connection;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import ru.dyakun.proxy.ChangeKeyOpsRequest;
+import ru.dyakun.proxy.ChangeOpReq;
+import ru.dyakun.proxy.dns.ResolveExpectant;
 import ru.dyakun.proxy.message.*;
 
 import java.io.IOException;
@@ -10,89 +9,42 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayDeque;
-import java.util.Queue;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 import static java.nio.channels.SelectionKey.*;
 
-public class TcpClientConnection implements ReadWriteConnection {
-    private static final Logger logger = LoggerFactory.getLogger(TcpClientConnection.class);
-    private final SocketChannel socket;
-    private final UUID id;
-    private final Consumer<ChangeKeyOpsRequest> changeRequests;
-    private final ByteBuffer readBuffer = ByteBuffer.allocate(4096);
-    private final Queue<ByteBuffer> dataQueue = new ArrayDeque<>();
-    private final Selector selector;
-    private ReadWriteConnection destination;
+public class TcpClientConnection extends AbstractTcpConnection implements ResolveExpectant {
+    private TcpRedirectConnection destination;
     private ConnectionState state;
-    private boolean closed = false;
 
-    public TcpClientConnection(SocketChannel socket, UUID id, Selector selector, Consumer<ChangeKeyOpsRequest> changeRequests)
+    public TcpClientConnection(SocketChannel socket, ConnectionParams params)
             throws ClosedChannelException {
-        this.socket = socket;
-        this.id = id;
-        this.selector = selector;
-        this.changeRequests = changeRequests;
+        super(socket, params);
         this.state = ConnectionState.HANDSHAKE;
         socket.register(selector, OP_READ, this);
     }
 
-    public void setDestination(ReadWriteConnection connection) {
+    public void setDestination(TcpRedirectConnection connection) {
         this.destination = connection;
     }
 
     @Override
-    public UUID getId() {
-        return id;
-    }
-
-    @Override
-    public boolean isClosed() {
-        return closed;
-    }
-
-    @Override
-    public void close() {
-        try {
-            socket.close();
-            closed = true;
-        } catch (IOException e) {
-            logger.warn("Socket channel close failed", e);
-        }
-    }
-
-    @Override
-    public String getAddress() {
-        try {
-            InetSocketAddress socketAddress = (InetSocketAddress) socket.getRemoteAddress();
-            InetAddress address = socketAddress.getAddress();
-            return String.format("%s:%s", address.getHostAddress(), socketAddress.getPort());
-        } catch (IOException e) {
-            logger.warn("Get remote address failed");
-        }
-        return "";
-    }
-
-    @Override
     public void receive() throws IOException {
-        int read = socket.read(readBuffer);
+        int read = socket.read(inputBuffer);
         if(read < 0) {
             throw new IOException("Cannot read data from channel");
         }
+        inputBuffer.flip();
         handleReceivedData();
+        inputBuffer.clear();
     }
 
     private void handleReceivedData() throws IOException {
-        readBuffer.flip();
         try {
             switch (state) {
                 case HANDSHAKE -> {
-                    HandshakeMsg msg = HandshakeMsg.parseFrom(readBuffer);
+                    HandshakeMsg msg = HandshakeMsg.parseFrom(inputBuffer);
                     if (msg.getVersion() != SocksMessages.VERSION) {
                         throw new IOException("Unsupported version");
                     }
@@ -101,20 +53,22 @@ public class TcpClientConnection implements ReadWriteConnection {
                     state = ConnectionState.REQUEST;
                 }
                 case REQUEST -> {
-                    RequestMsg msg = RequestMsg.parseFrom(readBuffer);
+                    RequestMsg msg = RequestMsg.parseFrom(inputBuffer);
                     if (msg.getCommand() != RequestCommand.CONNECT) {
                         var reply = SocksMessages.buildReplyMsg(ReplyCode.COMMAND_NOT_SUPPORTED);
                         requestSend(reply);
+                        ConnectionTable.getInstance().markClosed(id);
                     }
                     if(msg.getAddressType() != AddressType.IPV4 || msg.getAddressType() != AddressType.DOMAIN_NAME) {
                         var reply = SocksMessages.buildReplyMsg(ReplyCode.ADDRESS_TYPE_NOT_SUPPORTED);
                         requestSend(reply);
-                        // TODO close connection
+                        ConnectionTable.getInstance().markClosed(id);
                     }
                     switch (msg.getAddressType()) {
                         case IPV4 -> {
                             UUID id = ConnectionTable.getInstance().getFreeId();
-                            TcpConnection connection = new TcpConnection(id, selector, changeRequests,this);
+                            var params = new ConnectionParams(id, selector, changeRequests);
+                            TcpRedirectConnection connection = new TcpRedirectConnection(this, params);
                             setDestination(connection);
                             InetAddress address = msg.getDstAddress();
                             connection.requestConnect(new InetSocketAddress(address, msg.getDstPort()));
@@ -128,10 +82,8 @@ public class TcpClientConnection implements ReadWriteConnection {
                     if(destination.isClosed()) {
                         throw new IOException("Destination closed");
                     }
-                    logger.debug("Receive {}b from {}", readBuffer.limit(), getAddress());
-                    ByteBuffer data = ByteBuffer.allocate(readBuffer.limit());
-                    data.put(readBuffer);
-                    readBuffer.compact();
+                    logger.debug("Receive {}b from {}", inputBuffer.limit(), getAddress());
+                    var data = ByteBuffers.copyFrom(inputBuffer);
                     destination.requestSend(data);
                 }
             }
@@ -144,15 +96,8 @@ public class TcpClientConnection implements ReadWriteConnection {
         // TODO
     }
 
-    @Override
-    public void requestSend(ByteBuffer data) {
-        data.flip();
-        dataQueue.add(data);
-        SelectionKey key = getSelectionKey();
-        if(key != null && key.isValid() && key.interestOps() == OP_READ) {
-            changeRequests.accept(new ChangeKeyOpsRequest(key, OP_WRITE));
-            selector.wakeup();
-        }
+    private void connectToDesiredAddress(InetAddress address) {
+
     }
 
     @Override
@@ -166,11 +111,17 @@ public class TcpClientConnection implements ReadWriteConnection {
             logger.debug("Send {}b to {}", data.limit(), getAddress());
             dataQueue.remove();
         }
-        changeRequests.accept(new ChangeKeyOpsRequest(getSelectionKey(), OP_READ));
+        changeRequests.accept(new ChangeOpReq(getSelectionKey(), OP_READ));
     }
 
-    private SelectionKey getSelectionKey() {
-        return socket.keyFor(selector);
+    @Override
+    public void onResolve(String domain, InetAddress address) {
+
+    }
+
+    @Override
+    public void onException(Exception e) {
+
     }
 
 }

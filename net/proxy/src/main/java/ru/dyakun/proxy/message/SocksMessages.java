@@ -23,6 +23,7 @@ public class SocksMessages {
         ByteBuffer buffer =  ByteBuffer.allocate(2);
         buffer.put((byte) VERSION)
                 .put((byte) method);
+        buffer.flip();
         return buffer;
     }
 
@@ -62,6 +63,7 @@ public class SocksMessages {
                 .put((byte) type.getNumber())
                 .put(address)
                 .putShort((short) bndPort);
+        buffer.flip();
         return buffer;
     }
 
