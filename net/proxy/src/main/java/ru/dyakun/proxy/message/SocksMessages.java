@@ -2,7 +2,6 @@ package ru.dyakun.proxy.message;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 public class SocksMessages {
     public static final int NO_AUTHENTICATION_REQUIRED = 0;
@@ -27,41 +26,17 @@ public class SocksMessages {
         return buffer;
     }
 
-    private static byte[] addressToBytes(AddressType type, Object addr) {
-        return switch (type) {
-            case IPV4, IPV6 -> {
-                InetAddress address = (InetAddress) addr;
-                yield address.getAddress();
-            }
-            case DOMAIN_NAME -> {
-                String domainName = (String) addr;
-                byte[] name = domainName.getBytes(StandardCharsets.US_ASCII);
-                byte[] bytes = new byte[name.length + 1];
-                bytes[0] = (byte) name.length;
-                System.arraycopy(name, 0, bytes, 1, name.length);
-                yield bytes;
-            }
-        };
-    }
-
-    public static ByteBuffer buildReplyMsg(ReplyCode code) {
-        if (code == ReplyCode.SUCCEEDED) {
-            throw new IllegalArgumentException("Too few arguments for SUCCEEDED");
-        }
-        return buildReplyMsg(code, AddressType.DOMAIN_NAME, "", 0);
-    }
-
-    public static ByteBuffer buildReplyMsg(ReplyCode code, AddressType type, Object bndAddr, int bndPort) {
+    public static ByteBuffer buildReplyMsg(ReplyCode code, InetAddress address, int bndPort) {
         if(!UnsignedNumbers.isUnsignedShort(bndPort)) {
             throw new IllegalArgumentException("Bnd port must contain unsigned short value");
         }
-        byte[] address = addressToBytes(type, bndAddr);
-        ByteBuffer buffer = ByteBuffer.allocate(6 + address.length);
+        byte[] addressBytes = address.getAddress();
+        ByteBuffer buffer = ByteBuffer.allocate(6 + addressBytes.length);
         buffer.put((byte) VERSION)
                 .put((byte) code.getNumber())
                 .put((byte) 0)
-                .put((byte) type.getNumber())
-                .put(address)
+                .put((byte) AddressType.IPV4.getNumber())
+                .put(addressBytes)
                 .putShort((short) bndPort);
         buffer.flip();
         return buffer;

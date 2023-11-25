@@ -6,7 +6,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-import static java.nio.channels.SelectionKey.OP_WRITE;
+import static java.nio.channels.SelectionKey.*;
 
 public class TcpRedirectConnection extends AbstractTcpConnection implements ConnectableConnection {
     private final TcpClientConnection destination;
@@ -18,19 +18,8 @@ public class TcpRedirectConnection extends AbstractTcpConnection implements Conn
     }
 
     @Override
-    public void receive() throws IOException {
-
-    }
-
-
-    @Override
-    public void send() throws IOException {
-
-    }
-
-    @Override
     public void requestConnect(InetSocketAddress address) throws IOException {
-        socket.register(selector, SelectionKey.OP_CONNECT, this);
+        socket.register(selector, OP_CONNECT, this);
         socket.connect(address);
         selector.wakeup();
     }
@@ -42,6 +31,11 @@ public class TcpRedirectConnection extends AbstractTcpConnection implements Conn
             key.interestOps(OP_WRITE);
             destination.destFinishConnect();
         }
+    }
+
+    @Override
+    protected void handleReceivedData() throws IOException {
+        redirectInput(destination);
     }
 
 }

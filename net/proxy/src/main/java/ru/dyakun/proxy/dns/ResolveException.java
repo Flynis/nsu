@@ -6,4 +6,8 @@ public class ResolveException extends Exception {
         super(message, cause);
     }
 
+    public ResolveException(String message) {
+        super(message);
+    }
+
 }

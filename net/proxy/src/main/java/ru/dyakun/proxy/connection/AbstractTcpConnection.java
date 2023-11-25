@@ -2,12 +2,16 @@ package ru.dyakun.proxy.connection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.dyakun.proxy.ChangeOpReq;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+
+import static java.nio.channels.SelectionKey.OP_READ;
 
 public abstract class AbstractTcpConnection extends AbstractReadWriteConnection {
     protected static final Logger logger = LoggerFactory.getLogger(AbstractTcpConnection.class);
@@ -47,6 +51,42 @@ public abstract class AbstractTcpConnection extends AbstractReadWriteConnection 
             logger.warn("Get remote address failed");
         }
         return "";
+    }
+
+    @Override
+    public void receive() throws IOException {
+        int read = socket.read(inputBuffer);
+        if(read < 0) {
+            throw new IOException("Cannot read data from channel");
+        }
+        inputBuffer.flip();
+        handleReceivedData();
+        inputBuffer.clear();
+    }
+
+    protected abstract void handleReceivedData() throws IOException;
+
+    @Override
+    public void send() throws IOException {
+        while (!dataQueue.isEmpty()) {
+            ByteBuffer data = dataQueue.peek();
+            socket.write(data);
+            if(data.hasRemaining()) {
+                return;
+            }
+            logger.debug("Send {}b to {}", data.limit(), getAddress());
+            dataQueue.remove();
+        }
+        changeRequests.accept(new ChangeOpReq(getSelectionKey(), OP_READ));
+    }
+
+    protected void redirectInput(ReadWriteConnection dest) throws IOException {
+        if(dest.isClosed()) {
+            throw new IOException("Destination closed");
+        }
+        logger.debug("Receive {}b from {}", inputBuffer.limit(), getAddress());
+        var data = ByteBuffers.copyFrom(inputBuffer);
+        dest.requestSend(data);
     }
 
 }

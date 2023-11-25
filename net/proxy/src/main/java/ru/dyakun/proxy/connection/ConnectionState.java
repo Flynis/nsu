@@ -3,5 +3,6 @@ package ru.dyakun.proxy.connection;
 public enum ConnectionState {
     HANDSHAKE,
     REQUEST,
-    CONNECT
+    CONNECT,
+    WAIT_CONNECT;
 }

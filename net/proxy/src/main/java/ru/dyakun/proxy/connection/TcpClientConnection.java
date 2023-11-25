@@ -1,46 +1,37 @@
 package ru.dyakun.proxy.connection;
 
-import ru.dyakun.proxy.ChangeOpReq;
+import ru.dyakun.proxy.dns.DnsResolver;
+import ru.dyakun.proxy.dns.ResolveException;
 import ru.dyakun.proxy.dns.ResolveExpectant;
 import ru.dyakun.proxy.message.*;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
 import static java.nio.channels.SelectionKey.*;
+import static ru.dyakun.proxy.message.ReplyCode.*;
 
 public class TcpClientConnection extends AbstractTcpConnection implements ResolveExpectant {
     private TcpRedirectConnection destination;
     private ConnectionState state;
+    private final InetAddress address;
+    private final int port;
+    private int dstPort;
 
-    public TcpClientConnection(SocketChannel socket, ConnectionParams params)
-            throws ClosedChannelException {
+    public TcpClientConnection(SocketChannel socket, ConnectionParams params) throws IOException {
         super(socket, params);
         this.state = ConnectionState.HANDSHAKE;
         socket.register(selector, OP_READ, this);
-    }
-
-    public void setDestination(TcpRedirectConnection connection) {
-        this.destination = connection;
+        InetSocketAddress socketAddress = (InetSocketAddress) socket.getRemoteAddress();
+        address = socketAddress.getAddress();
+        port = socketAddress.getPort();
     }
 
     @Override
-    public void receive() throws IOException {
-        int read = socket.read(inputBuffer);
-        if(read < 0) {
-            throw new IOException("Cannot read data from channel");
-        }
-        inputBuffer.flip();
-        handleReceivedData();
-        inputBuffer.clear();
-    }
-
-    private void handleReceivedData() throws IOException {
+    protected void handleReceivedData() throws IOException {
         try {
             switch (state) {
                 case HANDSHAKE -> {
@@ -55,73 +46,66 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
                 case REQUEST -> {
                     RequestMsg msg = RequestMsg.parseFrom(inputBuffer);
                     if (msg.getCommand() != RequestCommand.CONNECT) {
-                        var reply = SocksMessages.buildReplyMsg(ReplyCode.COMMAND_NOT_SUPPORTED);
-                        requestSend(reply);
-                        ConnectionTable.getInstance().markClosed(id);
+                        sendErrorReply(COMMAND_NOT_SUPPORTED);
+                        break;
                     }
                     if(msg.getAddressType() != AddressType.IPV4 || msg.getAddressType() != AddressType.DOMAIN_NAME) {
-                        var reply = SocksMessages.buildReplyMsg(ReplyCode.ADDRESS_TYPE_NOT_SUPPORTED);
-                        requestSend(reply);
-                        ConnectionTable.getInstance().markClosed(id);
+                        sendErrorReply(ADDRESS_TYPE_NOT_SUPPORTED);
+                        break;
                     }
+                    dstPort = msg.getDstPort();
                     switch (msg.getAddressType()) {
                         case IPV4 -> {
-                            UUID id = ConnectionTable.getInstance().getFreeId();
-                            var params = new ConnectionParams(id, selector, changeRequests);
-                            TcpRedirectConnection connection = new TcpRedirectConnection(this, params);
-                            setDestination(connection);
                             InetAddress address = msg.getDstAddress();
-                            connection.requestConnect(new InetSocketAddress(address, msg.getDstPort()));
+                            connectToDesiredAddress(address);
                         }
                         case DOMAIN_NAME -> {
-                            // TODO
+                            String domain = msg.getDstDomainName();
+                            DnsResolver.getInstance().resolve(domain, this);
                         }
                     }
+                    state = ConnectionState.WAIT_CONNECT;
                 }
-                case CONNECT -> {
-                    if(destination.isClosed()) {
-                        throw new IOException("Destination closed");
-                    }
-                    logger.debug("Receive {}b from {}", inputBuffer.limit(), getAddress());
-                    var data = ByteBuffers.copyFrom(inputBuffer);
-                    destination.requestSend(data);
-                }
+                case CONNECT -> redirectInput(destination);
+                case WAIT_CONNECT -> logger.info("Unexpected receive when wait connect to desired address");
             }
-        } catch (MessageParseException e) {
+        } catch (MessageParseException | ResolveException e) {
             throw new IOException("Message parse failed", e);
         }
     }
 
     public void destFinishConnect() {
-        // TODO
+        state = ConnectionState.CONNECT;
+        var reply = SocksMessages.buildReplyMsg(SUCCEEDED, address, port);
+        requestSend(reply);
     }
 
-    private void connectToDesiredAddress(InetAddress address) {
-
-    }
-
-    @Override
-    public void send() throws IOException {
-        while (!dataQueue.isEmpty()) {
-            ByteBuffer data = dataQueue.peek();
-            socket.write(data);
-            if(data.hasRemaining()) {
-                return;
-            }
-            logger.debug("Send {}b to {}", data.limit(), getAddress());
-            dataQueue.remove();
-        }
-        changeRequests.accept(new ChangeOpReq(getSelectionKey(), OP_READ));
+    private void connectToDesiredAddress(InetAddress dstAddress) throws IOException {
+        UUID id = ConnectionTable.getInstance().getFreeId();
+        var params = new ConnectionParams(id, selector, changeRequests);
+        var connection = new TcpRedirectConnection(this, params);
+        destination = connection;
+        connection.requestConnect(new InetSocketAddress(dstAddress, dstPort));
     }
 
     @Override
     public void onResolve(String domain, InetAddress address) {
-
+        try {
+            connectToDesiredAddress(address);
+        } catch (IOException e) {
+            ConnectionTable.getInstance().markClosed(id);
+        }
     }
 
     @Override
     public void onException(Exception e) {
+        sendErrorReply(HOST_UNREACHABLE);
+    }
 
+    private void sendErrorReply(ReplyCode code) {
+        var reply = SocksMessages.buildReplyMsg(code, address, port);
+        requestSend(reply);
+        ConnectionTable.getInstance().markClosed(id);
     }
 
 }

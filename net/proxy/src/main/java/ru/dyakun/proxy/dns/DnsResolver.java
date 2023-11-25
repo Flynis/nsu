@@ -63,7 +63,32 @@ public class DnsResolver implements ConnectionListener {
     public void onReceive(ByteBuffer buffer) {
         try {
             Message response = new Message(buffer);
-            // TODO
+            if(response.getRcode() == Rcode.NOERROR) {
+                var records = response.getSection(Section.ANSWER);
+                for(var r: records) {
+                    if(r instanceof ARecord aRecord) {
+                        String domain = aRecord.getName().toString();
+                        InetAddress address = aRecord.getAddress();
+                        resolved.put(domain, address);
+                        expectants.removeIf(e -> {
+                            if(e.domain.equals(domain)) {
+                                e.expectant.onResolve(domain, address);
+                                return true;
+                            }
+                            return false;
+                        });
+                    }
+                }
+            } else {
+                var question = response.getQuestion();
+                expectants.removeIf(e -> {
+                    if(e.domain.equals(question.getName().toString())) {
+                        e.expectant.onException(new ResolveException("Resolve failed"));
+                        return true;
+                    }
+                    return false;
+                });
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
