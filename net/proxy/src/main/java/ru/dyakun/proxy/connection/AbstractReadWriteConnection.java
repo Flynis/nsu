@@ -32,7 +32,6 @@ public abstract class AbstractReadWriteConnection implements ReadWriteConnection
 
     @Override
     public void requestSend(ByteBuffer data) {
-        data.flip();
         dataQueue.add(data);
         SelectionKey key = getSelectionKey();
         if(key != null && key.isValid() && key.interestOps() == OP_READ) {

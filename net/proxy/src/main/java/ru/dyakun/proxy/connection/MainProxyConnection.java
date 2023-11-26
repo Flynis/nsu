@@ -30,6 +30,7 @@ public class MainProxyConnection implements AcceptableConnection {
         socket.configureBlocking(false);
         socket.bind(address);
         socket.register(selector, OP_ACCEPT, this);
+        logger.info("Bind server to {}", getAddress());
     }
 
     @Override

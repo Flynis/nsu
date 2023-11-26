@@ -29,12 +29,16 @@ public class ConnectionTable {
         return id;
     }
 
-    public void add(UUID id, Connection connection) {
+    public void add(UUID id, Connection connection, boolean closable) {
         if(connections.containsKey(id)) {
             throw new IllegalArgumentException("Id must be unique: " + id);
         }
-        var entry = new Entry(connection);
+        var entry = new Entry(connection, closable);
         connections.put(id, entry);
+    }
+
+    public void add(UUID id, Connection connection) {
+        add(id, connection, true);
     }
 
     public void remove(Connection connection) {
@@ -64,6 +68,12 @@ public class ConnectionTable {
     public void removeInactive() {
         connections.entrySet().removeIf(e -> {
             var entry = e.getValue();
+            if (!entry.isClosable()) {
+                return false;
+            }
+            if(entry.getConnection().isClosed()) {
+                return true;
+            }
             if(!entry.isClosed() &&
                     ChronoUnit.MINUTES.between(entry.getTime(), LocalDateTime.now()) > MAX_INACTIVE_TIME) {
                 entry.getConnection().close();
@@ -87,17 +97,23 @@ public class ConnectionTable {
 
     private static class Entry {
         private final Connection connection;
+        private final boolean closable;
         private boolean closed;
         private LocalDateTime time;
 
-        private Entry(Connection connection) {
+        private Entry(Connection connection, boolean closable) {
             this.connection = connection;
+            this.closable = closable;
             closed = false;
             time = LocalDateTime.now();
         }
 
         public Connection getConnection() {
             return connection;
+        }
+
+        public boolean isClosable() {
+            return closable;
         }
 
         public boolean isClosed() {
@@ -113,7 +129,11 @@ public class ConnectionTable {
         }
 
         public void setClosed() {
-            closed = true;
+            if (closable) {
+                closed = true;
+            } else {
+                throw new IllegalStateException("Attempt to close not closeable connection");
+            }
         }
 
     }

@@ -24,7 +24,9 @@ public class UdpConnection extends AbstractReadWriteConnection {
         this.listener = listener;
         try {
             socket = DatagramChannel.open();
+            socket.bind(null);
             socket.configureBlocking(false);
+            socket.connect(receiver);
             socket.register(selector, SelectionKey.OP_READ, this);
         } catch (IOException e) {
             throw new IllegalStateException("Udp connection initialize failed", e);
@@ -59,12 +61,14 @@ public class UdpConnection extends AbstractReadWriteConnection {
 
     @Override
     public void receive() throws IOException {
-        socket.receive(inputBuffer);
+        int read = socket.read(inputBuffer);
+        if(read < 0) {
+            throw new IOException("Cannot read data from channel");
+        }
         inputBuffer.flip();
         listener.onReceive(inputBuffer);
         inputBuffer.clear();
     }
-
 
     @Override
     protected SelectionKey getSelectionKey() {
@@ -75,11 +79,13 @@ public class UdpConnection extends AbstractReadWriteConnection {
     public void send() throws IOException {
         while (!dataQueue.isEmpty()) {
             ByteBuffer data = dataQueue.poll();
-            socket.send(data, receiver);
-            logger.debug("Send datagram {}b to {} remaining: {}",
-                    data.limit(),
-                    getAddress(),
-                    data.hasRemaining());
+            int length = data.limit();
+            socket.send(data, socket.getRemoteAddress());
+            logger.debug("Send datagram {}b to {}:{} remaining: {}",
+                    length,
+                    receiver.getAddress().getHostAddress(),
+                    receiver.getPort(),
+                    data.remaining());
         }
         changeRequests.accept(new ChangeOpReq(getSelectionKey(), SelectionKey.OP_READ));
     }

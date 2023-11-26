@@ -23,6 +23,14 @@ public class TcpRedirectConnection extends AbstractTcpConnection implements Conn
     }
 
     @Override
+    public void close() {
+        super.close();
+        if(destination != null && !destination.isClosed()) {
+            destination.close();
+        }
+    }
+
+    @Override
     public void connect() throws IOException {
         try {
             if(socket.finishConnect()) {

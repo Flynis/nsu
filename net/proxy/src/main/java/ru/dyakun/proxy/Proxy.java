@@ -14,7 +14,7 @@ import java.util.Queue;
 
 public class Proxy {
     private static final Logger logger = LoggerFactory.getLogger(Proxy.class);
-    private static final int SELECT_TIMEOUT = 10 * 1000; // ms
+    private static final int SELECT_TIMEOUT = 300; // ms
     private final Selector selector;
     private final Queue<ChangeOpReq> changeRequests = new ArrayDeque<>();
     private boolean running = false;
@@ -29,11 +29,11 @@ public class Proxy {
             var params = new ConnectionParams(id, selector, changeRequests::add);
             var address = new InetSocketAddress(port);
             var mainConnection = new MainProxyConnection(address, params);
-            ConnectionTable.getInstance().add(id, mainConnection);
+            ConnectionTable.getInstance().add(id, mainConnection, false);
             var dnsId = ConnectionTable.getInstance().getFreeId();
             var dnsParams = new ConnectionParams(dnsId, selector, changeRequests::add);
             var dnsConnection = DnsResolver.init(dnsParams);
-            ConnectionTable.getInstance().add(dnsId, dnsConnection);
+            ConnectionTable.getInstance().add(dnsId, dnsConnection, false);
         } catch (IOException | IllegalArgumentException e) {
             throw new IllegalStateException("Proxy initialize failed");
         }
@@ -47,6 +47,12 @@ public class Proxy {
                 changeKeyOps();
                 selector.select(SELECT_TIMEOUT);
                 Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
+                if(!keys.hasNext()) {
+                    DnsResolver.getInstance().tryResolve();
+                    var table =  ConnectionTable.getInstance();
+                    table.removeClosed();
+                    table.removeInactive();
+                }
                 while(keys.hasNext()) {
                     SelectionKey key = keys.next();
                     keys.remove();
@@ -56,9 +62,6 @@ public class Proxy {
                     else if(key.isWritable()) write(key);
                     else if(key.isConnectable()) connect(key);
                 }
-                var table =  ConnectionTable.getInstance();
-                table.removeClosed();
-                table.removeInactive();
             } catch (CancelledKeyException e) {
                 logger.debug("Canceled key", e);
             } catch (ClosedSelectorException e) {
@@ -76,10 +79,20 @@ public class Proxy {
             var request = changeRequests.poll();
             SelectionKey key = request.key();
             if (key.isValid()) {
-                logger.debug("Switch key op {} to {}", ((Connection)key.attachment()).getId(), request.ops());
+                logger.debug("Switch key op {} to {}", ((Connection)key.attachment()).getAddress(), opToString(request.ops()));
                 key.interestOps(request.ops());
             }
         }
+    }
+
+    private String opToString(int op) {
+        return switch (op) {
+            case 1 -> "READ";
+            case 4 -> "WRITE";
+            case 8 -> "CONNECT";
+            case 16 -> "ACCEPT";
+            default -> throw new IllegalArgumentException("Unknown selection key op");
+        };
     }
 
     private void accept(SelectionKey key) {
@@ -91,7 +104,7 @@ public class Proxy {
             if(!(connection instanceof MainProxyConnection)) {
                 disconnect(connection);
             }
-            logger.warn("Failed to accept a connection", e);
+            logger.warn("Accept failed", e);
         }
     }
 
@@ -101,6 +114,7 @@ public class Proxy {
             connection.receive();
             ConnectionTable.getInstance().updateTime(connection.getId());
         } catch (IOException e) {
+            logger.warn("Read failed", e);
             disconnect(connection);
         }
     }
@@ -111,6 +125,7 @@ public class Proxy {
             connection.send();
             ConnectionTable.getInstance().updateTime(connection.getId());
         } catch (IOException e) {
+            logger.warn("Write failed", e);
             disconnect(connection);
         }
     }
@@ -121,6 +136,7 @@ public class Proxy {
             connection.connect();
             ConnectionTable.getInstance().updateTime(connection.getId());
         } catch (IOException e) {
+            logger.warn("Connect failed", e);
             disconnect(connection);
         }
     }
@@ -139,7 +155,6 @@ public class Proxy {
     public void disconnect(Connection connection) {
         ConnectionTable.getInstance().remove(connection);
         connection.close();
-        logger.info("Connection with {} successfully closed", connection.getAddress());
     }
 
 }

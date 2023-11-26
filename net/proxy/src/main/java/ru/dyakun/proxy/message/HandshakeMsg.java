@@ -29,7 +29,7 @@ public class HandshakeMsg {
     @Override
     public String toString() {
         int ver = UnsignedNumbers.getUnsignedByte(version);
-        return String.format("Handshake[ver%d methods=%d", ver, methods.length);
+        return String.format("Handshake[ver%d methods=%d]", ver, methods.length);
     }
 
 }

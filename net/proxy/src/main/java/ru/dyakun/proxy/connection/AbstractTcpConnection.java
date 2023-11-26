@@ -35,6 +35,7 @@ public abstract class AbstractTcpConnection extends AbstractReadWriteConnection 
     @Override
     public void close() {
         try {
+            logger.info("Connection with {} successfully closed", getAddress());
             socket.close();
         } catch (IOException e) {
             logger.warn("Socket channel close failed", e);
@@ -48,7 +49,7 @@ public abstract class AbstractTcpConnection extends AbstractReadWriteConnection 
             InetAddress address = socketAddress.getAddress();
             return String.format("%s:%s", address.getHostAddress(), socketAddress.getPort());
         } catch (IOException e) {
-            logger.warn("Get remote address failed");
+            logger.warn("Get remote address failed", e);
         }
         return "";
     }
@@ -57,7 +58,9 @@ public abstract class AbstractTcpConnection extends AbstractReadWriteConnection 
     public void receive() throws IOException {
         int read = socket.read(inputBuffer);
         if(read < 0) {
-            throw new IOException("Cannot read data from channel");
+            logger.debug("Connection {} is terminated by the other side", getAddress());
+            close();
+            return;
         }
         inputBuffer.flip();
         handleReceivedData();
@@ -70,11 +73,12 @@ public abstract class AbstractTcpConnection extends AbstractReadWriteConnection 
     public void send() throws IOException {
         while (!dataQueue.isEmpty()) {
             ByteBuffer data = dataQueue.peek();
+            int length = data.limit();
             socket.write(data);
             if(data.hasRemaining()) {
                 return;
             }
-            logger.debug("Send {}b to {}", data.limit(), getAddress());
+            logger.debug("Send {}b to {} remaining: {}", length, getAddress(), data.remaining());
             dataQueue.remove();
         }
         changeRequests.accept(new ChangeOpReq(getSelectionKey(), OP_READ));

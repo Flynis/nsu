@@ -23,11 +23,24 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
 
     public TcpClientConnection(SocketChannel socket, ConnectionParams params) throws IOException {
         super(socket, params);
-        this.state = ConnectionState.HANDSHAKE;
         socket.register(selector, OP_READ, this);
         InetSocketAddress socketAddress = (InetSocketAddress) socket.getRemoteAddress();
         address = socketAddress.getAddress();
         port = socketAddress.getPort();
+        changeState(ConnectionState.HANDSHAKE);
+    }
+
+    private void changeState(ConnectionState state) {
+        this.state = state;
+        logger.debug("Change connection state to {}", state);
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        if(destination != null && !destination.isClosed()) {
+            destination.close();
+        }
     }
 
     @Override
@@ -36,17 +49,19 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
             switch (state) {
                 case HANDSHAKE -> {
                     HandshakeMsg msg = HandshakeMsg.parseFrom(inputBuffer);
+                    logger.debug("Receive {}", msg);
                     if (msg.getVersion() != SocksMessages.VERSION) {
                         var reply = SocksMessages.buildHandshakeReplyMsg(SocksMessages.NO_ACCEPTABLE_METHODS);
                         requestSend(reply);
                     } else {
                         var reply = SocksMessages.buildHandshakeReplyMsg(SocksMessages.NO_AUTHENTICATION_REQUIRED);
                         requestSend(reply);
-                        state = ConnectionState.REQUEST;
+                        changeState(ConnectionState.REQUEST);
                     }
                 }
                 case REQUEST -> {
                     RequestMsg msg = RequestMsg.parseFrom(inputBuffer);
+                    logger.debug("Receive {}", msg);
                     if(msg.getVersion() != SocksMessages.VERSION) {
                         sendErrorReply(SOCKS_SERVER_FAILURE);
                         break;
@@ -55,7 +70,7 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
                         sendErrorReply(COMMAND_NOT_SUPPORTED);
                         break;
                     }
-                    if(msg.getAddressType() != AddressType.IPV4 || msg.getAddressType() != AddressType.DOMAIN_NAME) {
+                    if(msg.getAddressType() != AddressType.IPV4 && msg.getAddressType() != AddressType.DOMAIN_NAME) {
                         sendErrorReply(ADDRESS_TYPE_NOT_SUPPORTED);
                         break;
                     }
@@ -70,7 +85,7 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
                             DnsResolver.getInstance().resolve(domain, this);
                         }
                     }
-                    state = ConnectionState.WAIT_CONNECT;
+                    changeState(ConnectionState.WAIT_CONNECT);
                 }
                 case CONNECT -> redirectInput(destination);
                 case WAIT_CONNECT -> logger.info("Unexpected receive when wait connect to desired address");
@@ -81,8 +96,10 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
     }
 
     public void destFinishConnect() {
-        state = ConnectionState.CONNECT;
+        logger.info("Connection established with {}", destination.getAddress());
+        changeState(ConnectionState.CONNECT);
         var reply = SocksMessages.buildReplyMsg(SUCCEEDED, address, port);
+        logger.debug("Send: {}", SUCCEEDED);
         requestSend(reply);
     }
 
@@ -95,6 +112,7 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
         var params = new ConnectionParams(id, selector, changeRequests);
         var connection = new TcpRedirectConnection(this, params);
         destination = connection;
+        ConnectionTable.getInstance().add(id, connection);
         connection.requestConnect(new InetSocketAddress(dstAddress, dstPort));
     }
 
@@ -114,6 +132,7 @@ public class TcpClientConnection extends AbstractTcpConnection implements Resolv
     }
 
     private void sendErrorReply(ReplyCode code) {
+        logger.debug("Send: {}", code);
         var reply = SocksMessages.buildReplyMsg(code, address, port);
         requestSend(reply);
         ConnectionTable.getInstance().markClosed(id);
