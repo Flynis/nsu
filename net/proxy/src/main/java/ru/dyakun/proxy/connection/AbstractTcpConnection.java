@@ -7,6 +7,7 @@ import ru.dyakun.proxy.ChangeOpReq;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -56,32 +57,44 @@ public abstract class AbstractTcpConnection extends AbstractReadWriteConnection 
 
     @Override
     public void receive() throws IOException {
-        int read = socket.read(inputBuffer);
-        if(read < 0) {
-            logger.debug("Connection {} is terminated by the other side", getAddress());
-            close();
-            return;
+        try {
+            int read = socket.read(inputBuffer);
+            if(read < 0) {
+                terminate();
+                return;
+            }
+            inputBuffer.flip();
+            handleReceivedData();
+            inputBuffer.clear();
+        } catch (SocketException e) {
+            terminate();
         }
-        inputBuffer.flip();
-        handleReceivedData();
-        inputBuffer.clear();
+    }
+
+    protected void terminate() {
+        logger.debug("Connection {} is terminated by the other side", getAddress());
+        close();
     }
 
     protected abstract void handleReceivedData() throws IOException;
 
     @Override
     public void send() throws IOException {
-        while (!dataQueue.isEmpty()) {
-            ByteBuffer data = dataQueue.peek();
-            int length = data.limit();
-            socket.write(data);
-            if(data.hasRemaining()) {
-                return;
+        try {
+            while (!dataQueue.isEmpty()) {
+                ByteBuffer data = dataQueue.peek();
+                int length = data.limit();
+                socket.write(data);
+                if(data.hasRemaining()) {
+                    return;
+                }
+                logger.debug("Send {}b to {} remaining: {}", length, getAddress(), data.remaining());
+                dataQueue.remove();
             }
-            logger.debug("Send {}b to {} remaining: {}", length, getAddress(), data.remaining());
-            dataQueue.remove();
+            changeRequests.accept(new ChangeOpReq(getSelectionKey(), OP_READ));
+        } catch (SocketException e) {
+            terminate();
         }
-        changeRequests.accept(new ChangeOpReq(getSelectionKey(), OP_READ));
     }
 
     protected void redirectInput(ReadWriteConnection dest) throws IOException {

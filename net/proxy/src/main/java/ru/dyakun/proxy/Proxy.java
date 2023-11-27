@@ -14,7 +14,7 @@ import java.util.Queue;
 
 public class Proxy {
     private static final Logger logger = LoggerFactory.getLogger(Proxy.class);
-    private static final int SELECT_TIMEOUT = 300; // ms
+    private static final int SELECT_TIMEOUT = 500; // ms
     private final Selector selector;
     private final Queue<ChangeOpReq> changeRequests = new ArrayDeque<>();
     private boolean running = false;
@@ -79,20 +79,9 @@ public class Proxy {
             var request = changeRequests.poll();
             SelectionKey key = request.key();
             if (key.isValid()) {
-                logger.debug("Switch key op {} to {}", ((Connection)key.attachment()).getAddress(), opToString(request.ops()));
                 key.interestOps(request.ops());
             }
         }
-    }
-
-    private String opToString(int op) {
-        return switch (op) {
-            case 1 -> "READ";
-            case 4 -> "WRITE";
-            case 8 -> "CONNECT";
-            case 16 -> "ACCEPT";
-            default -> throw new IllegalArgumentException("Unknown selection key op");
-        };
     }
 
     private void accept(SelectionKey key) {
