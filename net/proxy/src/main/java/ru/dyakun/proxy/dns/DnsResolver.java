@@ -37,6 +37,7 @@ public class DnsResolver implements ConnectionListener {
             return;
         }
         expectants.add(new Entry(domain, expectant));
+        if(isResolving(domain)) return;
         try {
             logger.info("Resolve query for {}", domain);
             Record queryRecord = Record.newRecord(Name.fromString(domain + '.'), Type.A, DClass.IN);
@@ -52,6 +53,7 @@ public class DnsResolver implements ConnectionListener {
 
     public void tryResolve() {
         for(var msg: messages) {
+            logger.debug("Try resolve for {}", msg.domain);
             connection.requestSend(msg.bytes);
         }
     }
@@ -69,13 +71,22 @@ public class DnsResolver implements ConnectionListener {
         return instance;
     }
 
-    private Message findQuery(int id) {
+    private ResolveMessage findQuery(int id) {
         for(var msg: messages) {
             if(msg.message.getHeader().getID() == id) {
-                return msg.message;
+                return msg;
             }
         }
         return null;
+    }
+
+    private boolean isResolving(String domain) {
+        for(var msg: messages) {
+            if (msg.domain.equals(domain)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean validateRecord(Message response, Message query) {
@@ -105,14 +116,14 @@ public class DnsResolver implements ConnectionListener {
             if(response.getRcode() == Rcode.NOERROR) {
                 var query = findQuery(response.getHeader().getID());
                 if(query == null) return;
-                if(!validateRecord(response, query)) return;
+                var queryMessage = query.message;
+                if(!validateRecord(response, queryMessage)) return;
                 var records = response.getSection(Section.ANSWER);
-                logger.info("DNS response answers count: {}", records.size());
+                logger.info("DNS response answers count = {} for {}", records.size(), queryMessage.getQuestion().getName());
                 for(var r: records) {
                     if(r instanceof ARecord aRecord) {
                         logger.debug(r.toString());
-                        String str = aRecord.getName().toString();
-                        String domain = str.substring(0, str.length() - 1);
+                        String domain = query.domain;
                         InetAddress address = aRecord.getAddress();
                         resolved.put(domain, address);
                         messages.removeIf(msg -> msg.domain.equals(domain));
