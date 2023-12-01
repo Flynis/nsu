@@ -156,7 +156,8 @@ int cache_push(cache_t *cache, char *key, void *data, size_t data_size) {
         cnode_t *node = NULL;
         do {
             node = &nodes[cache->head];
-            cache->head = (cache->head + 1) % cache->capacity; // ring buffer
+            // moving along ring buffer
+            cache->head = (cache->head + 1) % cache->capacity;
             int busy = pthread_rwlock_trywrlock(&node->lock);
             if(!busy) {
                 if(node->referenceBit == 0) {
