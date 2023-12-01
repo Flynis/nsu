@@ -26,13 +26,13 @@ typedef struct {
 
 /**
  * Initiates hashmap with the specified capacity and hash function.
- * @returns zero if successful, or an error number. 
+ * @returns zero on success, or an error number. 
 */
 int str_hashmap_init(str_hashmap_t *hashmap, size_t capacity, str_hashfunc_t hashfunc);
 
 /**
  * Associates the specified value with the specified key in map.
- * @returns zero if successful, or -1 if map is filled to capacity.
+ * @returns zero on success, or -1 if map is filled to capacity.
 */
 int str_hashmap_put(str_hashmap_t *hashmap, char *key, void *value);
 

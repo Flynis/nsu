@@ -10,8 +10,6 @@
 
 #include "containers/str_hashmap.h"
 
-#define MAX_CACHE_DATA_SIZE 65536 // = 2^16b = 64kb
-
 /**
  * CLOCK replacement policy based cache. 
  * This implementation is synchronized but not resizable.
@@ -33,7 +31,7 @@ typedef struct {
     size_t capacity;
     size_t size;
     size_t head;
-    cnode_t *nodes; // ring array
+    cnode_t *nodes;
     pthread_mutex_t replace_lock;
     pthread_rwlock_t map_lock;
 	str_hashmap_t hashmap;
@@ -41,19 +39,19 @@ typedef struct {
 
 /**
  * Initiates cache with the specified capacity.
- * @returns zero if successful, or an error number. 
+ * @returns zero on success, or an error number. 
 */
 int cache_init(cache_t *cache, size_t capacity);
 
 /**
  * Writes data with the specified key to the dest buffer.
- * @returns dest, or null if there was a cache miss.
+ * @returns dest on success, or null if there was a cache miss.
 */
 void* cache_get(cache_t *cache, char *key, void *dest);
 
 /**
  * Puts the specified value with the specified size and key in cache.
- * @returns zero if successful, or an error number.
+ * @returns zero on success, or an error number.
 */
 int cache_push(cache_t *cache, char *key, void *data, size_t data_size);
 
