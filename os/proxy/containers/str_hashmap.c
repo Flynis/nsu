@@ -3,90 +3,89 @@
 #include <errno.h>
 #include <string.h>
 
-typedef struct _entry_struct {
+typedef struct _bucket_struct {
     char *key;
     void *value;
-} entry_t;
+} bucket_t;
 
 typedef struct _str_hashmap_struct {
-	entry_t *entries;
+	bucket_t *buckets;
 	size_t capacity;
+    size_t size;
     str_hashfunc_t hashfunc;
 } str_hashmap_t;
 
 
 int str_hashmap_init(str_hashmap_t *hashmap, size_t capacity, str_hashfunc_t hashfunc) {
-    entry_t *entries = calloc(capacity, sizeof(entry_t));
-    if(!entries) {
+    bucket_t *buckets = calloc(capacity, sizeof(bucket_t));
+    if(!buckets) {
         return errno;
     }
 
     hashmap->capacity = capacity;
-    hashmap->entries = entries;
+    hashmap->size = 0;
+    hashmap->buckets = buckets;
     hashmap->hashfunc = hashfunc;
 
     return 0;
 }
 
 
-static entry_t* find_entry(str_hashmap_t *hashmap, char *key) {
-    entry_t *entries = hashmap->entries;
-
+static bucket_t* find_bucket(str_hashmap_t *hashmap, char *key) {
+    bucket_t *buckets = hashmap->buckets;
     size_t index = hashmap->hashfunc(key) % hashmap->capacity;
-    if(entries[index].key == NULL) {
-        return &entries[index];
-    }
 
-    size_t attempts = 0;
-    while(strcmp(key, entries[index].key) != 0) {
-        attempts++;
-        if(attempts == hashmap->capacity) {
-            return NULL;
+    if(buckets[index].key != NULL) {
+        // hash miss
+        // looking for bucket with specified key
+        size_t attempts = 0;
+        while(strcmp(key, buckets[index].key) != 0) {
+            attempts++;
+            if(attempts == hashmap->capacity) {
+                return NULL;
+            }
+            index = (index + 1) % hashmap->capacity;
         }
-        index = (index + 1) % hashmap->capacity;
     }
     
-    return &entries[index];
+    return &buckets[index];
 }
 
 
 int str_hashmap_put(str_hashmap_t *hashmap, char *key, void *value) {
-    entry_t *entries = hashmap->entries;
-
-    size_t index = hashmap->hashfunc(key) % hashmap->capacity;
-    if(entries[index].key == NULL) {
-        entries[index].key = key;
-        entries[index].value = value;
-        return 0;
+    if(hashmap->size == hashmap->capacity) {
+        return -1;
     }
 
-    size_t attempts = 0;
-    while(strcmp(key, entries[index].key) != 0) {
-        attempts++;
-        if(attempts == hashmap->capacity) {
-            return -1;
+    bucket_t *buckets = hashmap->buckets;
+    size_t index = hashmap->hashfunc(key) % hashmap->capacity;
+
+    if(buckets[index].key != NULL) {
+        // hash miss
+        // looking for free bucket
+        while(strcmp(key, buckets[index].key) != 0) {
+            index = (index + 1) % hashmap->capacity;
         }
-        index = (index + 1) % hashmap->capacity;
     }
     
-    entries[index].key = key;
-    entries[index].value = value;
+    buckets[index].key = key;
+    buckets[index].value = value;
     return 0;
 }
 
 
 void* str_hashmap_get(str_hashmap_t *hashmap, char *key) {
-    entry_t *entry = find_entry(hashmap, key);
-    return (entry->key == NULL) ? NULL : entry->value;    
+    bucket_t *bucket = find_bucket(hashmap, key);
+    return (bucket->key == NULL) ? NULL : bucket->value;    
 }
 
 
 void str_hashmap_remove(str_hashmap_t *hashmap, char *key) {
-    entry_t *entry = find_entry(hashmap, key);
-    entry->key = NULL;
+    bucket_t *bucket = find_bucket(hashmap, key);
+    bucket->key = NULL;
 }
 
 
 void str_hashmap_destroy(str_hashmap_t *hashmap) {
-    free(hashmap->entries);
+    free(hashmap->buckets);
 }
