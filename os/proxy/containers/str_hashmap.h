@@ -5,13 +5,24 @@
 
 /**
  * Hashmap with string keys. This implementation doesn't copy keys and values 
- * if its didn't store in somewhere else then any operation may produce EFAULT. 
+ * if its didn't store in somewhere else any operation may produce segfault. 
  * This implementation is not synchronized and not resizable.
 */
 
-typedef struct _str_hashmap_struct str_hashmap_t;
-
 typedef unsigned long (*str_hashfunc_t)(char *s);
+
+typedef struct {
+    char *key;
+    void *value;
+    unsigned long hashcode;
+} bucket_t;
+
+typedef struct {
+	bucket_t *buckets;
+	size_t capacity;
+    size_t size;
+    str_hashfunc_t hashfunc;
+} str_hashmap_t;
 
 /**
  * Initiates hashmap with the specified capacity and hash function.
