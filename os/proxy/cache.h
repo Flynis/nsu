@@ -1,5 +1,5 @@
-#ifndef _CACHE_H_
-#define _CACHE_H_
+#ifndef _CACHE_H_INCLUDED_
+#define _CACHE_H_INCLUDED_
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
