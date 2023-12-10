@@ -1,0 +1,32 @@
+import string;
+
+export {
+
+    VarDecl : (t: Type, v: Var);
+
+    Var : (name: string);
+
+    Type ::= Int, Array;
+    Int : ();
+    Array : (index: Type, value: Type);
+    
+    vdecl2s(decl : VarDecl) -> string;
+
+    t2s(t: Type) -> string;
+
+}
+
+vdecl2s(decl : VarDecl) -> string {
+    "VAR " + decl.v.name + " : " + t2s(decl.t) + ";";
+}
+
+t2s(t: Type) -> string {
+    switch (t) {
+        Int(): "INT";
+        Array(i, v): {
+            is = t2s(i);
+            vs = t2s(v);
+            is + " ARRAY OF " + vs;
+        } 
+    }
+}

@@ -1,0 +1,52 @@
+program = var_decl_list:list ws body:b { Program(:list, :b) };
+
+var_decl_list = var_decl*:list { buildVarDeclList(:list) };
+var_decl = ws 'VAR' ws var:v ws ':' ws type:t ws ';' { VarDecl(:v, :t) };
+
+type = array | int;
+array = type:idxT ws 'ARRAY OF' ws type:valT { Array(:idxT, :valT) };
+int = 'INT' { Int() };
+
+body = assign | test | body_seq | non_deter_choice | non_deter_iter;
+assign = ws var:v ws ':=' ws expr:e ws ';' { Assign(:v, :e) };
+test = ws '(' ws cond:c ws ')' ws '?' ws ";" { :c };
+body_seq = body*:b { buildBodySeq(:b) };
+non_deter_iter = body:b '*' { NonDeterIter(:b) };
+non_deter_choice = body:b choice+:c { buildNonDeterChoice(:b, :c) };
+choice = ws '||' ws body:b { :b };
+
+cond = operand:l ws comp_sign:op ws operand:r { Compare(:l, :r, :op) };
+expr = operand | arith_expr | array_func;
+
+arith_expr = ws sec_prior:sec ws {:sec};
+sec_prior = fst_prior:fst subtrahend*:sub ws '+' ws sec_prior:sec { Binary(buildSub(:fst, :sub),:sec, AddOp()) } |
+                 fst_prior:fst subtrahend*:sub { buildSub(:fst, :sub) };
+fst_prior = term:t divisor*:div ws '*' ws fst_prior:fst { Binary(buildDiv(:t, :div),:fst, MulOp()) } | 
+                term:t divisor*:div { buildDiv(:t, :div) };
+divisor = ws '/' ws term:t {:t};
+subtrahend = ws '-' ws fst_prior:fst {:fst};
+term = '+'? operand:o {:o} |
+       '-' operand:o { Neg(:o) } |
+       '+'? '(' arith_expr:e ')' {:e} |
+       '-(' arith_expr:e ')' { Neg(:e) };
+
+array_func = array_upd | array_app;
+array_upd = 'UPD(' ws operand:arr ws ',' ws operand:idx ws ',' ws operand:val ws ')' { ArrayUpd(:arr, :idx, :val) };
+array_app = 'APP(' ws operand:arr ws ',' ws operand:idx ws ')' { ArrayApp(:arr, :idx) };
+
+operand = var | const;
+const = const_int | const_arr;
+const_arr = const_int_arr | '[' ws const_arr:a const_arr_val*:vals ws ']' { buildConstArr(:a, :vals) };
+const_arr_val = ws ',' ws const_arr:arr { :arr };
+const_int_arr = '[' ws const_int:i const_int_arr_val*:vals ws ']' { buildConstIntArr(:i, :vals) };
+const_int_arr_val = ws ',' ws const_int:i { :i };
+const_int = ('0' | (('-' | '+')? non_zero_digit digit*))$d { ConstInt(s2i($d)) };
+var = (letter (letter | digit)*):n { Var(:n) };
+
+comp_sign = '==' | '>=' | '<=' | '!=' | '>' | '<';
+letter = 'a' - 'z' | 'A' - 'Z';
+non_zero_digit = '1' - '9';
+digit = '0'-'9';
+
+ws = s*;
+s = ' ' | '\t' | '\n' | '\r';

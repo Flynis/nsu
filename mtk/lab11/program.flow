@@ -1,0 +1,15 @@
+import ds/set;
+import variable;
+
+export {
+
+    Program : (ctx: Set<VarDecl>, body: Body);
+    Body : ();
+    
+    ctx2s(ctx: Set<VarDecl>) -> string;
+
+}
+
+ctx2s(ctx: Set<VarDecl>) -> string {
+    foldSet(ctx, "", \acc, decl -> acc + vdecl2s(decl) + "\n");
+}

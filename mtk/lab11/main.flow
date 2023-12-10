@@ -1,0 +1,11 @@
+import program;
+import parsing;
+
+main() {
+    grammar = "#include nemo.lingo";
+    programText = "#include program.nemo";
+
+    program = parse(programText, grammar);
+
+    ctx2s(program.ctx);
+}
