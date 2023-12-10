@@ -489,7 +489,7 @@ static unsigned int append_headers(char *headers, char ch, unsigned int state, h
 }
 
 
-int http_parse_headers(http_parser_t *parser, buffer_t *buf) {
+int http_parse_header_line(http_parser_t *parser, buffer_t *buf) {
     http_request_t *req = parser->request;
     char *headers;
     if(parser->is_request_parser) {
