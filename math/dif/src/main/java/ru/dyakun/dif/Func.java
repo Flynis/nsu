@@ -1,4 +1,4 @@
-package ru.dykun.dif;
+package ru.dyakun.dif;
 
 @FunctionalInterface
 public interface Func {
