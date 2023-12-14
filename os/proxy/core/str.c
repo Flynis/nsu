@@ -27,7 +27,7 @@ bool string_equals(String str1, String str2) {
         return false;
     }
 
-    for(size_t i = 0; i < str1.length; i++) {
+    for(size_t i = 0; i < str1.length; i += 1) {
         if(str1.data[i] != str2.data[i]) {
             return false;
         }

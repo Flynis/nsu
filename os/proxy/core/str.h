@@ -6,12 +6,9 @@
 #include <stddef.h>
 
 
-#define null_string(_) {.length = 0,.data = NULL }
-
-
 typedef struct String {
-    unsigned char           *data;
-    size_t                   length;
+    unsigned char const *data;
+    size_t length;
 } String;
 
 
@@ -29,7 +26,4 @@ unsigned int string_hash(String str);
 bool string_equals(String str1, String str2);
 
 
-bool is_null_string(String str);
-
-
-#endif
+#endif // _STR_H_INCLUDED_

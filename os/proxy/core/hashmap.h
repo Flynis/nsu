@@ -2,6 +2,7 @@
 #define _STR_HASHMAP_H_INCLUDED_
 
 
+#include <stdbool.h>
 #include <stddef.h>
 
 
@@ -11,63 +12,63 @@
 /**
  * Hash function for strings.
 */
-typedef unsigned long (*Hashfunc)(char *string);
+typedef unsigned int (*Hashfunc)(String string);
 
 
 /**
- * Hashmap bucket.
+ * Key-value mapping.
 */
-typedef struct Bucket {
-    String                   key;
-    void                    *value;
-    unsigned long            hash;
-} Bucket;
+typedef struct HashElement {
+    String key;
+    void const *value;
+    bool is_empty;
+} HashElement;
 
 
 /**
- * Hashmap with string keys. This implementation doesn't copy keys and values 
- * if its didn't store in somewhere else any operation may produce segfault. 
- * This implementation is not synchronized and not resizable.
+ * Hashmap with string keys. Not synchronized.
 */
 typedef struct {
-	Bucket                  *buckets;
-	size_t                   capacity;
-    size_t                   size;
-    Hashfunc                 hashfunc;
+	HashElement *elements;
+    Hashfunc hashfunc;
+    bool resizable;
+    double load_factor; // ignored if resizable is false
+	size_t capacity;
+    size_t nelements;
 } Hashmap;
 
 
 /**
  * Initiates hashmap with the specified capacity and hash function.
- * @returns zero on success, or an error number. 
+ * @returns ERRC_OK on success, ERRC_FAILED otherwise. 
 */
-int hashmap_init(Hashmap *hashmap, size_t capacity, Hashfunc hashfunc);
+int hashmap_init(Hashmap *map, size_t capacity, bool resizable);
 
 
 /**
- * Associates the specified value with the specified key in map.
- * @returns zero on success, or -1 if map is filled to capacity.
+ * Adds an element to the hashmap.
+ * @returns ERRC_OK on success, or ERRC_FAILED if rehash failed.
 */
-int hashmap_put(Hashmap *hashmap, String key, void *value);
+int hashmap_put(Hashmap *map, String key, void const *value);
 
 
 /**
- * Returns the value to which the specified key is mapped, or NULL if map contains no mapping for the key. 
- * @returns the value to which the specified key is mapped, or NULL if map contains no mapping for the key
+ * Gets an element from the hashmap. 
+ * @returns the element if key is present in the hashmap, or NULL otherwise.
 */
-void* hashmap_get(Hashmap *hashmap, String key);
+void* hashmap_get(Hashmap *map, String key);
 
 
 /**
- * Removes the mapping for the specified key from map if present.
+ * Removes an element by key from the hashmap if the key is present
 */
-void hashmap_remove(Hashmap *hashmap, String key);
+void hashmap_remove(Hashmap *map, String key);
 
 
 /**
  * Destroys hashmap
 */
-void hashmap_destroy(Hashmap *hashmap);
+void hashmap_destroy(Hashmap *map);
 
 
-#endif
+#endif // _STR_HASHMAP_H_INCLUDED_
