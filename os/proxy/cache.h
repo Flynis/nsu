@@ -34,7 +34,7 @@ typedef struct {
     cnode_t *nodes;
     pthread_mutex_t replace_lock;
     pthread_rwlock_t map_lock;
-	str_hashmap_t hashmap;
+	Hashmap hashmap;
 } cache_t;
 
 /**

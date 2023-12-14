@@ -16,7 +16,7 @@ static void destroy(cache_t *cache, size_t size) {
 
     pthread_mutex_destroy(&cache->replace_lock);
     pthread_rwlock_destroy(&cache->map_lock);
-    str_hashmap_destroy(&cache->hashmap);
+    hashmap_destroy(&cache->hashmap);
 }
 
 
@@ -33,7 +33,7 @@ int cache_init(cache_t *cache, size_t capacity) {
     }
 
     // increase map capacity to maintain load factor at 0.75
-    err = str_hashmap_init(&cache->hashmap, (capacity * 4) / 3, strhash);
+    err = hashmap_init(&cache->hashmap, (capacity * 4) / 3, strhash);
     if(err) {
         pthread_mutex_destroy(&cache->replace_lock);
         pthread_rwlock_destroy(&cache->map_lock);
@@ -65,7 +65,7 @@ int cache_init(cache_t *cache, size_t capacity) {
 
 void* cache_get(cache_t *cache, char *key, void *dest) {
     pthread_rwlock_rdlock(&cache->map_lock);
-    cnode_t *node = str_hashmap_get(&cache->hashmap, key);
+    cnode_t *node = hashmap_get(&cache->hashmap, key);
     pthread_rwlock_unlock(&cache->map_lock);
 
     if(node == NULL) {
@@ -146,7 +146,7 @@ int cache_push(cache_t *cache, char *key, void *data, size_t data_size) {
 
         // insert new node in map
         pthread_rwlock_wrlock(&cache->map_lock);
-        str_hashmap_put(&cache->hashmap, new_data->key, free_node);
+        hashmap_put(&cache->hashmap, new_data->key, free_node);
         pthread_rwlock_unlock(&cache->map_lock);
 
         pthread_rwlock_unlock(&free_node->lock);
@@ -175,8 +175,8 @@ int cache_push(cache_t *cache, char *key, void *data, size_t data_size) {
         // replace data in map
         cdata_t *replaced = node->data;
         pthread_rwlock_wrlock(&cache->map_lock);
-        str_hashmap_remove(&cache->hashmap, replaced->key);
-        str_hashmap_put(&cache->hashmap, new_data->key, node);
+        hashmap_remove(&cache->hashmap, replaced->key);
+        hashmap_put(&cache->hashmap, new_data->key, node);
         pthread_rwlock_unlock(&cache->map_lock);
 
         node->data = new_data;
