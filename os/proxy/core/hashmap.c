@@ -7,7 +7,7 @@
 #include "errcode.h"
 
 
-#define MAX_CHAIN_LENGTH 8
+#define DEFAULT_CHAIN_LENGTH 8
 #define DEFAULT_LOAD_FACTOR 0.75
 
 
@@ -19,13 +19,18 @@ static void init_elements(HashElement *elements, size_t n) {
 }
 
 
-int hashmap_init(Hashmap *map, size_t capacity, bool resizable) {
-    assert(map != NULL);
+Hashmap* hashmap_create(size_t capacity, bool resizable) {
     assert(capacity > 0);
+
+    Hashmap *map = malloc(sizeof(map));
+    if(map == NULL) {
+        return NULL;
+    }
 
     HashElement *elements = malloc(capacity * sizeof(HashElement));
     if(elements == NULL) {
-        return ERRC_FAILED;
+        free(map);
+        return NULL;
     }
 
     map->capacity = capacity;
@@ -33,15 +38,17 @@ int hashmap_init(Hashmap *map, size_t capacity, bool resizable) {
     map->elements = elements;
     map->hashfunc = string_hash;
     map->load_factor = DEFAULT_LOAD_FACTOR;
+    map->max_chain_length = DEFAULT_CHAIN_LENGTH;
     map->resizable = resizable;
     init_elements(map->elements, map->capacity);
 
-    return ERRC_OK;
+    return map;
 }
 
 
 /**
- * Finds an element by key in the map if the key is present.
+ * Finds an element by key or place to insert in the hashmap 
+ * if the key is present.
  * @returns the element if key is present in the map, or NULL otherwise.
 */
 static HashElement* find_element(Hashmap *map, String key) {
@@ -50,10 +57,15 @@ static HashElement* find_element(Hashmap *map, String key) {
     // find index
     size_t cur = map->hashfunc(key) % map->capacity;
 
-    for(int i = 0; i < MAX_CHAIN_LENGTH; i += 1) {
+    HashElement *not_empty_el = NULL;
+    // we should check all elements in the chain 
+    // because we have remove operation
+    for(int i = 0; i < map->max_chain_length; i += 1) {
         HashElement *element = &elements[cur];
-        if(element->is_empty) {
-            return element;
+
+        // save element for insert
+        if(not_empty_el == NULL && element->is_empty) {
+            not_empty_el = element; 
         }
 
         if(!element->is_empty && string_equals(element->key, key)) {
@@ -63,7 +75,8 @@ static HashElement* find_element(Hashmap *map, String key) {
         cur = (cur + 1) % map->capacity;
     }
     
-    return NULL;
+    // returns element for insert or NULL if map is full
+    return not_empty_el;
 }
 
 
@@ -74,7 +87,8 @@ static HashElement* find_element(Hashmap *map, String key) {
 static int rehash(Hashmap *map) {
     assert(map->resizable);
 
-    HashElement *new_elements = malloc(2 * map->capacity * sizeof(HashElement));
+    HashElement *new_elements = 
+                        malloc(2 * map->capacity * sizeof(HashElement));
     if(new_elements == NULL) {
         return ERRC_FAILED;
     }
@@ -94,6 +108,7 @@ static int rehash(Hashmap *map) {
         }
 
         int ret = hashmap_put(map, old_elements[i].key, old_elements[i].value);
+        // TODO log error
         assert(ret == ERRC_OK);
     }
 
@@ -120,8 +135,20 @@ int hashmap_put(Hashmap *map, String key, void const *value) {
     // find a place to put our value
     HashElement *el = find_element(map, key);
     if(el == NULL) {
-        // map is full
-        return ERRC_FAILED;
+        if(!map->resizable) {
+            // map is full
+            return ERRC_FULL;
+        } else {
+            // increase capacity
+            // TODO log this
+            do {
+                int ret = rehash(map);
+                if(ret != ERRC_OK) {
+                    return ret;
+                }
+                el = find_element(map, key);
+            } while(el == NULL);
+        }
     }
     
     el->key = key;
@@ -141,7 +168,7 @@ void* hashmap_get(Hashmap *map, String key) {
     size_t cur = map->hashfunc(key) % map->capacity;
 
     // linear probing if necessary
-    for(int i = 0; i < MAX_CHAIN_LENGTH; i += 1) {
+    for(int i = 0; i < map->max_chain_length; i += 1) {
         HashElement *element = &map->elements[cur];
         if(!element->is_empty && string_equals(element->key, key)) {
             return element->value;
@@ -162,7 +189,7 @@ void hashmap_remove(Hashmap *map, String key) {
     size_t cur = map->hashfunc(key) % map->capacity;
 
     // linear probing if necessary
-    for(int i = 0; i < MAX_CHAIN_LENGTH; i += 1) {
+    for(int i = 0; i < map->max_chain_length; i += 1) {
         HashElement *element = &map->elements[cur];
         if(!element->is_empty && string_equals(element->key, key)) {
             // blank out the fields
@@ -180,5 +207,7 @@ void hashmap_remove(Hashmap *map, String key) {
 
 
 void hashmap_destroy(Hashmap *map) {
+    assert(map != NULL);
     free(map->elements);
+    free(map);
 }

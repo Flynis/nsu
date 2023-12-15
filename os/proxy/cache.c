@@ -1,69 +1,75 @@
 #include "cache.h"
 
-#include <errno.h>
-#include <stdio.h>
-#include <string.h>
 
-#include "util.h"
+#include <assert.h>
+#include <stdbool.h>
 
 
-static void destroy(cache_t *cache, size_t size) {
-    cnode_t *nodes = cache->nodes;
-    for(size_t i = 0; i < size; i++) {
-        pthread_rwlock_destroy(&nodes[i].lock);
+#define PENDING_REQUESTS_INITIAL_SIZE 512
+
+
+BlockingCache* cache_create(size_t capacity) {
+    assert(capacity > 0);
+
+    BlockingCache *cache = malloc(sizeof(cache));
+    if(cache == NULL) {
+        return NULL;
     }
-    free(nodes);
 
-    pthread_mutex_destroy(&cache->replace_lock);
-    pthread_rwlock_destroy(&cache->map_lock);
-    hashmap_destroy(&cache->hashmap);
-}
-
-
-int cache_init(cache_t *cache, size_t capacity) {
-    int err = pthread_mutex_init(&cache->replace_lock, NULL);
+    int err;
+    err = pthread_mutex_init(&cache->lock, NULL);
     if(err) {
-        return err;
+        goto fail_lock_init;
     }
-
-    err = pthread_rwlock_init(&cache->map_lock, NULL);
+    err = pthread_cond_init(&cache->cond, NULL);
     if(err) {
-        pthread_mutex_destroy(&cache->replace_lock);
-        return err;
+        goto fail_cond_init;        
     }
 
-    // increase map capacity to maintain load factor at 0.75
-    err = hashmap_init(&cache->hashmap, (capacity * 4) / 3, strhash);
-    if(err) {
-        pthread_mutex_destroy(&cache->replace_lock);
-        pthread_rwlock_destroy(&cache->map_lock);
-        return err;
+    size_t pending_req_size = PENDING_REQUESTS_INITIAL_SIZE;
+    cache->pending_requests = hashmap_create(pending_req_size, true);
+    if(cache->pending_requests == NULL) {
+        goto fail_pending_req_create;
+    }
+    size_t nodes_size = (capacity * 4) / 3; // * 4/3 to avoid hash collisions
+    cache->map = hashmap_create(nodes_size, false);
+    if(cache->map == NULL) {
+        goto fail_nodes_create;
+    } 
+    cache->lru = queue_create();
+    if(cache->lru == NULL) {
+        goto fail_queue_create;
+    }
+    cache->qnode_pool = malloc(capacity * sizeof(QueueNode));
+    if(cache->qnode_pool == NULL) {
+        goto fail_qnode_pool_create;
     }
 
-    cnode_t *nodes = malloc(sizeof(cnode_t) * capacity);
-    if(!nodes) {
-        destroy(cache, 0);
-        return ENOMEM;
-    }
-
+    // successfully allocate all resources
     cache->capacity = capacity;
     cache->size = 0;
-    cache->head = 0;
-    for(size_t i = 0; i < capacity; i++) {
-        err = pthread_rwlock_init(&nodes[i].lock, NULL);
-        if(err) {
-            if(i > 0) {
-                destroy(cache, i - 1);
-            }
-            return err;
-        }
-    }
+    cache->empty_node_index = 0;
+    return cache;
 
-    return 0;
+fail_qnode_pool_create:
+    queue_destroy(cache->lru);
+fail_queue_create:
+    hashmap_destroy(cache->map);
+fail_nodes_create:
+    hashmap_destroy(cache->pending_requests);
+fail_pending_req_create:
+    pthread_cond_destroy(&cache->cond);
+fail_cond_init:
+    pthread_mutex_destroy(&cache->lock);
+fail_lock_init:
+    free(cache);
+    return NULL;
 }
 
 
-void* cache_get(cache_t *cache, char *key, void *dest) {
+void* cache_peek(BlockingCache *cache, String key, void *dest) {
+    assert(cache != NULL);
+    assert(dest != NULL);
     pthread_rwlock_rdlock(&cache->map_lock);
     cnode_t *node = hashmap_get(&cache->hashmap, key);
     pthread_rwlock_unlock(&cache->map_lock);
@@ -123,7 +129,7 @@ static cdata_t* data_create(char *key, void *value, size_t val_size) {
 }
 
 
-int cache_push(cache_t *cache, char *key, void *data, size_t data_size) {
+int cache_push(BlockingCache *cache, char *key, void *data, size_t data_size) {
     cdata_t *new_data = data_create(key, data, data_size);
     if(!new_data) {
         perror("Cache data object create failed");
@@ -131,11 +137,11 @@ int cache_push(cache_t *cache, char *key, void *data, size_t data_size) {
     }
 
     pthread_mutex_lock(&cache->replace_lock);
-    cnode_t *nodes = cache->nodes;
-    if(cache->size < cache->capacity) {
+    cnode_t *nodes = cache->map;
+    if(cache->nnodes < cache->capacity) {
         // cache is not full
-        cnode_t *free_node = &nodes[cache->size];
-        cache->size++;
+        cnode_t *free_node = &nodes[cache->nnodes];
+        cache->nnodes++;
         pthread_rwlock_wrlock(&free_node->lock);
 
         // we acquire needed node so another thread may continue replace
@@ -187,7 +193,15 @@ int cache_push(cache_t *cache, char *key, void *data, size_t data_size) {
 }
 
 
-void cache_destroy(cache_t *cache) {
-    destroy(cache, cache->capacity);
+void cache_destroy(BlockingCache *cache) {
+    assert(cache != NULL);
+
+    free(cache->qnode_pool);
+    queue_destroy(cache->lru);
+    hashmap_destroy(cache->map);
+    hashmap_destroy(cache->pending_requests);
+    pthread_cond_destroy(&cache->cond);
+    pthread_mutex_destroy(&cache->lock);
+    free(cache);
 }
 

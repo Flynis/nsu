@@ -33,21 +33,23 @@ typedef struct {
     Hashfunc hashfunc;
     bool resizable;
     double load_factor; // ignored if resizable is false
+    int max_chain_length; // max linear probing chain length
 	size_t capacity;
     size_t nelements;
 } Hashmap;
 
 
 /**
- * Initiates hashmap with the specified capacity and hash function.
- * @returns ERRC_OK on success, ERRC_FAILED otherwise. 
+ * Creates hashmap with the specified capacity.
+ * @returns new hashmap on success, NULL otherwise. 
 */
-int hashmap_init(Hashmap *map, size_t capacity, bool resizable);
+Hashmap* hashmap_create(size_t capacity, bool resizable);
 
 
 /**
  * Adds an element to the hashmap.
- * @returns ERRC_OK on success, or ERRC_FAILED if rehash failed.
+ * @returns ERRC_OK on success, 
+ * ERRC_FAILED if rehash failed or ERRC_FULL if hashmap is full.
 */
 int hashmap_put(Hashmap *map, String key, void const *value);
 

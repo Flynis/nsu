@@ -1,112 +1,10 @@
-#include "http.h"
+#include "http_parser.h"
 
 
-#include "util.h"
+#include <assert.h>
 
 
-/* Tokens as defined by rfc 1945.
- *        token       = 1*<any CHAR except CTLs or tspecials>
- *     tspecials      = "(" | ")" | "<" | ">" | "@"
- *                    | "," | ";" | ":" | "\" | <">
- *                    | "/" | "[" | "]" | "?" | "="
- *                    | "{" | "}" | SP  | HT
- */
-static const char tokens[256] = {
-/*   0 nul    1 soh    2 stx    3 etx    4 eot    5 enq    6 ack    7 bel  */
-        0,       0,       0,       0,       0,       0,       0,       0,
-/*   8 bs     9 ht    10 nl    11 vt    12 np    13 cr    14 so    15 si   */
-        0,       0,       0,       0,       0,       0,       0,       0,
-/*  16 dle   17 dc1   18 dc2   19 dc3   20 dc4   21 nak   22 syn   23 etb */
-        0,       0,       0,       0,       0,       0,       0,       0,
-/*  24 can   25 em    26 sub   27 esc   28 fs    29 gs    30 rs    31 us  */
-        0,       0,       0,       0,       0,       0,       0,       0,
-/*  32 sp    33  !    34  "    35  #    36  $    37  %    38  &    39  '  */
-       ' ',     '!',      0,      '#',     '$',     '%',     '&',    '\'',
-/*  40  (    41  )    42  *    43  +    44  ,    45  -    46  .    47  /  */
-        0,       0,      '*',     '+',      0,      '-',     '.',      0,
-/*  48  0    49  1    50  2    51  3    52  4    53  5    54  6    55  7  */
-       '0',     '1',     '2',     '3',     '4',     '5',     '6',     '7',
-/*  56  8    57  9    58  :    59  ;    60  <    61  =    62  >    63  ?  */
-       '8',     '9',      0,       0,       0,       0,       0,       0,
-/*  64  @    65  A    66  B    67  C    68  D    69  E    70  F    71  G  */
-        0,      'a',     'b',     'c',     'd',     'e',     'f',     'g',
-/*  72  H    73  I    74  J    75  K    76  L    77  M    78  N    79  O  */
-       'h',     'i',     'j',     'k',     'l',     'm',     'n',     'o',
-/*  80  P    81  Q    82  R    83  S    84  T    85  U    86  V    87  W  */
-       'p',     'q',     'r',     's',     't',     'u',     'v',     'w',
-/*  88  X    89  Y    90  Z    91  [    92  \    93  ]    94  ^    95  _  */
-       'x',     'y',     'z',      0,       0,       0,      '^',     '_',
-/*  96  `    97  a    98  b    99  c   100  d   101  e   102  f   103  g  */
-       '`',     'a',     'b',     'c',     'd',     'e',     'f',     'g',
-/* 104  h   105  i   106  j   107  k   108  l   109  m   110  n   111  o  */
-       'h',     'i',     'j',     'k',     'l',     'm',     'n',     'o',
-/* 112  p   113  q   114  r   115  s   116  t   117  u   118  v   119  w  */
-       'p',     'q',     'r',     's',     't',     'u',     'v',     'w',
-/* 120  x   121  y   122  z   123  {   124  |   125  }   126  ~   127 del */
-       'x',     'y',     'z',      0,      '|',      0,      '~',      0 };
-
-
-// char classes
-#define LOWER(c) (unsigned char)(c | 0x20)
-#define NOT_TOKEN(c) (!tokens[(unsigned char) c])
-#define IS_TOKEN(c) (tokens[(unsigned char) c])
-#define NOT_ALPHA(c) (LOWER(c) < 'a' || LOWER(c) > 'z')
-#define IS_ALPHA(c) (LOWER(c) >= 'a' && LOWER(c) <= 'z')
-#define NOT_DIGIT(c) ((c) < '0' || (c) > '9')
-#define IS_DIGIT(c) ((c) >= '0' && (c) <= '9')
-
-
-enum state { 
-    sw_res_start = 0,
-    sw_res_H,
-    sw_res_HT,
-    sw_res_HTT,
-    sw_res_HTTP,
-    sw_res_first_major_digit,
-    sw_res_major_digit,
-    sw_res_first_minor_digit,
-    sw_res_minor_digit,
-    sw_res_status_code,
-    sw_res_space_after_status_code,
-    sw_res_status_text,
-    sw_res_almost_done,
-
-    sw_req_method,
-    sw_req_schema,
-    sw_req_schema_h,
-    sw_req_schema_ht,
-    sw_req_schema_htt,
-    sw_req_schema_http,
-    sw_req_schema_slash,
-    sw_req_schema_slash_slash,
-    sw_req_host_start,
-    sw_req_host,
-    sw_req_port,
-    sw_req_after_slash_in_uri,
-    sw_req_09,
-    sw_req_http_H,
-    sw_req_http_HT,
-    sw_req_http_HTT,
-    sw_req_http_HTTP,
-    sw_req_first_major_digit,
-    sw_req_major_digit,
-    sw_req_first_minor_digit,
-    sw_req_minor_digit,
-    sw_req_space_after_digit,
-    sw_req_almost_done,
-
-    sw_header_start,
-    sw_header_name,
-    sw_header_space_before_value,
-    sw_header_value,
-    sw_header_space_after_value,
-    sw_header_almost_done,
-    sw_all_headers_almost_done,
-    sw_header_invalid
-};
-
-
-int http_request_parser_init(http_parser_t *parser, http_request_t *request) {
+void http_request_parser_init(HttpParser *parser, HttpRequest *request) {
     parser->state = sw_req_method;
 
     parser->is_request_parser = true;
@@ -115,17 +13,19 @@ int http_request_parser_init(http_parser_t *parser, http_request_t *request) {
 
     parser->http_major = 0;
     parser->http_minor = 0;
-    
-    parser->method_len = 0;
-    parser->url_len = 0;
-    parser->host_len = 0;
-    parser->headers_len = 0;
 
-    return 0;
+    parser->method_start = NULL;
+    parser->method_end = NULL;    
+    parser->url_start = NULL;
+    parser->url_end = NULL;
+    parser->host_start = NULL;
+    parser->host_end = NULL;
+    parser->line_start = NULL;
+    parser->line_end = NULL;
 }
 
 
-int http_response_parser_init(http_parser_t *parser, http_response_t *response) {
+void http_response_parser_init(HttpParser *parser, HttpResponse *response) {
     parser->state = sw_res_start;
     
     parser->is_request_parser = false;
@@ -135,18 +35,17 @@ int http_response_parser_init(http_parser_t *parser, http_response_t *response) 
     parser->http_major = 0;
     parser->http_minor = 0;
 
-    parser->status_text_len = 0; 
-    
-    return 0;
+    parser->line_start = NULL;
+    parser->line_end = NULL;
 }
 
 
-int http_parse_request_line(http_parser_t *parser, buffer_t *buf) {
-    http_request_t *req = parser->request;
+int http_parse_request_line(HttpParser *parser, Buffer *buf) {
+    HttpRequest *req = parser->request;
     unsigned int state = parser->state;
 
     char *p;
-    for(p = buf->pos; p < buf->last; p++) {
+    for(p = buf->pos; p < buf->limit; p++) {
         char ch = *p;
 
         switch(state) {
@@ -260,9 +159,9 @@ int http_parse_request_line(http_parser_t *parser, buffer_t *buf) {
                 parser->url_len++;
 
                 if(IS_DIGIT(ch)) {
-                    req->is_host_domain_name = false;
+                    req->is_ip_literal = false;
                 } else {
-                    req->is_host_domain_name = true;
+                    req->is_ip_literal = true;
                 }
                 state = sw_req_host;
             } else {
@@ -270,8 +169,8 @@ int http_parse_request_line(http_parser_t *parser, buffer_t *buf) {
             }
             break;
         case sw_req_host:
-            if(req->is_host_domain_name && (IS_ALPHA(ch) || IS_DIGIT(ch) || ch == '.' || ch == '-') 
-                || !req->is_host_domain_name && (IS_DIGIT(ch) || ch == '.')) {
+            if(req->is_ip_literal && (IS_ALPHA(ch) || IS_DIGIT(ch) || ch == '.' || ch == '-') 
+                || !req->is_ip_literal && (IS_DIGIT(ch) || ch == '.')) {
                 
                 req->host[parser->host_len] = ch;
                 parser->host_len++;
@@ -477,7 +376,7 @@ done:
 }
 
 
-static unsigned int append_headers(char *headers, char ch, unsigned int state, http_parser_t *parser) {
+static unsigned int append_headers(char *headers, char ch, unsigned int state, HttpParser *parser) {
     *headers = ch;
     headers++;
     parser->headers_len++;
@@ -489,8 +388,8 @@ static unsigned int append_headers(char *headers, char ch, unsigned int state, h
 }
 
 
-int http_parse_header_line(http_parser_t *parser, buffer_t *buf) {
-    http_request_t *req = parser->request;
+int http_parse_header_line(HttpParser *parser, Buffer *buf, HttpHeader *out_header) {
+    HttpRequest *req = parser->request;
     char *headers;
     if(parser->is_request_parser) {
         headers = parser->request->headers;
@@ -501,7 +400,7 @@ int http_parse_header_line(http_parser_t *parser, buffer_t *buf) {
     unsigned int state = parser->state;
 
     char *p;
-    for (p = buf->pos; p < buf->last; p++) {
+    for (p = buf->pos; p < buf->limit; p++) {
         char ch = *p;
 
         switch(state) {
@@ -652,12 +551,12 @@ all_headers_done:
 }
 
 
-int http_parse_status_line(http_parser_t *parser, buffer_t *buf) {
-    http_response_t *res = parser->response;
+int http_parse_status_line(HttpParser *parser, Buffer *buf) {
+    HttpResponse *res = parser->response;
     unsigned int state = sw_res_start;
 
     char *p;
-    for(p = buf->pos; p < buf->last; p++) {
+    for(p = buf->pos; p < buf->limit; p++) {
         char ch = *p;
 
         switch(state) {
