@@ -92,13 +92,13 @@ typedef struct HttpParser {
 
 
 /**
- * Initiates request parser.
+ * Initializes request parser.
 */
 void http_request_parser_init(HttpParser *parser, HttpRequest *request);
 
 
 /**
- * Initiates response parser.
+ * Initializes response parser.
 */
 void http_response_parser_init(HttpParser *parser, HttpResponse *response);
 

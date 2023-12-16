@@ -20,7 +20,7 @@ typedef unsigned int (*Hashfunc)(String string);
 */
 typedef struct HashElement {
     String key;
-    void const *value;
+    void *value;
     bool is_empty;
 } HashElement;
 
@@ -51,7 +51,7 @@ Hashmap* hashmap_create(size_t capacity, bool resizable);
  * @returns ERRC_OK on success, 
  * ERRC_FAILED if rehash failed or ERRC_FULL if hashmap is full.
 */
-int hashmap_put(Hashmap *map, String key, void const *value);
+int hashmap_put(Hashmap *map, String key, void *value);
 
 
 /**

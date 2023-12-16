@@ -117,7 +117,7 @@ static int rehash(Hashmap *map) {
 }
 
 
-int hashmap_put(Hashmap *map, String key, void const *value) {
+int hashmap_put(Hashmap *map, String key, void *value) {
     assert(map != NULL);
     assert(value != NULL);
 

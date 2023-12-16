@@ -37,7 +37,7 @@ static const unsigned char tokens[256] = {
 
 
 bool is_http_alpha(unsigned char c) {
-    c |= 0x20; // c += 32
+    c |= 0x20; // c += 32 equal tolower(c)
     return c >= 'a' && c <= 'z';
 }
 
