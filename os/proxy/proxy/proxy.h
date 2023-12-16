@@ -8,12 +8,10 @@
 
 
 #include "cache.h"
-#include "core/queue.h"
 
 
 typedef struct Proxy {
     BlockingCache *cache;
-    Queue *connections;
     bool running;
     pthread_attr_t handler_attr;
 } Proxy;

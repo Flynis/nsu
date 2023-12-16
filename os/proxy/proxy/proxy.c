@@ -6,21 +6,25 @@
 #include <string.h>
 
 
+#include "core/buffer.h"
+#include "core/connection.h"
 #include "core/errcode.h"
 #include "core/log.h"
+#include "http/http_parser.h"
+#include "http/http_processor.h"
 #include "socket.h"
+
+
+#define BUFFER_SIZE 8192
 
 
 /**
  * Argument for connection handler function.
 */
-typedef struct Connection {
-    int sockfd;
-    struct sockaddr_in sockaddr;
-    socklen_t socklen;
-    Proxy *proxy;
-    QueueNode node; // for fast remove
-} Connection;
+typedef struct ConnectionHandlerArgs {
+    Connection connection;
+    BlockingCache *cache;
+} ConnectionHandlerArgs;
 
 
 Proxy* proxy_create(size_t cache_size) {
@@ -38,11 +42,6 @@ Proxy* proxy_create(size_t cache_size) {
         log_error("Cache create failed");
         goto fail_cache_create;
     }
-    proxy->connections = queue_create();
-    if(proxy->connections == NULL) {
-        log_error("Connections list create failed");
-        goto fail_connections_create;
-    }
 
 	int ret;
     pthread_attr_t *attr = &proxy->handler_attr;
@@ -54,16 +53,16 @@ Proxy* proxy_create(size_t cache_size) {
     ret = pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED);
     if (ret != 0) {
         log_error_code(ret, "pthread_attr_setdetachstate() failed");
-        goto fail_handler_attr_init;
+        goto fail_handler_attr_set;
     }
 
     // successfully allocate all resources 
     proxy->running = false;
     return proxy;
 
+fail_handler_attr_set:
+    pthread_attr_destroy(&proxy->handler_attr);
 fail_handler_attr_init:
-    vector_destroy(proxy->connections);
-fail_connections_create:
     cache_destroy(proxy->cache);
 fail_cache_create:
     free(proxy);
@@ -71,8 +70,36 @@ fail_cache_create:
 }
 
 
+static void terminate_connection(ConnectionHandlerArgs *args) {
+    close(args->connection.sockfd);
+    free(args);
+}
+
+
 static void* connection_handler(void *args) {
-    Connection *conn = (Connection*)args;
+    ConnectionHandlerArgs *a = (ConnectionHandlerArgs*)args;
+    Buffer *headers_in = buffer_create(BUFFER_SIZE);
+    if(headers_in == NULL) {
+        terminate_connection(a);
+        return NULL;
+    }
+    HttpParser parser;
+    HttpRequest request;
+    http_request_parser_init(&parser, &request);
+    HttpProcessor processor = {
+        .connection = &a->connection,
+        .buffer = headers_in,
+        .parser = &parser,
+    };
+
+    int ret;
+    ret = http_process_request_line(&processor);
+    if(ret == ERRC_OK) {
+
+    } else {
+        
+    }
+
 
 }
 
@@ -81,36 +108,32 @@ static void* connection_handler(void *args) {
  * Starts a new connection handler thread.
  * @returns ERRC_OK on success, ERRC_FAILED otherwise.
 */
-static int start_connection_handler(Connection const *client) {
-    Connection *connection = malloc(sizeof(connection));
-    if(connection == NULL) {
+static int start_connection_handler(Proxy *proxy, Connection const *client) {
+    ConnectionHandlerArgs *args = malloc(sizeof(args));
+    if(args == NULL) {
         return ERRC_FAILED;
     }
+    args->cache = proxy->cache;
+    args->connection = *client;
 
-    // dup connection
-    memcpy(connection, client, sizeof(Connection));
-
-    // initialize node for queue
-    QueueNode *node = &connection->node;
-    node->value = connection;
-
-    Proxy *proxy = connection->proxy;
     int ret;
     pthread_t tid;
-    ret = pthread_create(&tid, &proxy->handler_attr, connection_handler, connection);
+    ret = pthread_create(&tid, &proxy->handler_attr, connection_handler, args);
     if(ret != 0) {
         log_error_code(ret, "Connection handler thread create failed");
-        free(connection);
+        free(args);
         return ERRC_FAILED;
     }
 
-    // insert node into queue to free connection later
-    queue_push(&proxy->connections, node);
     return ERRC_OK;    
 }
 
 
 int proxy_listen(Proxy *proxy, struct sockaddr const *sockaddr, socklen_t socklen) {
+    if(proxy == NULL || sockaddr == NULL || socklen == 0) {
+        return ERRC_FAILED;
+    }
+
     int listen_sock = open_listening_socket(sockaddr, socklen);
     if(listen_sock < 0) {
         log_error("Open server socket failed");
@@ -131,17 +154,13 @@ int proxy_listen(Proxy *proxy, struct sockaddr const *sockaddr, socklen_t sockle
         Connection conn = { 
             .sockfd = sockfd,
             .sockaddr = clientaddr,
-            .socklen = clientlen,
-            .proxy = proxy
+            .socklen = clientlen
         };  
         
-        int ret = start_connection_handler(&conn);
+        int ret = start_connection_handler(proxy, &conn);
         if(ret != ERRC_OK) {
             log_error("Start client connection handler failed");
             close(sockfd);
-            if(proxy->connections->size == 0) {
-                goto err;
-            }
             // continue listening
         }
     }
@@ -156,6 +175,5 @@ void proxy_destroy(Proxy *proxy) {
     if(proxy == NULL) return;
     pthread_attr_destroy(&proxy->handler_attr);
     cache_destroy(proxy->cache);
-    queue_destroy(proxy->connections);
     free(proxy);
 }

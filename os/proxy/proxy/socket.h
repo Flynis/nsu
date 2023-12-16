@@ -7,14 +7,14 @@
 
 /**
  * Opens socket listening incoming connections.
- * @returns socket descriptor on success, -1 otherwise.
+ * @returns socket descriptor on success, ERRC_FAILED otherwise.
 */
 int open_listening_socket(struct sockaddr const *sockaddr, socklen_t socklen);
 
 
 /**
  * Opens and connects socket to remote host.
- * @returns socket descriptor on success, -1 otherwise.
+ * @returns socket descriptor on success, ERRC_FAILED otherwise.
 */
 int open_and_connect_socket(struct sockaddr const *sockaddr, socklen_t socklen);
 

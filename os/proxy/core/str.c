@@ -2,6 +2,10 @@
 
 
 #include <assert.h>
+#include <string.h>
+
+
+#include "errcode.h"
 
 
 // djb2 algorithm
@@ -27,11 +31,55 @@ bool string_equals(String str1, String str2) {
         return false;
     }
 
-    for(size_t i = 0; i < str1.length; i += 1) {
-        if(str1.data[i] != str2.data[i]) {
-            return false;
-        }
+    return strncmp(str1.data, str2.data, str1.length) == 0;
+}
+
+
+bool string_equal_chararray(String str1, char const *str2) {
+    assert(str1.data != NULL);
+    assert(str2 != NULL);
+
+    return strncmp(str1.data, str2, str1.length) == 0;
+}
+
+
+int string_to_long(String str, long *result) {
+    assert(str.data != NULL);
+    assert(result != NULL);
+
+	// Expect that digit representation of LONG_MAX/MIN
+	// not greater than this buffer 
+	char buf[24];
+	const char *s = str.data;
+    size_t len = str.length;
+
+	// Skip leading spaces 
+    size_t i = 0;
+    while(i < len && isspace(s[i])) {
+        i += 1;
     }
 
-    return true;
+    // Skip trailing spaces
+    size_t end = len - 1;
+    while(end != i && isspace(s[end])) {
+        end -= 1;
+    }
+
+    size_t remaining = end - i + 1;
+	if (remaining == 0 || remaining >= sizeof(buf)) {
+        if(result != NULL) {
+            *result = 0;
+        }
+		return ERRC_FAILED;
+	}
+
+    // make nul terminated string
+	memcpy(buf, s + i, remaining);
+	buf[remaining] = '\0';
+
+	long ret = strtol(buf, NULL, 10);
+	if(result != NULL) {
+        *result = 0;
+    }
+	return ERRC_OK;
 }

@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 
+#include "core/errcode.h"
 #include "core/log.h"
 
 
@@ -20,14 +21,14 @@ int open_listening_socket(struct sockaddr const *sockaddr, socklen_t socklen) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd < 0) {
         log_error_code(errno, "Failed to open socket");
-        return -1;
+        return ERRC_FAILED;
     }
     
     int err;
 
     // Eliminates "Address already in use" error from bind.
     int opval = 1;
-    err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void*)&opval , sizeof(opval));
+    err = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opval , sizeof(opval));
     if(err) {
         log_error_code(errno, "setsockopt(SO_REUSEADDR) failed");
         goto fail_configure;
@@ -48,7 +49,7 @@ int open_listening_socket(struct sockaddr const *sockaddr, socklen_t socklen) {
 
 fail_configure:
     close(fd);
-    return -1;
+    return ERRC_FAILED;
 }
 
 
@@ -58,14 +59,14 @@ int open_and_connect_socket(struct sockaddr const *sockaddr, socklen_t socklen) 
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd < 0) {
         log_error_code(errno, "Failed to open socket");
-        return -1;
+        return ERRC_FAILED;
     }
 
     int err = connect(fd, sockaddr, socklen);
     if(err < 0) {
         log_error_code(errno, "Failed to socket connect");
         close(fd);
-        return -1;
+        return ERRC_FAILED;
     }
 
     return fd;
