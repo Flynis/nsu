@@ -10,7 +10,7 @@ export {
 }
 
 
-buildVarDecls(a: [flow]) {
+buildVarDeclList(a: [flow]) {
     VarDeclList(a[0]);
 }
 
@@ -111,7 +111,7 @@ buildVmProgram(a: [flow]) -> flow {
 
 specialPegActions = {
     actions : [Pair<string, ([flow]) -> flow>] = [
-        Pair("buildVarDecls", buildVarDecls),
+        Pair("buildVarDeclList", buildVarDeclList),
         Pair("buildTrueConst", buildTrueConst),
         Pair("buildFalseConst", buildFalseConst),
         Pair("buildArrayConst", buildArrayConst),

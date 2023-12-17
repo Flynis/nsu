@@ -1,9 +1,10 @@
+import ds/array;
 
 export {
 
     range(len: int) -> [int];
 
-    findAll(a : [?], fn : (?) -> bool) -> [?];
+    findAll(a: [?], fn: (?) -> bool) -> [?];
     
 }
 
@@ -17,12 +18,12 @@ doRange(len : int, acc : [int], index : int) -> [int] {
 }
 
 
-range(len : int) -> [int] {
+range(len: int) -> [int] {
     doRange(len, [], 0);
 }
 
 
-findAllAcc(a : [?], fn : (?) -> bool, acc : [?]) -> [?] {
+findAllAcc(a: [?], fn: (?) -> bool, acc: [?]) -> [?] {
     index = findi(a, fn);
     eitherMap(
         index,
@@ -32,6 +33,6 @@ findAllAcc(a : [?], fn : (?) -> bool, acc : [?]) -> [?] {
 }
 
 
-findAll(a : [?], fn : (?) -> bool) -> [?] {    
+findAll(a: [?], fn: (?) -> bool) -> [?] {    
     findAllAcc(a, fn, []);
 }

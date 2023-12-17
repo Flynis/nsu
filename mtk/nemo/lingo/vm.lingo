@@ -2,10 +2,9 @@ program = ws varDeclList:vdl operator*:ops { buildVmProgram(:vdl, :ops) };
 
 
 operator = ws intNumber$d ws ':' ws operation:op ws ';' ws { Operator(s2i($d), :op) };
-operation = assignmentVmOp | conditionVmOp | printVmOp;
+operation = assignmentVmOp | conditionVmOp;
 assignmentVmOp = varName:v ws ":=" ws expr:e ws "goto" ws labels:ls { AssignmentOp(:v, :e, :ls) };
 conditionVmOp = 'if' ws '(' ws boolExpr:cond ws ')' ws 'then' ws labels:thenLabels ws 'else' ws labels:elseLabels { TestOp(:cond, :thenLabels, :elseLabels)};
-printVmOp = 'print' ws expr:e ws 'goto' ws labels:ls { PrintOp(:e, :ls) };
 labels = '{' ws '}' { buildLabels() }
     | '{' label:f labelsSetElement*:s ws '}' { buildLabels(:f, :s) };
 labelsSetElement = ws ',' ws label:l {:l};
@@ -98,7 +97,6 @@ apply = "APP";
 concat = "CONCAT";
 length = "LENGTH";
 nonDeterChoiceSymbol = "U";
-print = "PRINT";
 not = "NOT";
 and = "AND";
 or = "OR";

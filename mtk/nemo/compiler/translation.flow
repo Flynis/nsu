@@ -15,7 +15,6 @@ findMaxLabelOfOp(operation: VmOp) -> int {
     switch (operation) {
         AssignmentOp(varName, expr, labels): findMaxOfArray(labels);
         TestOp(cond, ifLabels, elseLabels): max(findMaxOfArray(ifLabels), findMaxOfArray(elseLabels));
-        PrintOp(expr, labels): findMaxOfArray(labels);
     }
 }
 
@@ -46,7 +45,6 @@ increaseLabelsOfOp(operation: VmOp, delta: int) -> VmOp {
     switch (operation) {
         AssignmentOp(varName, expr, labels): AssignmentOp(varName, expr, increaseLabels(labels));
         TestOp(cond, thenLabels, elseLabels): TestOp(cond, increaseLabels(thenLabels), increaseLabels(elseLabels));
-        PrintOp(expr, labels): PrintOp(expr, increaseLabels(labels));
     }
 }
 
@@ -57,7 +55,6 @@ replaceLabelsOfOp(operation: VmOp, newLabel: int, oldLabel: int) -> VmOp {
     switch (operation) {
         AssignmentOp(varName, expr, labels): AssignmentOp(varName, expr, replaceLabels(labels));
         TestOp(cond, thenLabels, elseLabels): TestOp(cond, replaceLabels(thenLabels), replaceLabels(elseLabels));
-        PrintOp(expr, labels): PrintOp(expr, replaceLabels(labels));
     }
 }
 
@@ -101,16 +98,14 @@ bodiesToOperators(bodies: [Body], f: (firstElement: Body, tailElements: [Body]) 
 
 
 bodyToOperators(body: Body) ->  Set<Operator> {
-    createBranchingGoto = \l -> Operator(0, TestOperation(BoolConst(true), [1, l], []));
+    createBranchingGoto = \l -> Operator(0, TestOp(BoolConst(true), [1, l], []));
     createStartOperator = \op -> Operator(0, op);
 
     switch (body) {
         Assignment(varName, expr): makeSet1(createStartOperator(AssignmentOp(varName, expr, [1])));
         
         Test(booleanExpr): makeSet1(createStartOperator(TestOp(booleanExpr, [1], [])));
-        
-        Print(expr): makeSet1(createStartOperator(PrintOp(expr, [1])));
-        
+                
         BodiesSeq(bodies): bodiesToOperators(
             bodies, \firstElement, tailElements -> {
                 s1 = bodyToOperators(firstElement);

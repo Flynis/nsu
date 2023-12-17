@@ -14,7 +14,6 @@ State : (memoryState: MemoryState, nextLabel: int);
 
 
 NoValue : ();
-NumericConst ::= IntConst, RealConst;
 ExprValue ::= NoValue, Const;
 
 
@@ -28,100 +27,24 @@ getVarValue(varName: string, memoryState: MemoryState) -> ExprValue {
 }
 
 
-executeNumericOperation(c : NumericConst, intOp : (int) -> ExprValue, realOp : (double) -> ExprValue) -> ExprValue {
-    switch (c) {
-        IntConst(v) : intOp(v);
-        RealConst(v) : realOp(v);
+executeBinaryArithmOp(op: ArithmOp, x: int, y: int) -> ExprValue {
+    switch (op) {
+        ArithmAddOp(): IntConst(x + y);
+        ArithmSubOp(): IntConst(x - y);
+        ArithmMulOp(): IntConst(x * y);
+        ArithmDivOp(): if (y == 0) NoValue() else IntConst(x / y);
+        default: NoValue();
     }
 }
 
 
-executeBinaryNumericOperation(
-    c1 : NumericConst,
-    c2 : NumericConst,
-    intOp : (int, int) -> ExprValue,
-    realOp : (double, double) -> ExprValue) -> ExprValue {
-    
-    switch (c1) {
-        IntConst(v1) : {
-            switch (c2) {
-                IntConst(v2) : intOp(v1, v2);
-                default : NoValue();
-            }
-        }
-
-        RealConst(v1) : {
-            switch (c2) {
-                RealConst(v2) : realOp(v1, v2);
-                default : NoValue();
-            }
-        }
-    }
-}
-
-
-executeNumericAdd(c1 : NumericConst, c2 : NumericConst) -> ExprValue {
-    executeBinaryNumericOperation(
-        c1,
-        c2,
-        \x, y -> IntConst(x + y),
-        \x, y -> RealConst(x + y)
-    );
-}
-
-
-executeNumericSub(c1 : NumericConst, c2 : NumericConst) -> ExprValue {
-    executeBinaryNumericOperation(
-        c1,
-        c2,
-        \x, y -> IntConst(x - y),
-        \x, y -> RealConst(x - y)
-    );
-}
-
-
-executeNumericMul(c1 : NumericConst, c2 : NumericConst) -> ExprValue {
-    executeBinaryNumericOperation(
-        c1,
-        c2,
-        \x, y -> IntConst(x * y),
-        \x, y -> RealConst(x * y)
-    );
-}
-
-
-executeNumericDiv(c1 : NumericConst, c2 : NumericConst) -> ExprValue {    
-    executeBinaryNumericOperation(
-        c1,
-        c2,
-        \x, y -> {
-            if (y == 0) {
-                NoValue();
-            } else {
-                IntConst(x / y);
-            }
-        },
-        \x, y -> RealConst(x / y)
-    );
-}
-
-
-calculateValueOfArithmExpr(expr : ArithmExpr, memoryState : MemoryState) -> ExprValue {
-    binaryArithmOp2Func = \op -> {
-        switch (op) {
-            ArithmAddOp() : executeNumericAdd;
-            ArithmSubOp() : executeNumericSub;
-            ArithmMulOp() : executeNumericMul;
-            ArithmDivOp() : executeNumericDiv;
-        }
-    };
-
+calculateValueOfArithmExpr(expr: ArithmExpr, memoryState: MemoryState) -> ExprValue {
     switch (expr) {
-        ArithmNeg(e) : {
+        ArithmNeg(e): {
             val = calculateValueOfExpr(e, memoryState);
             switch (val) {
-                NumericConst() : executeNumericOperation(val, \i -> IntConst(-i), \r -> RealConst(-r));
-                default : NoValue();
+                IntConst(v): IntConst(-v);
+                default: NoValue();
             }
         }
 
@@ -130,52 +53,48 @@ calculateValueOfArithmExpr(expr : ArithmExpr, memoryState : MemoryState) -> Expr
             rVal = calculateValueOfExpr(r, memoryState);
 
             switch (lVal) {
-                NumericConst() : {
+                IntConst(lv): {
                     switch (rVal) {
-                        NumericConst() : binaryArithmOp2Func(op)(lVal, rVal);
-                        default : NoValue();
+                        IntConst(rv): executeBinaryArithmOp(op, lv, rv);
+                        default: NoValue();
                     }
                 }
                 
-                default : NoValue();
+                default: NoValue();
             }
         }        
     }
 }
 
 
-updateArray(array : ArrayConst, ind : ExprValue, val : ExprValue) -> ExprValue {
+updateArray(array: ArrayConst, ind: ExprValue, val: ExprValue) -> ExprValue {
     switch (ind) {
-        IntConst(i) : {
+        IntConst(i): {
             switch (val) {
-                // Types were checked during compilation. So "val" has appropriate type for "array" and it has value 
-                Const() : {
+                Const(): {
                     ArrayConst(setTree(array.values, i, val));
                 }
-                
-                default : NoValue();
+                default: NoValue();
             }
         }
 
-        default : NoValue();
+        default: NoValue();
     }
 }
 
 
-applyArray(array : ArrayConst, ind : ExprValue) -> ExprValue {
+applyArray(array: ArrayConst, ind: ExprValue) -> ExprValue {
     switch (ind) {
-        IntConst(i) : {
+        IntConst(i): {
             lookupTreeDef(array.values, i, NoValue());
         }
 
-        default : NoValue();
+        default: NoValue();
     }
 }
 
 
-concatArrays(a1 : ArrayConst, a2 : ArrayConst) -> ExprValue {
-    // We cannot just do ArrayConst(mergeTree(a1.values, a2.values)), because when we do it, result of merging [1, 2] and [3, 4] would be [3,4].
-
+concatArrays(a1: ArrayConst, a2: ArrayConst) -> ExprValue {
     l1 = lengthOfArray(a1);
 
     treeOfResult = foldTree(a2.values, a1.values, \k, v, acc -> {
@@ -186,40 +105,40 @@ concatArrays(a1 : ArrayConst, a2 : ArrayConst) -> ExprValue {
 }
 
 
-lengthOfArray(arr : ArrayConst) -> int {
+lengthOfArray(arr: ArrayConst) -> int {
     switch (popmax(arr.values)) {
-        EmptyPopResult() : 0;
-        PopResult(k, v, rest) : k + 1;
+        EmptyPopResult(): 0;
+        PopResult(k, v, rest): k + 1;
     }
 }
 
 
-calculateValueOfArrayOp(arrayOp : ArrayOp, memoryState : MemoryState) -> ExprValue {
+calculateValueOfArrayOp(arrayOp: ArrayOp, memoryState: MemoryState) -> ExprValue {
     arrValue = calculateValueOfExpr(arrayOp.arr, memoryState);
 
     switch (arrValue) {
         ArrayConst(values) : {
             switch (arrayOp.opType) {
-                ArrayUpdateOpType(ind, expr) : {
+                ArrayUpdateOp(ind, expr) : {
                     indVal = calculateValueOfExpr(ind, memoryState);
                     exprVal = calculateValueOfExpr(expr, memoryState);
                     updateArray(arrValue, indVal, exprVal);
                 }
 
-                ArrayApplyOpType(ind) : {
+                ArrayApplyOp(ind) : {
                     indVal = calculateValueOfExpr(ind, memoryState);
                     applyArray(arrValue, indVal);
                 }
 
-                ArrayConcatOpType(arr2) : {
+                ArrayConcatOp(arr2): {
                     array2Val = calculateValueOfExpr(arr2, memoryState);
                     switch (array2Val) {
-                        ArrayConst(values2) : concatArrays(arrValue, array2Val);
-                        default : NoValue();
+                        ArrayConst(values2): concatArrays(arrValue, array2Val);
+                        default: NoValue();
                     }
                 }
 
-                ArrayLengthOpType() : IntConst(lengthOfArray(arrValue));
+                ArrayLengthOp(): IntConst(lengthOfArray(arrValue));
             }
         }
 
@@ -228,130 +147,119 @@ calculateValueOfArrayOp(arrayOp : ArrayOp, memoryState : MemoryState) -> ExprVal
 }
 
 
-compareConstants(c1 : ExprValue, c2 : ExprValue, intCmp : (int, int) -> bool, realCmp : (double, double) -> bool) -> ExprValue {
+compareConstants(c1: ExprValue, c2: ExprValue, intCmp: (int, int) -> bool) -> ExprValue {
     switch (c1) {
-        IntConst(v1) : {
+        IntConst(v1): {
             switch (c2) {
-                IntConst(v2) : BoolConst(intCmp(v1, v2));
-                default : NoValue();
+                IntConst(v2): BoolConst(intCmp(v1, v2));
+                default: NoValue();
             }
         }
 
-        RealConst(v1) : {
-            switch (c2) {
-                RealConst(v2) : BoolConst(realCmp(v1, v2));
-                default : NoValue();
-            }
-        }
-
-        default : NoValue();
+        default: NoValue();
     }
 }
 
 
-equalConstants(c1 : ExprValue, c2 : ExprValue) -> ExprValue {
+equalConstants(c1: ExprValue, c2: ExprValue) -> ExprValue {
     compareConstants(
         c1,
         c2,
-        \x, y -> x == y,
         \x, y -> x == y
     );
 }
 
 
-lessConstants(c1 : ExprValue, c2 : ExprValue) -> ExprValue {
+lessConstants(c1: ExprValue, c2: ExprValue) -> ExprValue {
     compareConstants(
         c1,
         c2,
-        \x, y -> x < y,
         \x, y -> x < y
     );
 }
 
 
-executeBoolOperation(c : ExprValue, op : (bool) -> bool) -> ExprValue {
+executeBoolOperation(c: ExprValue, op: (bool) -> bool) -> ExprValue {
     switch (c) {
-        BoolConst(v) : BoolConst(op(v));
-        default : NoValue();
+        BoolConst(v): BoolConst(op(v));
+        default: NoValue();
     }
 }
 
 
-executeBinaryBoolOperation(c1 : ExprValue, c2 : ExprValue, op : (bool, bool) -> bool) -> ExprValue {
+executeBinaryBoolOperation(c1: ExprValue, c2: ExprValue, op: (bool, bool) -> bool) -> ExprValue {
     switch (c1) {
-        BoolConst(v1) : {
+        BoolConst(v1): {
             switch (c2) {
-                BoolConst(v2) : BoolConst(op(v1, v2));
-                default : NoValue();
+                BoolConst(v2): BoolConst(op(v1, v2));
+                default: NoValue();
             }
         }
 
-        default : NoValue();
+        default: NoValue();
     }
 }
 
 
-calculateValueOfBooleanExpr(expr : BooleanExpr, memoryState : MemoryState) -> ExprValue {
+calculateValueOfBooleanExpr(expr: BooleanExpr, memoryState: MemoryState) -> ExprValue {
     comparisonType2Func = \t -> {
         switch (t) {
-            Equal() : equalConstants;
-            Less() : lessConstants;
+            Equal(): equalConstants;
+            Less(): lessConstants;
         }
     }
     
     switch (expr) {
-        Comparison(l, r, comparisonType) : {
+        Comparison(l, r, comparisonType): {
             lValue = calculateValueOfExpr(l, memoryState);
             rValue = calculateValueOfExpr(r, memoryState);
             comparisonType2Func(comparisonType)(lValue, rValue);
         }
 
-        Not(e) : {
+        Not(e): {
             eValue = calculateValueOfBooleanExpr(e, memoryState);
             executeBoolOperation(eValue, \v -> !v);            
         }
 
-        Or(l, r) : {
+        Or(l, r): {
             lValue = calculateValueOfBooleanExpr(l, memoryState);
             rValue = calculateValueOfBooleanExpr(r, memoryState);
             executeBinaryBoolOperation(lValue, rValue, \x, y -> x || y);
         }
 
-        BoolConst(value) : expr;
+        BoolConst(value): expr;
     }
 }
 
 
-calculateValueOfExpr(expr : Expr, memoryState : MemoryState) -> ExprValue {
+calculateValueOfExpr(expr: Expr, memoryState: MemoryState) -> ExprValue {
     switch (expr) {
-        Var(name) : getVarValue(name, memoryState);
-        ArithmExpr() : calculateValueOfArithmExpr(expr, memoryState);
-        ArrayOp(arr, opType) : calculateValueOfArrayOp(expr, memoryState);
-        BooleanExpr() : calculateValueOfBooleanExpr(expr, memoryState);
-        NonBoolConst() : expr;
+        Var(name): getVarValue(name, memoryState);
+        ArithmExpr(): calculateValueOfArithmExpr(expr, memoryState);
+        ArrayOp(arr, opType): calculateValueOfArrayOp(expr, memoryState);
+        BooleanExpr(): calculateValueOfBooleanExpr(expr, memoryState);
+        NonBoolConst(): expr;
     }
 }
 
 
-getInitValue(varType : VarType) -> Const {
+getDefaultValue(varType: VarType) -> Const {
     switch (varType) {
-        Int() : IntConst(0);
-        String() : StringConst("");
-        Bool() : BoolConst(false);
-        Real() : RealConst(0.0);
-        Array(baseType) : ArrayConst(makeTree());
+        Int(): IntConst(0);
+        Bool(): BoolConst(false);
+        Array(baseType): ArrayConst(makeTree());
     }
 }
 
 
-createInitState(program : VMProgram) -> State {
+createInitState(program: VmProgram) -> State {
     initMemoryState = MemoryState(fold(
-        program.varDeclList.elements,
+        program.varDeclList.decls,
         makeTree(),
         \acc, decl -> setTree(
             acc,
             decl.name,
-            getInitValue(decl.type)
+            getDefaultValue(decl.type)
         )
     ));
     
@@ -359,7 +267,7 @@ createInitState(program : VMProgram) -> State {
 }
 
 
-createStates(memoryState : MemoryState, labels : [int]) -> Set<State> {
+createStates(memoryState: MemoryState, labels: [int]) -> Set<State> {
     fold(
         labels,
         makeSet(),
@@ -368,79 +276,61 @@ createStates(memoryState : MemoryState, labels : [int]) -> Set<State> {
 }
 
 
-executeAssignment(state : State, operation : AssignmentOperation) -> Set<State> {
+executeAssignment(state: State, operation: AssignmentOp) -> Set<State> {
     exprValue = calculateValueOfExpr(operation.expr, state.memoryState);
     
     switch (exprValue) {        
-        // Types were checked during compilation and we don't have to check them here
-        Const() : {
+        Const(): {
             newMemoryState = updateMemoryState(state.memoryState, operation.varName, exprValue);
             createStates(newMemoryState, operation.labels);
         }
 
-        // Expression in assignment isn't correct. Example: "x := 1 / 0;"
-        default() : makeSet();
+        // Incorrect assign for example x := 1 / 0;
+        default(): makeSet();
     }
 }
 
 
-executeTest(state : State, operation : TestOperation) -> Set<State> {
+executeTest(state: State, operation: TestOp) -> Set<State> {
     condValue = calculateValueOfExpr(operation.cond, state.memoryState);
     
     switch (condValue) {
-        BoolConst(value) : {
-            gotoLabels = if (value) operation.ifLabels else operation.elseLabels;
+        BoolConst(value): {
+            gotoLabels = if (value) operation.thenLabels else operation.elseLabels;
             createStates(state.memoryState, gotoLabels);
         }
 
-        // Condition isn't correct. Example: "(1 / 0 < 3)?;"
-        default : makeSet();
+        // Incorrect cond  for example (1 / 0 < 3)?;
+        default: makeSet();
     }
 
 }
 
 
-executePrint(state : State, operation : PrintOperation) -> Set<State> {
-    exprValue = calculateValueOfExpr(operation.expr, state.memoryState);
-
-    switch (exprValue) {
-        Const() : {
-            constRepr = const2s(exprValue);
-            println(constRepr);
-            createStates(state.memoryState, operation.labels);
-        }
-
-        // Expression to print isn't correct. Example: "PRINT(1 / 0);"
-        NoValue() : makeSet();
-    }
-}
-
-
-executeOperation(state : State, operation : Operation) -> Set<State> {
+executeVmOp(state: State, operation: VmOp) -> Set<State> {
     memoryState = state.memoryState;
     
     switch (operation) {
-        AssignmentOperation(varName, expr, labels) : executeAssignment(state, operation);
+        AssignmentOp(varName, expr, labels): executeAssignment(state, operation);
 
-        TestOperation(cond, ifLabels, elseLabels) : executeTest(state, operation);
-        
-        PrintOperation(expr, labels) : executePrint(state, operation);
+        TestOp(cond, thenLabels, elseLabels): executeTest(state, operation);        
     }   
 }
 
-moveState(state : State, operators : [Operator]) -> Set<State> {
+
+moveState(state: State, operators: [Operator]) -> Set<State> {
     nextLabel = state.nextLabel;
     nextOperators = findAll(operators, \op -> op.label == nextLabel);
 
     fold(
         nextOperators,
         makeSet(),
-        \acc, op -> mergeSets(acc, executeOperation(state, op.operation))
+        \acc, op -> mergeSets(acc, executeVmOp(state, op.op))
     );
 }
 
 
-moveStates(states : Set<State>, operators : [Operator]) -> Set<State> {
+moveStates(states: Set<State>, operators: [Operator]) -> Set<State> {
     if (isEmptySet(states)) {
         makeSet();
     } else {
@@ -457,13 +347,13 @@ moveStates(states : Set<State>, operators : [Operator]) -> Set<State> {
 }
 
 
-executeProgram(initState : State, program : VMProgram) -> void {
+executeProgram(initState: State, program: VmProgram) -> void {
     moveStates(makeSet1(initState), program.operators);
     nop();
 }
 
 
-execute(program : VMProgram) -> void {
+execute(program: VmProgram) -> void {
     initState = createInitState(program);
     executeProgram(initState, program);
 }

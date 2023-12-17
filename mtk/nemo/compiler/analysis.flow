@@ -151,7 +151,7 @@ calculateTypeOfArithmExpr(a: ArithmExpr, variablesTypes: Tree<string, ExprType>)
         }
         ArithmNeg(e): {
             eType = calculateTypeOfExpr(e, variablesTypes);
-            if (etype == Int()) eType else NoType();
+            if (eType == Int()) eType else NoType();
         }
     }
 }
@@ -215,7 +215,7 @@ isBooleanExprCorrect(b: BooleanExpr, variablesTypes: Tree<string, ExprType>) -> 
                 false;
             } else {
                 switch (cmpType) {
-                    Less(): ltype == Int();
+                    Less(): lType == Int();
                     Equal(): true;
                 }
             }
@@ -285,11 +285,6 @@ analyseTest(t: Test, variablesTypes: Tree<string, ExprType>) -> AnalysisResult {
 }
 
 
-analysePrint(p: Print, variablesTypes: Tree<string, ExprType>) -> AnalysisResult {
-    analyseExpr(p.e, variablesTypes);
-}
-
-
 analyseBodies(bodies: [Body], variablesTypes: Tree<string, ExprType>) -> AnalysisResult {
     fold(bodies, Success(), \acc, b -> {
         if (acc != Success()) {
@@ -308,8 +303,6 @@ analyseBody(body: Body, variablesTypes: Tree<string, ExprType>) -> AnalysisResul
         BodiesSeq(bodies): analyseBodies(bodies, variablesTypes);
 
         Test(b): analyseTest(body, variablesTypes);
-
-        Print(expr): analysePrint(body, variablesTypes);
 
         NonDeterChoice(bodies): analyseBodies(bodies, variablesTypes);
 

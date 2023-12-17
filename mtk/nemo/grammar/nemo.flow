@@ -18,7 +18,7 @@ export {
     varDeclList2s(vdl: VarDeclList) -> string;
 
 
-    Var : (name : string);
+    Var : (name: string);
 
 
     IntConst : (value: int);
@@ -71,7 +71,6 @@ export {
     Assignment : (varName: string, expr: Expr);
     BodiesSeq : (bodies: [Body]);
     Test : (b: BooleanExpr);
-    Print : (e: Expr);
     NonDeterChoice : (bodies: [Body]);
     NonDeterIteration : (body: Body);
     Body ::= Assignment, BodiesSeq, Test, NonDeterChoice, NonDeterIteration;
@@ -165,13 +164,13 @@ arrayOp2s(arrayOp: ArrayOp) -> string {
     fst = expr2s(arrayOp.arr);
 
     switch (arrayOp.opType) {
-        ArrayUpdateOpType(ind, val): "UPD(" + fst + ", " + expr2s(ind) + ", " + expr2s(val) + ")";
+        ArrayUpdateOp(ind, val): "UPD(" + fst + ", " + expr2s(ind) + ", " + expr2s(val) + ")";
 
-        ArrayApplyOpType(ind): "APP(" + fst + ", " + expr2s(ind) + ")";
+        ArrayApplyOp(ind): "APP(" + fst + ", " + expr2s(ind) + ")";
 
-        ArrayConcatOpType(arr2): "CONCAT(" + fst + ", " + expr2s(arr2) + ")";
+        ArrayConcatOp(arr2): "CONCAT(" + fst + ", " + expr2s(arr2) + ")";
 
-        ArrayLengthOpType(): "LENGTH(" + fst + ")";
+        ArrayLengthOp(): "LENGTH(" + fst + ")";
     }
 }
 
@@ -206,10 +205,10 @@ expr2s(e: Expr) -> string {
 
 
 bodiesSeq2s(bodies: [Body]) -> string {
-    s = fold(bodies, "", \s, b -> {
+    str = fold(bodies, "", \s, b -> {
         s + body2s(b);
     })
-    "{\n" + s + "}\n";
+    "{\n" + str + "}\n";
 }
 
 
@@ -225,15 +224,13 @@ nonDeterChoice2s(bodies: [Body]) -> string {
 }
 
 
-body2s(b: Body) -> string {
+body2s(body: Body) -> string {
     switch (body) {
         Assignment(varName, expr): varName + " := " + expr2s(expr) + ";\n";
 
         BodiesSeq(bodies): bodiesSeq2s(bodies);
 
-        Test(b): "(" + booleanExpr2s(b) + ")?;\n";
-
-        Print(expr): "PRINT(" + expr2s(expr) + ");\n";
+        Test(bexpr): "(" + booleanExpr2s(bexpr) + ")?;\n";
 
         NonDeterChoice(bodies): nonDeterChoice2s(bodies);
 

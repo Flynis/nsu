@@ -1,5 +1,5 @@
 import vm/parsing;
-import vm/execution;
+import vm/execute;
 
 main() {
     program = parse("#include program.out");
