@@ -4,48 +4,54 @@
 #include <assert.h>
 
 
-void http_request_parser_init(HttpParser *parser, HttpRequest *request) {
-    parser->state = sw_req_method;
+void http_request_parser_init(HttpParser *p, HttpRequest *req) {
+    assert(p != NULL);
+    assert(req != NULL);
 
-    parser->is_request_parser = true;
-    parser->request = request;
-    parser->response = NULL;
+    p->state = sw_req_method;
 
-    parser->http_major = 0;
-    parser->http_minor = 0;
+    p->is_request_parser = true;
+    p->request = req;
+    p->response = NULL;
 
-    parser->method_start = NULL;
-    parser->method_end = NULL;    
-    parser->url_start = NULL;
-    parser->url_end = NULL;
-    parser->host_start = NULL;
-    parser->host_end = NULL;
-    parser->line_start = NULL;
-    parser->line_end = NULL;
+    p->http_major = 0;
+    p->http_minor = 0;
+
+    p->method_start = NULL;
+    p->method_end = NULL;    
+    p->url_start = NULL;
+    p->url_end = NULL;
+    p->host_start = NULL;
+    p->host_end = NULL;
+    p->line_start = NULL;
+    p->line_end = NULL;
 }
 
 
-void http_response_parser_init(HttpParser *parser, HttpResponse *response) {
-    parser->state = sw_res_start;
+void http_response_parser_init(HttpParser *p, HttpResponse *res) {
+    assert(p != NULL);
+    assert(res != NULL);
+
+    p->state = sw_res_start;
     
-    parser->is_request_parser = false;
-    parser->request = NULL;
-    parser->response = response;
+    p->is_request_parser = false;
+    p->request = NULL;
+    p->response = res;
 
-    parser->http_major = 0;
-    parser->http_minor = 0;
+    p->http_major = 0;
+    p->http_minor = 0;
 
-    parser->line_start = NULL;
-    parser->line_end = NULL;
+    p->line_start = NULL;
+    p->line_end = NULL;
 }
 
 
-int http_parse_request_line(HttpParser *parser, Buffer *buf) {
+int http_parse_request_line(HttpParser *parser) {
     HttpRequest *req = parser->request;
     unsigned int state = parser->state;
 
     char *p;
-    for(p = buf->pos; p < buf->limit; p++) {
+    for(p = buf->pos; p < buf->last; p++) {
         char ch = *p;
 
         switch(state) {
@@ -400,7 +406,7 @@ int http_parse_header_line(HttpParser *parser, Buffer *buf, HttpHeader *out_head
     unsigned int state = parser->state;
 
     char *p;
-    for (p = buf->pos; p < buf->limit; p++) {
+    for (p = buf->pos; p < buf->last; p++) {
         char ch = *p;
 
         switch(state) {
@@ -556,7 +562,7 @@ int http_parse_status_line(HttpParser *parser, Buffer *buf) {
     unsigned int state = sw_res_start;
 
     char *p;
-    for(p = buf->pos; p < buf->limit; p++) {
+    for(p = buf->pos; p < buf->last; p++) {
         char ch = *p;
 
         switch(state) {

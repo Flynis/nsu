@@ -4,13 +4,11 @@
 
 #include <netinet/in.h>
 #include <stddef.h>
-#include <sys/socket.h>
 
 
 typedef struct Connection {
     int sockfd;
     struct sockaddr_in sockaddr;
-    socklen_t socklen;
 } Connection;
 
 

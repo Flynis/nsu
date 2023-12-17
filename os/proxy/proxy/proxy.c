@@ -10,12 +10,9 @@
 #include "core/connection.h"
 #include "core/errcode.h"
 #include "core/log.h"
+#include "core/socket.h"
 #include "http/http_parser.h"
-#include "http/http_processor.h"
-#include "socket.h"
-
-
-#define BUFFER_SIZE 8192
+#include "http/http_process.h"
 
 
 /**
@@ -77,30 +74,35 @@ static void terminate_connection(ConnectionHandlerArgs *args) {
 
 
 static void* connection_handler(void *args) {
-    ConnectionHandlerArgs *a = (ConnectionHandlerArgs*)args;
-    Buffer *headers_in = buffer_create(BUFFER_SIZE);
-    if(headers_in == NULL) {
-        terminate_connection(a);
+    ConnectionHandlerArgs *arg = (ConnectionHandlerArgs*)args;
+    Connection *conn = &arg->connection;
+    BlockingCache *cache = arg->cache;
+
+    HttpRequest *req = http_request_create(conn);
+    if(req == NULL) {
+        terminate_connection(arg);
         return NULL;
     }
-    HttpParser parser;
-    HttpRequest request;
-    http_request_parser_init(&parser, &request);
-    HttpProcessor processor = {
-        .connection = &a->connection,
-        .buffer = headers_in,
-        .parser = &parser,
-    };
 
-    int ret;
-    ret = http_process_request_line(&processor);
-    if(ret == ERRC_OK) {
+    HttpState state = HTTP_PROCESS_STATE;
+    while (state == HTTP_PROCESS_STATE) {
+        HttpParser parser;
+        http_request_parser_init(&parser, req);
 
-    } else {
-        
+        state = http_process_request_line(&parser);
+        if(state == HTTP_TERMINATE_STATE) {
+            break;
+        }
+
+        state = http_process_headers(&parser);
+        if(state == HTTP_TERMINATE_STATE) {
+            break;
+        }
     }
-
-
+    
+    http_request_destroy(req);
+    terminate_connection(arg);
+    return NULL;
 }
 
 
@@ -128,13 +130,12 @@ static int start_connection_handler(Proxy *proxy, Connection const *client) {
     return ERRC_OK;    
 }
 
-
-int proxy_listen(Proxy *proxy, struct sockaddr const *sockaddr, socklen_t socklen) {
-    if(proxy == NULL || sockaddr == NULL || socklen == 0) {
+int proxy_listen(Proxy *proxy, struct sockaddr_in const *sockaddr) {
+    if(proxy == NULL || sockaddr == NULL) {
         return ERRC_FAILED;
     }
 
-    int listen_sock = open_listening_socket(sockaddr, socklen);
+    int listen_sock = open_listening_socket(sockaddr);
     if(listen_sock < 0) {
         log_error("Open server socket failed");
         return ERRC_FAILED;
@@ -154,7 +155,6 @@ int proxy_listen(Proxy *proxy, struct sockaddr const *sockaddr, socklen_t sockle
         Connection conn = { 
             .sockfd = sockfd,
             .sockaddr = clientaddr,
-            .socklen = clientlen
         };  
         
         int ret = start_connection_handler(proxy, &conn);

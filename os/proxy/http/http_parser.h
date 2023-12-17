@@ -5,9 +5,19 @@
 #include <stddef.h>
 
 
-#include "core/buffer.h"
-#include "core/str.h"
 #include "http.h"
+
+
+typedef enum HttpParseCode {
+    HTTP_MORE_HEADERS = 10,
+    HTTP_INVALID_METHOD,
+    HTTP_INVALID_REQUEST,
+    HTTP_INVALID_RESPONSE,
+    HTTP_INVALID_STATUS,
+    HTTP_INVALID_VERSION,
+    HTTP_INVALID_HEADER,
+    HTTP_INVALID_09_METHOD
+} HttpParseCode;
 
 
 typedef enum ParserState { 
@@ -75,7 +85,7 @@ typedef struct HttpParser {
 
     unsigned char *url_start;
     unsigned char *url_end;
-    unsigned char *line_start; // request or status line start
+    unsigned char *line_start; // request or status line data
     unsigned char *line_end;
     unsigned char *method_start;
     unsigned char *method_end;
@@ -94,13 +104,13 @@ typedef struct HttpParser {
 /**
  * Initializes request parser.
 */
-void http_request_parser_init(HttpParser *parser, HttpRequest *request);
+void http_request_parser_init(HttpParser *p, HttpRequest *req);
 
 
 /**
  * Initializes response parser.
 */
-void http_response_parser_init(HttpParser *parser, HttpResponse *response);
+void http_response_parser_init(HttpParser *p, HttpResponse *res);
 
 
 /**
@@ -113,7 +123,7 @@ void http_response_parser_init(HttpParser *parser, HttpResponse *response);
  * @returns HTTP_INVALID_VERSION if http version is not valid.
  * @returns HTTP_INVALID_09_METHOD if http0.9 request method is not valid.
 */
-int http_parse_request_line(HttpParser *parser, Buffer *buf);
+int http_parse_request_line(HttpParser *parser);
 
 
 /**
@@ -123,7 +133,7 @@ int http_parse_request_line(HttpParser *parser, Buffer *buf);
  * @returns HTTP_MORE_HEADERS if there are more headers to parse.
  * @returns HTTP_INVALID_HEADER if header line is not valid.
 */
-int http_parse_header_line(HttpParser *parser, Buffer *buf, HttpHeader *out_header);
+int http_parse_header_line(HttpParser *parser, HttpHeader *out_header);
 
 
 /**
@@ -134,7 +144,7 @@ int http_parse_header_line(HttpParser *parser, Buffer *buf, HttpHeader *out_head
  * @returns HTTP_INVALID_RESPONSE if status line is not valid.
  * @returns HTTP_INVALID_VERSION if http version is not valid.
 */
-int http_parse_status_line(HttpParser *parser, Buffer *buf);
+int http_parse_status_line(HttpParser *parser);
 
 
 #endif // _HTTP_PARSER_H_INCLUDED_

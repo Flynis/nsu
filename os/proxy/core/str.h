@@ -12,6 +12,9 @@ typedef struct String {
 } String;
 
 
+const String NULL_STRING = { NULL, 0};
+
+
 /**
  * Returns hash of string.
  * @returns hash of string.

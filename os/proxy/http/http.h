@@ -6,12 +6,15 @@
 #include <stddef.h>
 
 
+#include "core/buffer.h"
+#include "core/connection.h"
 #include "core/str.h"
 
 
 typedef enum HttpVersion {
     HTTP_9,
-    HTTP_10
+    HTTP_10,
+    HTTP_NOT_SUPPORTED_VERSION,
 } HttpVersion;
 
 
@@ -21,18 +24,6 @@ typedef enum HttpMethod {
     HTTP_POST,
     HTTP_UNKNOWN
 } HttpMethod;
-
-
-enum {
-    HTTP_MORE_HEADERS = 10,
-    HTTP_INVALID_METHOD,
-    HTTP_INVALID_REQUEST,
-    HTTP_INVALID_RESPONSE,
-    HTTP_INVALID_STATUS,
-    HTTP_INVALID_VERSION,
-    HTTP_INVALID_HEADER,
-    HTTP_INVALID_09_METHOD
-};
 
 
 typedef enum HttpStatusCode {
@@ -58,6 +49,9 @@ typedef enum HttpStatusCode {
 
 
 typedef struct HttpRequest {
+    Buffer *header_in; // contains request line and headers
+    Connection *conn; // connection with client
+
     String request_line;
 
     HttpVersion version;
@@ -67,7 +61,6 @@ typedef struct HttpRequest {
     
     String url;
     String host;
-    bool is_ip_literal;
     unsigned int port;
 
     String headers;
@@ -79,6 +72,9 @@ typedef struct HttpRequest {
 
 
 typedef struct HttpResponse {
+    Buffer *header_in; // contains status line and headers
+    Connection *conn; // upstream
+   
     String status_line;
 
     HttpVersion version;
@@ -96,6 +92,18 @@ typedef struct HttpHeader {
     String name;
     String value;
 } HttpHeader;
+
+
+HttpRequest* http_request_create(Connection *conn);
+
+
+void http_request_destroy(HttpRequest *req);
+
+
+HttpResponse* http_response_create(Connection *conn);
+
+
+void http_response_destroy(HttpResponse *res);
 
 
 #endif // _HTTP_H_INCLUDED_

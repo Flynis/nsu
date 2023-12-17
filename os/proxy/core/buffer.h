@@ -2,18 +2,21 @@
 #define _BUFFER_H_INCLUDED_
 
 
+#include <stdbool.h>
 #include <stddef.h>
+
+
+#include "connection.h"
 
 
 /**
  * Byte buffer.
- * Pos should be between start and limit, i.e start <= pos <= limit.
 */
 typedef struct Buffer{
-    unsigned char *pos;
-    unsigned char *limit;
     unsigned char *start;
-    size_t capacity;
+    unsigned char *end;
+    unsigned char *pos;
+    unsigned char *last;
 } Buffer;
 
 
@@ -22,6 +25,12 @@ typedef struct Buffer{
  * @returns new buffer on success, NULL otherwise.
 */
 Buffer* buffer_create(size_t capacity);
+
+
+size_t buffer_remaining(Buffer *buffer);
+
+
+ssize_t buffer_recv(Connection *c, Buffer *buf);
 
 
 /**

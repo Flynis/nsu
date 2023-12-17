@@ -4,7 +4,7 @@
 
 #include <pthread.h>
 #include <stdbool.h>
-#include <sys/socket.h>
+#include <netinet/in.h>
 
 
 #include "cache.h"
@@ -28,7 +28,7 @@ Proxy* proxy_create(size_t cache_size);
  * Starts to listen to incoming connections and serve its.
  * @returns ERRC_FAILED on some error.
 */
-int proxy_listen(Proxy *proxy, struct sockaddr const *sockaddr, socklen_t socklen);
+int proxy_listen(Proxy *proxy, struct sockaddr_in const *sockaddr);
 
 
 /**

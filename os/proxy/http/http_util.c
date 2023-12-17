@@ -3,6 +3,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+
+#include "core/errcode.h"
 
 
 char const* http_status_tostring(HttpStatusCode status) {
@@ -47,6 +51,29 @@ char const* http_status_tostring(HttpStatusCode status) {
 }
 
 
+char const* http_parse_code_tostring(HttpParseCode parse_code) {
+    switch(parse_code) { 
+    case HTTP_INVALID_METHOD: 
+        return "Client sent invalid method";    
+    case HTTP_INVALID_REQUEST:
+        return "Client sent invalid request";
+    case HTTP_INVALID_VERSION:
+        return "Client sent invalid version";
+    case HTTP_INVALID_HEADER:
+        return "Client sent invalid header";
+    case HTTP_INVALID_09_METHOD: 
+        return "Client sent invalid method in HTTP/0.9 request";
+    
+    case HTTP_INVALID_RESPONSE:
+        return "Gateway sent invalid response";
+    case HTTP_INVALID_STATUS:
+        return "Gateway sent invalid status";
+    
+    default: abort();
+    }
+}
+
+
 int send_error_response(Connection *connection, HttpStatusCode http_status) {
     char msg[256];
     char body[128];
@@ -64,5 +91,10 @@ int send_error_response(Connection *connection, HttpStatusCode http_status) {
                  "Content-type: text/html\r\n" \
                  "Content-length: %d\r\n\r\n%s", \
                  status, (int)strlen(body), body);
-    
+
+    ssize_t n = conn_send(connection, msg, strlen(msg));
+    if(n < 0) {
+        return ERRC_FAILED;
+    }
+    return ERRC_OK;
 }
