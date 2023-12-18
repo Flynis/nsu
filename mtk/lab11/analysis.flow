@@ -1,0 +1,329 @@
+import ds/tree;
+import nemo;
+
+
+export {
+
+    Success : ();
+    RedeclarationError : (varName: string);
+    InvalidTypeError : (e: Expr);
+    AssignmentToUndeclaredVarError : (varName: string);
+    AssignmentTypesMismatchError : (a: Assignment);
+    AnalysisResult ::= Success, 
+                        RedeclarationError, 
+                        InvalidTypeError, 
+                        AssignmentToUndeclaredVarError, 
+                        AssignmentTypesMismatchError;
+    analysisResult2s(res: AnalysisResult) -> string;
+
+
+    analyse(program : Program) -> AnalysisResult;
+
+}
+
+
+analysisResult2s(res: AnalysisResult) -> string {
+    switch (res) {
+        Success(): "Success";
+
+        InvalidTypeError(e): "Invalid type name: " + expr2s(e);
+
+        RedeclarationError(varName): "Redeclaration of variable: " + varName;
+
+        AssignmentToUndeclaredVarError(varName): "Assignment to undeclared variable : " + varName;
+    
+        AssignmentTypesMismatchError(a): "Mismatch of types : " + a.varName + " and " + expr2s(a.expr);
+    }
+}
+
+
+getDeclaredVariables(program: Program) -> Tree<string, [VarDecl]> {
+    fold(
+        program.varDeclList.decls,
+        makeTree(),
+        \acc, decl -> treePushToArrayValue(acc, decl.name, decl)
+    );
+}
+
+
+analyseDeclaredVariables(declaredVariables: Tree<string, [VarDecl]>) -> AnalysisResult {
+    foldTree(
+        declaredVariables,
+        Success(),
+        \varName, decls, acc -> {
+            if (acc != Success()) {
+                acc;
+            } else {
+                if (length(decls) > 1) RedeclarationError(varName) else Success();
+            }
+    });
+}
+
+
+areArraysWithSimilarType2(t1: ExprType, t2: ExprType) -> bool {
+    switch (t1) {
+        Array(bt1): {
+            switch (t2) {
+                Array(bt2): bt1 == AnyType() || bt2 == AnyType() || bt1 == bt2 || areArraysWithSimilarType2(bt1, bt2);   
+                default : false;
+            }
+        }
+        default: false;
+    }
+}
+
+
+areArraysWithSimilarType(types: [ExprType]) -> bool {
+    foldi(types, true, \i, acc, t -> {
+        if (i == length(types) - 1) {
+            acc;
+        } else {
+            acc && areArraysWithSimilarType2(types[i], types[i + 1]);
+        }
+    });
+}
+
+
+chooseMostSpecificArrayType2(t1: ExprType, t2: ExprType) -> ExprType {
+    switch (t1) {
+        Array(bt1): {
+            if (bt1 != AnyType()) {
+                t1;
+            } else {
+                switch (t2) {
+                    Array(bt2): t2;
+                    default: NoType()
+                }
+            }
+        }
+        default: NoType();
+    }
+}
+
+
+chooseMostSpecificArrayType(ts: [ExprType]) -> ExprType {
+    fold(ts, Array(AnyType()), \acc, t -> {
+        chooseMostSpecificArrayType2(acc, t);
+    });
+}
+
+
+calculateTypeOfConst(c: Const) -> ExprType {
+    switch (c) {
+        IntConst(value): Int();
+        BoolConst(value): Bool();
+        ArrayConst(values): {
+            keyValuePairs = tree2pairs(values);
+            valuesArray = map(keyValuePairs, \p -> p.second);
+
+            if (length(valuesArray) == 0) {
+                Array(AnyType());
+            } else {
+                elementsTypes = map(valuesArray, \v -> calculateTypeOfConst(v));
+
+                if (contains(elementsTypes, NoType())) {
+                    NoType();
+                } else {
+                    if (areArraysWithSimilarType(elementsTypes)) {
+                        Array(chooseMostSpecificArrayType(elementsTypes));
+                    } else if (countA(elementsTypes, \e -> e == elementsTypes[0]) == length(elementsTypes)) {
+                        Array(elementsTypes[0]);
+                    } else {
+                        NoType();
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+calculateTypeOfArithmExpr(a: ArithmExpr, variablesTypes: Tree<string, ExprType>) -> ExprType {
+    switch (a) {
+        ArithmBinary(l, r, op): {
+            lType = calculateTypeOfExpr(l, variablesTypes);
+            rType = calculateTypeOfExpr(r, variablesTypes);
+            if (lType == NoType() || rType == NoType() || lType != rType || lType != Int()) {
+                NoType();
+            } else {
+                lType;
+            }
+        }
+        ArithmNeg(e): {
+            eType = calculateTypeOfExpr(e, variablesTypes);
+            if (eType == Int()) eType else NoType();
+        }
+    }
+}
+
+
+isArrayType(t: ExprType) -> bool {    
+    switch (t) {
+        Array(baseType): true;
+        default: false;
+    }
+}
+
+
+calculateTypeOfArrayOp(op: ArrayOp, variablesTypes: Tree<string, ExprType>) -> ExprType {
+    firstOperand = op.arr;
+    firstOperandType = calculateTypeOfExpr(firstOperand, variablesTypes);
+
+    switch (firstOperandType) {
+        Array(baseType): {
+            switch (op.opType) {
+                ArrayUpdateOp(i, v): {
+                    idxType = calculateTypeOfExpr(i, variablesTypes);
+                    valType = calculateTypeOfExpr(v, variablesTypes);
+                    if (idxType != Int()) {
+                        NoType();
+                    } else if (baseType == AnyType() || baseType == valType) {
+                        Array(valType);
+                    } else {
+                        NoType();
+                    }
+                }
+                ArrayApplyOp(i): {
+                    if (calculateTypeOfExpr(i, variablesTypes) != Int()) {
+                        NoType();
+                    } else {
+                        baseType;
+                    }
+                }
+                ArrayConcatOp(arr2): {
+                    secondOperandType = calculateTypeOfExpr(arr2, variablesTypes);
+                    if (!areArraysWithSimilarType2(firstOperandType, secondOperandType)) {
+                        NoType();
+                    } else {
+                        chooseMostSpecificArrayType2(firstOperandType, secondOperandType);
+                    }
+                }
+                ArrayLengthOp(): Int();
+            }
+        }
+        default: NoType();
+    }
+}
+
+
+isBooleanExprCorrect(b: BooleanExpr, variablesTypes: Tree<string, ExprType>) -> bool {
+    switch (b) {
+        Comparison(l, r, cmpType): {
+            lType = calculateTypeOfExpr(l, variablesTypes);
+            rType = calculateTypeOfExpr(r, variablesTypes);
+            if (lType == NoType() || rType == NoType() || lType != rType) {
+                false;
+            } else {
+                switch (cmpType) {
+                    Less(): lType == Int();
+                    Equal(): true;
+                }
+            }
+        }
+        Not(e): isBooleanExprCorrect(e, variablesTypes);
+        Or(l, r) : isBooleanExprCorrect(l, variablesTypes) && isBooleanExprCorrect(r, variablesTypes);
+        BoolConst(value) : true;
+    }
+}
+
+
+calculateTypeOfExpr(e: Expr, variablesTypes: Tree<string, ExprType>) -> ExprType {
+    switch (e) {
+        Var(name): lookupTreeDef(variablesTypes, name, NoType());
+    
+        NonBoolConst(): calculateTypeOfConst(e);
+    
+        ArithmExpr(): calculateTypeOfArithmExpr(e, variablesTypes);
+
+        ArrayOp(arr, opType): calculateTypeOfArrayOp(e, variablesTypes);
+
+        BooleanExpr(): if (isBooleanExprCorrect(e, variablesTypes)) Bool() else NoType();
+    }
+}
+
+
+analyseType(e: Expr, t: ExprType) -> AnalysisResult {
+    if (t == NoType()) {
+        InvalidTypeError(e);
+    } else {
+        Success();
+    }
+}
+
+
+analyseExpr(e: Expr, variablesTypes: Tree<string, ExprType>) -> AnalysisResult {
+    analyseType(e, calculateTypeOfExpr(e, variablesTypes));
+}
+
+
+analyseAssignment(a: Assignment, variablesTypes: Tree<string, ExprType>) -> AnalysisResult {
+    varName = a.varName;
+    expr = a.expr;
+
+    varType = lookupTreeDef(variablesTypes, varName, NoType());
+
+    if (varType == NoType()) {
+        AssignmentToUndeclaredVarError(varName);
+    } else {
+        exprType = calculateTypeOfExpr(expr, variablesTypes);
+
+        if (exprType == NoType()) {
+            analyseType(expr, exprType);
+        } else {
+            if (exprType == varType || areArraysWithSimilarType2(exprType, varType)) {
+                Success();
+            } else {
+                AssignmentTypesMismatchError(a);
+            }
+        }
+    }
+}
+
+
+analyseTest(t: Test, variablesTypes: Tree<string, ExprType>) -> AnalysisResult {
+    analyseExpr(t.b, variablesTypes);
+}
+
+
+analyseBodies(bodies: [Body], variablesTypes: Tree<string, ExprType>) -> AnalysisResult {
+    fold(bodies, Success(), \acc, b -> {
+        if (acc != Success()) {
+            acc;
+        } else {
+            analyseBody(b, variablesTypes);
+        }
+    });
+}
+
+
+analyseBody(body: Body, variablesTypes: Tree<string, ExprType>) -> AnalysisResult {    
+    switch (body) {
+        Assignment(varName, expr): analyseAssignment(body, variablesTypes);
+
+        BodiesSeq(bodies): analyseBodies(bodies, variablesTypes);
+
+        Test(b): analyseTest(body, variablesTypes);
+
+        NonDeterChoice(bodies): analyseBodies(bodies, variablesTypes);
+
+        NonDeterIteration(b): analyseBody(b, variablesTypes);
+    }
+}
+
+
+analyse(program: Program) -> AnalysisResult {
+    declaredVariables = getDeclaredVariables(program);
+
+    declAnalysRes = analyseDeclaredVariables(declaredVariables);
+
+    if (declAnalysRes != Success()) {
+        declAnalysRes;
+    } else {
+        variablesTypes = foldTree(
+            declaredVariables,
+            makeTree(),
+            \varName, decls, acc -> setTree(acc, varName, decls[0].type)
+        );
+        analyseBody(program.body, variablesTypes);
+    }
+}
