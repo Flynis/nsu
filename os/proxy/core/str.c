@@ -5,7 +5,17 @@
 #include <string.h>
 
 
-#include "errcode.h"
+#include "status.h"
+
+
+void string_set(String *s, unsigned char const *start, unsigned char const *end) {
+    assert(s != NULL);
+    assert(start != NULL);
+    assert(end != NULL);
+
+    s->len = end - start;
+    s->data = (s->len == 0) ? NULL : start;
+}
 
 
 // djb2 algorithm
@@ -27,11 +37,11 @@ bool string_equals(String str1, String str2) {
     assert(str1.data != NULL);
     assert(str2.data != NULL);
 
-    if(str1.length != str2.length) {
+    if(str1.len != str2.len) {
         return false;
     }
 
-    return strncmp(str1.data, str2.data, str1.length) == 0;
+    return strncmp(str1.data, str2.data, str1.len) == 0;
 }
 
 
@@ -39,7 +49,7 @@ bool string_equal_chararray(String str1, char const *str2) {
     assert(str1.data != NULL);
     assert(str2 != NULL);
 
-    return strncmp(str1.data, str2, str1.length) == 0;
+    return strncmp(str1.data, str2, str1.len) == 0;
 }
 
 
@@ -51,7 +61,7 @@ int string_to_long(String str, long *result) {
 	// not greater than this buffer 
 	char buf[24];
 	const char *s = str.data;
-    size_t len = str.length;
+    size_t len = str.len;
 
 	// Skip leading spaces 
     size_t i = 0;
@@ -70,7 +80,7 @@ int string_to_long(String str, long *result) {
         if(result != NULL) {
             *result = 0;
         }
-		return ERRC_FAILED;
+		return ERROR;
 	}
 
     // make nul terminated string
@@ -81,5 +91,5 @@ int string_to_long(String str, long *result) {
 	if(result != NULL) {
         *result = 0;
     }
-	return ERRC_OK;
+	return OK;
 }

@@ -2,9 +2,11 @@
 
 
 #include <assert.h>
+#include <stdlib.h>
+#include <sys/types.h>
 
 
-#include "errcode.h"
+#include "status.h"
 
 
 Buffer* buffer_create(size_t capacity) {
@@ -35,16 +37,16 @@ size_t buffer_remaining(Buffer *buffer) {
 }
 
 
-ssize_t buffer_recv(Connection *c, Buffer *buf) {
-    assert(c != NULL);
+ssize_t buffer_recv(int sock, Buffer *buf) {
+    assert(sock >= 0);
     assert(buf != NULL);
 
     size_t remainig_size = buf->end - buf->last;
     if(remainig_size == 0) {
-        return ERRC_FAILED;
+        return FULL;
     }
 
-    ssize_t n = conn_recv(c, buf->last, remainig_size);
+    ssize_t n = sock_recv(sock, buf->last, remainig_size);
     if(n > 0) {
         buf->last += n;
     }

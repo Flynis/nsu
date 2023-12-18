@@ -3,10 +3,12 @@
 
 #include <assert.h>
 #include <string.h>
+#include <sys/types.h>
 
 
-#include "core/errcode.h"
+#include "core/inet_limits.h"
 #include "core/socket.h"
+#include "core/status.h"
 #include "core/str.h"
 #include "http.h"
 #include "http_util.h"
@@ -15,12 +17,12 @@
 #define IO_BUFFER_SIZE 8192
 
 
-static ssize_t fill_buffer(Connection *c, Buffer *buf) {
+static ssize_t fill_buffer(int sock, Buffer *buf) {
     ssize_t n = buffer_remaining(buf);
     if(n > 0) {
         return n;
     }
-    return buffer_recv(c, buf);
+    return buffer_recv(sock, buf);
 }
 
 
@@ -29,41 +31,45 @@ HttpState http_process_request_line(HttpParser *parser) {
     assert(parser->is_request_parser);
 
     HttpRequest *req = parser->request;
-    Connection *c = req->conn;
-    Buffer *buf = req->header_in;
+    int sock = req->sock;
+    Buffer *buf = req->raw_head;
 
     while(1) {
         // fill buffer from connection
-        ssize_t n = fill_buffer(c, buf);
-        if(n == ERRC_FAILED) {
-            send_error_response(c, HTTP_INTERNAL_SERVER_ERROR);
-            return HTTP_TERMINATE_STATE;
+        ssize_t n = fill_buffer(sock, buf);
+        if(n == IO || n == FULL) {
+            send_error_response(sock, HTTP_INTERNAL_SERVER_ERROR);
+            return HTTP_TERMINATE_REQUEST;
         }
 
         int status = http_parse_request_line(parser);
-        if(status == ERRC_OK) {
+        if(status == OK) {
             // request line parsed successfully 
 
             // analyse request line
             HttpRequest *req = parser->request;
             if(req->version == HTTP_NOT_SUPPORTED_VERSION) {
-                send_error_response(c, HTTP_NOT_IMPLEMENTED);
-                return HTTP_TERMINATE_STATE;
+                send_error_response(sock, HTTP_NOT_IMPLEMENTED);
+                return HTTP_TERMINATE_REQUEST;
             }
-            // TODO check host
+            size_t hostlen = req->host.len;
+            if(hostlen == 0 || hostlen >= DOMAIN_NAME_STR_LEN) {
+                send_error_response(sock, HTTP_BAD_REQUEST);
+                return HTTP_TERMINATE_REQUEST;
+            }
             
             // successful analysis
-            return HTTP_PROCESS_STATE;
+            return HTTP_READ_REQUEST_HEAD;
         }
 
-        if(status != ERRC_AGAIN) {
-            // some error occurred
-            send_error_response(c, HTTP_BAD_REQUEST);
-            return HTTP_TERMINATE_STATE;
+        if(status != AGAIN) {
+            // some parse error occurred
+            send_error_response(sock, HTTP_BAD_REQUEST);
+            return HTTP_TERMINATE_REQUEST;
         }
     }
 
-    return HTTP_TERMINATE_STATE;
+    return HTTP_TERMINATE_REQUEST;
 }
 
 
@@ -73,75 +79,75 @@ HttpState http_process_status_line(HttpParser *parser) {
    
     HttpResponse *res = parser->response;
     Connection *c = res->conn;
-    Buffer *buf = res->header_in;
+    Buffer *buf = res->raw_head;
 
     while(1) {
         // fill buffer from connection
         status = connection_recv(c, buf);
-        if(status != ERRC_OK) {
+        if(status != OK) {
             return status;
         }
 
         status = http_parse_status_line(parser);
-        if(status != ERRC_AGAIN) {
+        if(status != AGAIN) {
             // status line parsed successfully or some error occurred
             return status;
         }
     }
 
-    return ERRC_FAILED;
+    return ERROR;
 }
 
 
 static HttpState analyse_req_headers(HttpRequest *req) {
-    Connection *c = req->conn;
-    Buffer *buf = req->header_in;
+    int sock = req->sock;
+    Buffer *buf = req->raw_head;
 
     if(req->method == HTTP_GET || req->method == HTTP_HEAD) {
         if(req->has_body || buffer_remaining(buf) != 0) {
-            send_error_response(c, HTTP_BAD_REQUEST);
-            return HTTP_TERMINATE_STATE;
+            send_error_response(sock, HTTP_BAD_REQUEST);
+            return HTTP_TERMINATE_REQUEST;
         }
     }
     if(req->method == HTTP_POST && !req->has_body) {
-        send_error_response(c, HTTP_BAD_REQUEST);
-        return HTTP_TERMINATE_STATE;
+        send_error_response(sock, HTTP_BAD_REQUEST);
+        return HTTP_TERMINATE_REQUEST;
     }
     
-    return HTTP_PROCESS_STATE;
+    return HTTP_PROCESS;
 }
 
 
 HttpState http_process_headers(HttpParser *parser) {
     assert(parser != NULL);
 
-    Connection *c;
+    int sock;
     Buffer *buf;
     if(parser->is_request_parser) {
         HttpRequest *req = parser->request;
-        c = req->conn;
-        buf = req->header_in;
+        sock = req->sock;
+        buf = req->raw_head;
     } else {
         HttpResponse *res = parser->response;
-        c = res->conn;
-        buf = res->header_in;
+        sock = res->sock;
+        buf = res->raw_head;
     }
 
     while(1) {
         // fill buffer from connection
-        ssize_t n = fill_buffer(c, buf);
-        if(n == ERRC_FAILED) {
-            send_error_response(c, HTTP_INTERNAL_SERVER_ERROR);
-            return HTTP_TERMINATE_STATE;
+        ssize_t n = fill_buffer(sock, buf);
+        if(n == IO || n == FULL) {
+            send_error_response(sock, HTTP_INTERNAL_SERVER_ERROR);
+            return HTTP_TERMINATE_REQUEST;
         }
 
         HttpHeader header;
         int status = http_parse_header_line(parser, &header);
-        if(status == ERRC_OK) {
+        if(status == OK) {
             // all headers parsed successfully
 
             // analyse headers
-            HttpState state = HTTP_PROCESS_STATE;
+            HttpState state = HTTP_PROCESS;
             if(parser->is_request_parser) {
                 state = analyse_req_headers(parser->request);
             }
@@ -152,8 +158,8 @@ HttpState http_process_headers(HttpParser *parser) {
             // header parsed successfully
             if(string_equal_chararray(header.name, "Content-Length")) {
                 long ret;
-                status = string_to_long(header.value, &ret);
-                if(status != ERRC_OK) {
+                status = string_to_long(header.val, &ret);
+                if(status != OK) {
                     return HTTP_INVALID_HEADER;
                 }
                 if(ret != 0) {
@@ -166,14 +172,14 @@ HttpState http_process_headers(HttpParser *parser) {
             continue;
         }
 
-        if(status != ERRC_AGAIN) {
+        if(status != AGAIN) {
             // some error occurred
-            send_error_response(c, HTTP_BAD_REQUEST);
-            return HTTP_TERMINATE_STATE;
+            send_error_response(sock, HTTP_BAD_REQUEST);
+            return HTTP_TERMINATE_REQUEST;
         }
     }
 
-    return HTTP_TERMINATE_STATE;
+    return HTTP_TERMINATE_REQUEST;
 }
 
 
@@ -181,11 +187,11 @@ HttpState http_send_request(HttpRequest *req) {
     assert(req != NULL);
 
     Connection *c = req->conn;
-    Buffer *header = req->header_in;
+    Buffer *header = req->raw_head;
 
     Connection dest;
     dest.sockfd = open_and_connect_socket(req->host.data, req->port, &dest.sockaddr);
-    if(dest.sockfd == ERRC_FAILED) {
+    if(dest.sockfd == ERROR) {
         send_error_response(c, HTTP_INTERNAL_SERVER_ERROR);
         return HTTP_TERMINATE_STATE;
     }
@@ -228,4 +234,25 @@ fail:
     close_socket(dest.sockfd);
     send_error_response(c, HTTP_INTERNAL_SERVER_ERROR);
     return HTTP_TERMINATE_STATE;
+}
+
+
+HttpState http_read_request_head(HttpRequest *req) {
+    HttpParser parser;
+        http_request_parser_init(&parser, req);
+
+        state = http_process_request_line(&parser);
+        if(state == HTTP_TERMINATE_STATE) {
+            break;
+        }
+
+        state = http_process_headers(&parser);
+        if(state == HTTP_TERMINATE_STATE) {
+            break;
+        }
+}
+
+
+HttpState http_process_request(HttpRequest *req) {
+
 }

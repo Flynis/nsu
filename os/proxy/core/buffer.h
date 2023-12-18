@@ -2,11 +2,7 @@
 #define _BUFFER_H_INCLUDED_
 
 
-#include <stdbool.h>
 #include <stddef.h>
-
-
-#include "connection.h"
 
 
 /**
@@ -27,10 +23,19 @@ typedef struct Buffer{
 Buffer* buffer_create(size_t capacity);
 
 
+/**
+ * @returns number of remaining unread bytes from the buffer.
+*/
 size_t buffer_remaining(Buffer *buffer);
 
 
-ssize_t buffer_recv(Connection *c, Buffer *buf);
+/**
+ * Fills buffer from socket.
+ * @returns number of recv bytes from socket.
+ * @returns FULL if buffer is full.
+ * @returns IO if I/O error occurs.
+*/
+ssize_t buffer_recv(int sock, Buffer *buf);
 
 
 /**

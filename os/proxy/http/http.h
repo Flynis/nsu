@@ -7,7 +7,6 @@
 
 
 #include "core/buffer.h"
-#include "core/connection.h"
 #include "core/str.h"
 
 
@@ -49,8 +48,8 @@ typedef enum HttpStatusCode {
 
 
 typedef struct HttpRequest {
-    Buffer *header_in; // contains request line and headers
-    Connection *conn; // connection with client
+    Buffer *raw_head; // contains request line and headers
+    int sock; // connection with client
 
     String request_line;
 
@@ -59,7 +58,6 @@ typedef struct HttpRequest {
     HttpMethod method;
     String method_name;
     
-    String url;
     String host;
     unsigned int port;
 
@@ -67,13 +65,12 @@ typedef struct HttpRequest {
 
     size_t content_length;
     bool has_body;
-    void *body;
 } HttpRequest;
 
 
 typedef struct HttpResponse {
-    Buffer *header_in; // contains status line and headers
-    Connection *conn; // upstream
+    Buffer *raw_head; // contains status line and headers
+    int sock; // connection with upstream
    
     String status_line;
 
@@ -90,17 +87,17 @@ typedef struct HttpResponse {
 
 typedef struct HttpHeader {
     String name;
-    String value;
+    String val;
 } HttpHeader;
 
 
-HttpRequest* http_request_create(Connection *conn);
+HttpRequest* http_request_create(void);
 
 
 void http_request_destroy(HttpRequest *req);
 
 
-HttpResponse* http_response_create(Connection *conn);
+HttpResponse* http_response_create(void);
 
 
 void http_response_destroy(HttpResponse *res);

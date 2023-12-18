@@ -4,9 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 
-#include "core/errcode.h"
+#include "core/status.h"
 
 
 char const* http_status_tostring(HttpStatusCode status) {
@@ -46,7 +47,6 @@ char const* http_status_tostring(HttpStatusCode status) {
         return "Service Unavailable";
 
     default: abort();
-
     }
 }
 
@@ -74,7 +74,7 @@ char const* http_parse_code_tostring(HttpParseCode parse_code) {
 }
 
 
-int send_error_response(Connection *connection, HttpStatusCode http_status) {
+int send_error_response(int sock, HttpStatusCode http_status) {
     char msg[256];
     char body[128];
 
@@ -83,7 +83,7 @@ int send_error_response(Connection *connection, HttpStatusCode http_status) {
     // Build the HTTP response body
     sprintf(body, "<html><title>Proxy Error</title>" \
                   "<body bgcolor=""ffffff"">\r\n" \
-                  "%d: %s<html>\r\n", \
+                  "<h1>%d: %s</h1></body></html>\r\n", \
                   status, http_status_tostring(http_status));
 
     // Print the HTTP response
@@ -92,9 +92,9 @@ int send_error_response(Connection *connection, HttpStatusCode http_status) {
                  "Content-length: %d\r\n\r\n%s", \
                  status, (int)strlen(body), body);
 
-    ssize_t n = conn_send(connection, msg, strlen(msg));
-    if(n < 0) {
-        return ERRC_FAILED;
+    ssize_t n = sock_send(sock, msg, strlen(msg));
+    if(n == IO) {
+        return ERROR;
     }
-    return ERRC_OK;
+    return OK;
 }

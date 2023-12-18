@@ -41,9 +41,11 @@ bool is_http_alpha(unsigned char c) {
     return c >= 'a' && c <= 'z';
 }
 
+
 bool is_http_digit(unsigned char c) {
     return c >= '0' && c <= '9';
 }
+
 
 bool is_http_token(unsigned char c) {
     return tokens[c];

@@ -2,9 +2,10 @@
 
 
 #include <assert.h>
+#include <stdlib.h>
 
 
-#include "errcode.h"
+#include "status.h"
 
 
 #define DEFAULT_CHAIN_LENGTH 8
@@ -82,7 +83,7 @@ static HashElement* find_element(Hashmap *map, String key) {
 
 /**
  * Doubles the capacity of the map, and rehashes all the elements.
- * @returns ERRC_OK on success, or ERRC_FAILED otherwise.
+ * @returns OK on success, or ERROR otherwise.
 */
 static int rehash(Hashmap *map) {
     assert(map->resizable);
@@ -90,7 +91,7 @@ static int rehash(Hashmap *map) {
     HashElement *new_elements = 
                         malloc(2 * map->capacity * sizeof(HashElement));
     if(new_elements == NULL) {
-        return ERRC_FAILED;
+        return ERROR;
     }
 
     HashElement *old_elements = map->elements;
@@ -109,11 +110,11 @@ static int rehash(Hashmap *map) {
 
         int ret = hashmap_put(map, old_elements[i].key, old_elements[i].value);
         // TODO log error
-        assert(ret == ERRC_OK);
+        assert(ret == OK);
     }
 
     free(old_elements);
-    return ERRC_OK;
+    return OK;
 }
 
 
@@ -126,7 +127,7 @@ int hashmap_put(Hashmap *map, String key, void *value) {
         // check for overflow
         if(map->nelements >= max_load) {
             int ret = rehash(map);
-            if(ret != ERRC_OK) {
+            if(ret != OK) {
                 return ret;
             }
         }
@@ -137,13 +138,13 @@ int hashmap_put(Hashmap *map, String key, void *value) {
     if(el == NULL) {
         if(!map->resizable) {
             // map is full
-            return ERRC_FULL;
+            return FULL;
         } else {
             // increase capacity
             // TODO log this
             do {
                 int ret = rehash(map);
-                if(ret != ERRC_OK) {
+                if(ret != OK) {
                     return ret;
                 }
                 el = find_element(map, key);
@@ -157,7 +158,7 @@ int hashmap_put(Hashmap *map, String key, void *value) {
 
     map->nelements += 1;
     
-    return ERRC_OK;
+    return OK;
 }
 
 

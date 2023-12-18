@@ -6,13 +6,23 @@
 #include <stddef.h>
 
 
+/**
+ * Not nul terminated string
+*/
 typedef struct String {
     unsigned char const *data;
-    size_t length;
+    size_t len;
 } String;
 
 
-const String NULL_STRING = { NULL, 0};
+const String EMPTY_STRING = { NULL, 0};
+
+
+/**
+ * Sets string data and length by two points. 
+ * Pointers should be from same array.
+*/
+void string_set(String *s, unsigned char const *start, unsigned char const *end);
 
 
 /**
@@ -38,7 +48,7 @@ bool string_equal_chararray(String str1, char const *str2);
 
 /**
  * Converts string to long.
- * @returns ERRC_OK if conversion was successful, ERRC_FAILED otherwise.
+ * @returns OK if conversion was successful, ERROR otherwise.
 */
 int string_to_long(String str, long *result);
 

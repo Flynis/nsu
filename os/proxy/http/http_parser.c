@@ -2,29 +2,36 @@
 
 
 #include <assert.h>
+#include <stdlib.h>
+
+
+#include "core/inet_limits.h"
+#include "core/status.h"
+#include "http_alphabet.h"
 
 
 void http_request_parser_init(HttpParser *p, HttpRequest *req) {
     assert(p != NULL);
     assert(req != NULL);
 
-    p->state = sw_req_method;
+    p->state = sw_req_start;
 
     p->is_request_parser = true;
     p->request = req;
     p->response = NULL;
 
-    p->http_major = 0;
+    p->http_major = 1;
     p->http_minor = 0;
 
-    p->method_start = NULL;
-    p->method_end = NULL;    
-    p->url_start = NULL;
-    p->url_end = NULL;
-    p->host_start = NULL;
-    p->host_end = NULL;
     p->line_start = NULL;
     p->line_end = NULL;
+    p->method_end = NULL;    
+    p->host_start = NULL;
+    p->host_end = NULL;
+    p->port = 0;
+    
+    p->headers_start = NULL;
+    p->headers_end = NULL;
 }
 
 
@@ -38,44 +45,59 @@ void http_response_parser_init(HttpParser *p, HttpResponse *res) {
     p->request = NULL;
     p->response = res;
 
-    p->http_major = 0;
+    p->http_major = 1;
     p->http_minor = 0;
 
     p->line_start = NULL;
     p->line_end = NULL;
+    p->status = 0;
+
+    p->headers_start = NULL;
+    p->headers_end = NULL;
 }
 
 
 int http_parse_request_line(HttpParser *parser) {
+    assert(parser != NULL);
+    assert(parser->is_request_parser);
+
     HttpRequest *req = parser->request;
+    Buffer *buf = req->raw_head;
     unsigned int state = parser->state;
 
-    char *p;
+    char *p; // we need to update buf->pos after parsing
     for(p = buf->pos; p < buf->last; p++) {
         char ch = *p;
 
         switch(state) {
+        // HTTP methods: GET, HEAD, POST section 5.1.1
+        case sw_req_start:
+            parser->line_start = p;
+            if(!is_http_token(ch)) {
+                return HTTP_INVALID_METHOD;
+            }
+            state = sw_req_method;
+            break;
 
-        // HTTP methods: GET, HEAD, POST
         case sw_req_method:
-            if (ch == ' ') {
-                req->method_name[parser->method_len] = '\0';
-                req->method = HTTP_UNKNOWN;
-
+            if(ch == ' ') {
+                parser->method_end = p;
+                unsigned char *method = parser->line_start;
+                size_t len = parser->method_end - method;
                 // determine method
-                switch(parser->method_len) {
+                switch(len) {
                 case 3:
-                    if(streq(req->method_name, "GET")) {
+                    if(string_equal_chararray(req->method_name, "GET")) {
                         req->method = HTTP_GET;
                     }
                     break;
                 case 4:
-                    if(req->method_name[1] == 'O') {
-                        if(streq(req->method_name, "POST")) {
+                    if(method[1] == 'O') {
+                        if(string_equal_chararray(req->method_name, "POST")) {
                             req->method = HTTP_POST;
                         }
                     } else {
-                        if(streq(req->method_name, "HEAD")) {
+                        if(string_equal_chararray(req->method_name, "HEAD")) {
                             req->method = HTTP_HEAD;
                         }
                     }
@@ -86,13 +108,7 @@ int http_parse_request_line(HttpParser *parser) {
                 break;
             }
 
-            if(NOT_TOKEN(ch)) {
-                return HTTP_INVALID_METHOD;
-            }
-
-            req->method_name[parser->method_len] = ch;
-            parser->method_len++;
-            if(parser->method_len >= HTTP_METHOD_MAX_LEN) {
+            if(!is_http_token(ch)) {
                 return HTTP_INVALID_METHOD;
             }
             break;            
@@ -155,73 +171,70 @@ int http_parse_request_line(HttpParser *parser) {
             }
             break;
         
-        // legal host domain name or IP address [rfc 1123, rfc 952] 
+        // legal host domain name or IP address [rfc 1123 section 2.1, rfc 952] 
         case sw_req_host_start:
-            if(IS_DIGIT(ch) || IS_ALPHA(ch)) {
-                req->port = 0;
-                req->host[parser->host_len] = ch;
-                parser->host_len++;
-                req->url[parser->url_len] = ch;
-                parser->url_len++;
+            if(is_http_digit(ch) || is_http_alpha(ch)) {
+                parser->host_start = p;
 
-                if(IS_DIGIT(ch)) {
-                    req->is_ip_literal = false;
+                if(is_http_digit(ch)) {
+                    state = sw_req_ip_literal;
                 } else {
-                    req->is_ip_literal = true;
+                    state = sw_req_host;
                 }
-                state = sw_req_host;
             } else {
                 return HTTP_INVALID_REQUEST;
             }
             break;
         case sw_req_host:
-            if(req->is_ip_literal && (IS_ALPHA(ch) || IS_DIGIT(ch) || ch == '.' || ch == '-') 
-                || !req->is_ip_literal && (IS_DIGIT(ch) || ch == '.')) {
-                
-                req->host[parser->host_len] = ch;
-                parser->host_len++;
-                if(parser->host_len >= HTTP_HOST_MAX_LEN) {
-                    return HTTP_INVALID_REQUEST;
-                }
-                req->url[parser->url_len] = ch;
-                parser->url_len++;
+            if(is_http_alpha(ch) || is_http_digit(ch) || ch == '.' || ch == '-') {
                 break;
             } 
+            parser->host_end = p;
             switch(ch) {
             case ':':
                 state = sw_req_port;
                 break;
             case '/':
-                req->url[parser->url_len] = ch;
-                parser->url_len++;
                 state = sw_req_after_slash_in_uri;
                 break;
             case ' ':
-                req->url[parser->url_len] = '\0';
                 state = sw_req_09;
                 break;
             default:
                 return HTTP_INVALID_REQUEST;
             }
-            // end host name
-            req->host[parser->host_len] = '\0';
             break;
+        case sw_req_ip_literal:
+            if(is_http_digit(ch) || ch == '.') {
+                break;
+            }
+            parser->host_end = p;
+            switch(ch) {
+            case ':':
+                state = sw_req_port;
+                break;
+            case '/':
+                state = sw_req_after_slash_in_uri;
+                break;
+            case ' ':
+                state = sw_req_09;
+                break;
+            default:
+                return HTTP_INVALID_REQUEST;
+            }
         case sw_req_port:
-            if(IS_DIGIT(ch)) {
+            if(is_http_digit(ch)) {
                 req->port = req->port * 10 + (ch - '0');
-                if(req->port > 65535) {
+                if(req->port >= PORT_MAX) {
                     return HTTP_INVALID_REQUEST;
                 }
                 break;
             }
             switch(ch) {
             case '/':
-                req->url[parser->url_len] = ch;
-                parser->url_len++;
                 state = sw_req_after_slash_in_uri;
                 break;
             case ' ':
-                req->url[parser->url_len] = '\0';
                 state = sw_req_09;
                 break;
             default:
@@ -229,29 +242,23 @@ int http_parse_request_line(HttpParser *parser) {
             }
             break;
             
-        // just copy uri
+        // just skip url
         case sw_req_after_slash_in_uri:
             switch(ch) {
             case ' ':
-                req->url[parser->url_len] = '\0';
                 state = sw_req_09;
                 break;
             case '\r':
-                req->url[parser->url_len] = '\0';
+                parser->http_major = 0;
                 parser->http_minor = 9;
                 state = sw_req_almost_done;
                 break;
             case '\n':
-                req->url[parser->url_len] = '\0';
+                parser->http_major = 0;
                 parser->http_minor = 9;
                 goto done;
             }
-
-            req->url[parser->url_len] = ch;
-            parser->url_len++;
-            if(parser->url_len >= HTTP_URL_MAX_LEN) {
-                return HTTP_INVALID_REQUEST;
-            }
+            // skip char
             break;
 
         // space after uri
@@ -260,10 +267,12 @@ int http_parse_request_line(HttpParser *parser) {
             case ' ':
                 break; // ignore spaces
             case '\r':
+                parser->http_major = 0;
                 parser->http_minor = 9;
                 state = sw_req_almost_done;
                 break;
             case '\n':
+                parser->http_major = 0;
                 parser->http_minor = 9;
                 goto done;
             case 'H':
@@ -306,7 +315,7 @@ int http_parse_request_line(HttpParser *parser) {
 
         // major HTTP version 
         case sw_req_first_major_digit:
-            if(NOT_DIGIT(ch)) {
+            if(!is_http_digit(ch)) {
                 return HTTP_INVALID_VERSION;
             }
             parser->http_major = ch - '0';
@@ -319,7 +328,7 @@ int http_parse_request_line(HttpParser *parser) {
                 state = sw_req_first_minor_digit;
                 break;
             }
-            if(NOT_DIGIT(ch)) {
+            if(!is_http_digit(ch)) {
                 return HTTP_INVALID_VERSION;
             }
             parser->http_major = parser->http_major * 10 + (ch - '0');
@@ -330,7 +339,7 @@ int http_parse_request_line(HttpParser *parser) {
 
         // minor HTTP version
         case sw_req_first_minor_digit:
-            if(NOT_DIGIT(ch)) {
+            if(!is_http_digit(ch)) {
                 return HTTP_INVALID_VERSION;
             }
             parser->http_minor = ch - '0';
@@ -346,7 +355,7 @@ int http_parse_request_line(HttpParser *parser) {
             case '\n':
                 goto done;
             }
-            if(NOT_DIGIT(ch)) {
+            if(!is_http_digit(ch)) {
                 return HTTP_INVALID_VERSION;
             }
             parser->http_minor = parser->http_minor * 10 + (ch - '0');
@@ -362,91 +371,95 @@ int http_parse_request_line(HttpParser *parser) {
             } else {
                 return HTTP_INVALID_REQUEST;
             }
+
+        default: abort();
         }
     }
 
     buf->pos = p;
     parser->state = state;
-    return HTTP_AGAIN;
+    return AGAIN;
 
 done:
     buf->pos = p + 1;
-    req->version = parser->http_major * 1000 + parser->http_minor;
-    parser->state = sw_header_start;
+    parser->line_end = p + 1;
 
-    if(req->version == 9 && req->method != HTTP_GET) {
+    // HTTP 0.9
+    if(parser->http_major == 0 && parser->http_minor == 9) {
+        req->version = HTTP_9;
+    }
+    // HTTP 1.0
+    if(parser->http_major == 1 && parser->http_minor == 0) {
+        req->version = HTTP_10;
+    }
+
+    if(req->version == HTTP_9 && req->method != HTTP_GET) {
         return HTTP_INVALID_09_METHOD;
     }
 
-    return 0;
+    string_set(&req->method_name, parser->line_start, parser->method_end);
+    string_set(&req->host, parser->host_start, parser->host_end);
+    string_set(&req->request_line, parser->line_start, parser->line_end);
+    req->port = parser->port;
+
+    parser->state = sw_header_start;
+
+    return OK;
 }
 
 
-static unsigned int append_headers(char *headers, char ch, unsigned int state, HttpParser *parser) {
-    *headers = ch;
-    headers++;
-    parser->headers_len++;
-    if(parser->headers_len >= HTTP_HEADERS_MAX_LEN) {
-        return sw_header_invalid;
-    } else {
-        return state;
-    }
-}
+int http_parse_header_line(HttpParser *parser, HttpHeader *out_header) {
+    assert(parser != NULL);
+    assert(out_header != NULL);
 
-
-int http_parse_header_line(HttpParser *parser, Buffer *buf, HttpHeader *out_header) {
-    HttpRequest *req = parser->request;
-    char *headers;
+    Buffer *buf;
     if(parser->is_request_parser) {
-        headers = parser->request->headers;
+        buf = parser->request->raw_head;
     } else {
-        headers = parser->response->headers;
+        buf = parser->response->raw_head;
     }
-    headers += parser->headers_len;
+    parser->header_name_start = NULL;
+    parser->header_name_end = NULL;
+    parser->header_val_start = NULL;
+    parser->header_val_end = NULL;
     unsigned int state = parser->state;
 
-    char *p;
+    char *p; // we need to update buf->pos after parsing
     for (p = buf->pos; p < buf->last; p++) {
         char ch = *p;
 
         switch(state) {
-
         // first char or end of headers section
         case sw_header_start:
-            parser->header_name_start = headers;
+            parser->header_name_start = p;
 
-            if(IS_TOKEN(ch)) {
-                *headers = ch;
-                headers++;
-                parser->headers_len++;
+            if(is_http_token(ch)) {
                 state = sw_header_name;
                 break;
             }
 
             switch(ch) {
             case '\r':
-                parser->header_name_end = headers;
+                parser->header_name_end = p;
                 state = sw_all_headers_almost_done;
                 break;
             case '\n':
-                parser->header_name_end = headers;
+                parser->header_name_end = p;
                 goto all_headers_done;
             default:
                 return HTTP_INVALID_HEADER;
             }
             break;
 
-        // header name 
+        // header name rfc 1945 section 4.2
         case sw_header_name:
-            if(IS_TOKEN(ch)) {
-                // copy name in headers
-                state = append_headers(headers, ch, state, parser);
+            if(is_http_token(ch)) {
                 break;
             }
+
             if(ch == ':') {
-                parser->header_name_end = headers;
+                parser->header_name_end = p;
                 state = sw_header_space_before_value;
-                state = append_headers(headers, ch, state, parser);
             } else {
                 return HTTP_INVALID_HEADER;
             }
@@ -458,20 +471,15 @@ int http_parse_header_line(HttpParser *parser, Buffer *buf, HttpHeader *out_head
             case ' ':
                 break; // ignore spaces
             case '\r':
-                parser->header_val_start = headers;
-                parser->header_val_end = headers;
                 state = sw_header_almost_done;
                 break;
             case '\n':
-                parser->header_val_start = headers;
-                parser->header_val_end = headers;
                 goto done;
             case '\0':
                 return HTTP_INVALID_HEADER;
             default:
-                parser->header_val_start = headers;
+                parser->header_val_start = p;
                 state = sw_header_value;
-                state = append_headers(headers, ch, state, parser);
                 break;
             }
             break;
@@ -480,22 +488,20 @@ int http_parse_header_line(HttpParser *parser, Buffer *buf, HttpHeader *out_head
         case sw_header_value:
             switch(ch) {
             case ' ':
-                parser->header_val_end = headers;
+                parser->header_val_end = p;
                 state = sw_header_space_after_value;
-                state = append_headers(headers, ch, state, parser);
                 break;
             case '\r':
-                parser->header_val_end = headers;
+                parser->header_val_end = p;
                 state = sw_header_almost_done;
                 break;
             case '\n':
-                parser->header_val_end = headers;
+                parser->header_val_end = p;
                 goto done;
             case '\0':
                 return HTTP_INVALID_HEADER;
             }
-            // copy value in headers
-            state = append_headers(headers, ch, state, parser);
+            // skip value chars
             break;
 
         // spaces before end of header line
@@ -513,7 +519,6 @@ int http_parse_header_line(HttpParser *parser, Buffer *buf, HttpHeader *out_head
             default:
                 // another value
                 state = sw_header_value;
-                state = append_headers(headers, ch, state, parser);
                 break;
             }
             break;
@@ -538,38 +543,58 @@ int http_parse_header_line(HttpParser *parser, Buffer *buf, HttpHeader *out_head
             default:
                 return HTTP_INVALID_HEADER;
             }
+
+        default: abort();
         }
     }
 
     buf->pos = p;
     parser->state = state;
-    return HTTP_AGAIN;
+    return AGAIN;
 
 done:
     buf->pos = p + 1;
     parser->state = sw_header_start;
+
+    if(parser->header_name_start != NULL) {
+        string_set(&out_header->name, parser->header_name_start, parser->header_name_end);
+    }
+    if(parser->header_val_start != NULL) {
+        string_set(&out_header->val, parser->header_val_start, parser->header_val_end);
+    }
+
     return HTTP_MORE_HEADERS;
 
 all_headers_done:
     buf->pos = p + 1;
-    parser->state = (parser->is_request_parser) ? sw_req_method : sw_res_start;
-    return 0;
+    if(parser->is_request_parser) {
+        parser->state = sw_req_start;
+        string_set(&parser->request->headers, parser->line_end, p + 1);
+    } else {
+        parser->state = sw_res_start;
+        string_set(&parser->response->headers, parser->line_end, p + 1);
+    }
+    return OK;
 }
 
 
-int http_parse_status_line(HttpParser *parser, Buffer *buf) {
+int http_parse_status_line(HttpParser *parser) {
+    assert(parser != NULL);
+    assert(!parser->is_request_parser);
+
     HttpResponse *res = parser->response;
+    Buffer *buf = res->raw_head;
     unsigned int state = sw_res_start;
 
-    char *p;
+    char *p; // we need to update buf->pos after parsing
     for(p = buf->pos; p < buf->last; p++) {
         char ch = *p;
 
         switch(state) {
-
         // "HTTP/"
         case sw_res_start:
             if(ch == 'H') {
+                parser->line_start = p;
                 state = sw_res_H;
             } else {
                 return HTTP_INVALID_RESPONSE;
@@ -606,7 +631,7 @@ int http_parse_status_line(HttpParser *parser, Buffer *buf) {
 
         // major HTTP version
         case sw_res_first_major_digit:
-            if(NOT_DIGIT(ch)) {
+            if(!is_http_digit(ch)) {
                 return HTTP_INVALID_VERSION;
             }
             parser->http_major = ch - '0';
@@ -619,7 +644,7 @@ int http_parse_status_line(HttpParser *parser, Buffer *buf) {
                 state = sw_res_first_minor_digit;
                 break;
             }
-            if(NOT_DIGIT(ch)) {
+            if(!is_http_digit(ch)) {
                 return HTTP_INVALID_VERSION;
             }
             parser->http_major = parser->http_major * 10 + (ch - '0');
@@ -630,7 +655,7 @@ int http_parse_status_line(HttpParser *parser, Buffer *buf) {
 
         // minor HTTP version
         case sw_res_first_minor_digit:
-            if(NOT_DIGIT(ch)) {
+            if(!is_http_digit(ch)) {
                 return HTTP_INVALID_VERSION;
             }
             parser->http_minor = ch - '0';
@@ -643,7 +668,7 @@ int http_parse_status_line(HttpParser *parser, Buffer *buf) {
                 state = sw_res_status_code;
                 break;
             }
-            if(NOT_DIGIT(ch)) {
+            if(!is_http_digit(ch)) {
                 return HTTP_INVALID_VERSION;
             }
             parser->http_minor = parser->http_minor * 10 + (ch - '0');
@@ -654,16 +679,16 @@ int http_parse_status_line(HttpParser *parser, Buffer *buf) {
 
         // HTTP status code
         case sw_res_status_code:
-            if(ch == ' ' && res->status_code == 0) {
+            if(ch == ' ' && parser->status == 0) {
                 break;
             }
-            if(NOT_DIGIT(ch)) {
+            if(!is_http_digit(ch)) {
                 return HTTP_INVALID_STATUS;
             }
-            res->status_code = res->status_code * 10 + (ch - '0');
-            if(res->status_code >= 100) {
+            parser->status = parser->status * 10 + (ch - '0');
+            if(parser->status >= 100) {
                 state = sw_res_space_after_status_code;
-            } else if(res->status_code >= 1000) {
+            } else if(parser->status >= 1000) {
                 return HTTP_INVALID_STATUS;
             }
             break;
@@ -693,10 +718,7 @@ int http_parse_status_line(HttpParser *parser, Buffer *buf) {
             case '\n':
                 goto done;
             }
-            parser->status_text_len++;
-            if(parser->status_text_len >= HTTP_STATUS_MAX_LEN) {
-                return HTTP_INVALID_STATUS;
-            }
+            // skip status text
             break;
 
         // end of status line
@@ -711,12 +733,20 @@ int http_parse_status_line(HttpParser *parser, Buffer *buf) {
 
     buf->pos = p;
     parser->state = state;
-    return HTTP_AGAIN;
+    return AGAIN;
 
 done:
     buf->pos = p + 1;
-    res->version = parser->http_major * 1000 + parser->http_minor;
+    parser->line_end = p + 1;
+
+    if(parser->http_major == 1 && parser->http_minor == 0) {
+        res->version = HTTP_10;
+    }
+
+    string_set(&res->status_line, parser->line_start, parser->line_end);
+    res->status_code = parser->status;
+
     parser->state = sw_header_start;
 
-    return 0;  
+    return OK;  
 }

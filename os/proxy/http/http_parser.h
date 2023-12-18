@@ -2,9 +2,6 @@
 #define _HTTP_PARSER_H_INCLUDED_
 
 
-#include <stddef.h>
-
-
 #include "http.h"
 
 
@@ -35,6 +32,7 @@ typedef enum ParserState {
     sw_res_status_text,
     sw_res_almost_done,
 
+    sw_req_start,
     sw_req_method,
     sw_req_schema,
     sw_req_schema_h,
@@ -45,6 +43,7 @@ typedef enum ParserState {
     sw_req_schema_slash_slash,
     sw_req_host_start,
     sw_req_host,
+    sw_req_ip_literal,
     sw_req_port,
     sw_req_after_slash_in_uri,
     sw_req_09,
@@ -65,8 +64,7 @@ typedef enum ParserState {
     sw_header_value,
     sw_header_space_after_value,
     sw_header_almost_done,
-    sw_all_headers_almost_done,
-    sw_header_invalid
+    sw_all_headers_almost_done
 } ParserState;
 
 
@@ -83,14 +81,14 @@ typedef struct HttpParser {
     unsigned short http_major;
     unsigned short http_minor;
 
-    unsigned char *url_start;
-    unsigned char *url_end;
+    int status;
+
     unsigned char *line_start; // request or status line data
     unsigned char *line_end;
-    unsigned char *method_start;
     unsigned char *method_end;
     unsigned char *host_start;
     unsigned char *host_end;
+    int port;
 
     unsigned char *headers_start;
     unsigned char *headers_end;
@@ -115,9 +113,9 @@ void http_response_parser_init(HttpParser *p, HttpResponse *res);
 
 /**
  * Parses request line.
- * @returns ERRC_OK if request line is parsed successfully.
- * @returns ERRC_AGAIN if request line is not parsed completely.
- * @returns ERRC_FAILED if parser is not request parser.
+ * @returns OK if request line is parsed successfully.
+ * @returns AGAIN if request line is not parsed completely.
+ * @returns ERROR if parser is not request parser.
  * @returns HTTP_INVALID_REQUEST if request line is not valid.
  * @returns HTTP_INVALID_METHOD if request method is not valid.
  * @returns HTTP_INVALID_VERSION if http version is not valid.
@@ -128,8 +126,8 @@ int http_parse_request_line(HttpParser *parser);
 
 /**
  * Parses request headers.
- * @returns ERRC_OK if all headers are parsed successfully.
- * @returns ERRC_AGAIN if header line is not parsed completely.
+ * @returns OK if all headers are parsed successfully.
+ * @returns AGAIN if header line is not parsed completely.
  * @returns HTTP_MORE_HEADERS if there are more headers to parse.
  * @returns HTTP_INVALID_HEADER if header line is not valid.
 */
@@ -138,9 +136,9 @@ int http_parse_header_line(HttpParser *parser, HttpHeader *out_header);
 
 /**
  * Parses status line.
- * @returns ERRC_OK if status line is parsed successfully.
- * @returns ERRC_AGAIN if status line is not parsed completely.
- * @returns ERRC_FAILED if parser is not response parser.
+ * @returns OK if status line is parsed successfully.
+ * @returns AGAIN if status line is not parsed completely.
+ * @returns ERROR if parser is not response parser.
  * @returns HTTP_INVALID_RESPONSE if status line is not valid.
  * @returns HTTP_INVALID_VERSION if http version is not valid.
 */

@@ -5,40 +5,40 @@
 #include <stdlib.h>
 
 
-#define HEADER_IN_BUF_SIZE 8192
+#include "core/socket.h"
 
 
-HttpRequest* http_request_create(Connection *conn) {
-    assert(conn != NULL);
+#define RAW_HEAD_BUF_SIZE 4096
+#define INVALID_SOCKET -1
 
+
+HttpRequest* http_request_create(void) {
     HttpRequest *req = malloc(sizeof(req));
     if(req == NULL) {
         return NULL;
     }
 
-    req->header_in = buffer_create(HEADER_IN_BUF_SIZE);
-    if(req->header_in == NULL) {
+    req->raw_head = buffer_create(RAW_HEAD_BUF_SIZE);
+    if(req->raw_head == NULL) {
         free(req);
         return NULL;
     }
-    req->conn = conn;
+    req->sock = INVALID_SOCKET;
 
-    req->request_line = NULL_STRING;
+    req->request_line = EMPTY_STRING;
 
     req->version = HTTP_NOT_SUPPORTED_VERSION;
 
     req->method = HTTP_UNKNOWN;
-    req->method_name = NULL_STRING;
+    req->method_name = EMPTY_STRING;
 
-    req->url = NULL_STRING;
-    req->host = NULL_STRING;
+    req->host = EMPTY_STRING;
     req->port = 80;
 
-    req->headers = NULL_STRING;
+    req->headers = EMPTY_STRING;
 
     req->content_length = 0;
     req->has_body = false;
-    req->body = NULL;
 
     return req;
 }
@@ -46,35 +46,33 @@ HttpRequest* http_request_create(Connection *conn) {
 
 void http_request_destroy(HttpRequest *req) {
     assert(req != NULL);
-    buffer_destroy(req->header_in);
-    free(req->body);
+    buffer_destroy(req->raw_head);
+    if(req->sock != INVALID_SOCKET) {
+        close_socket(req->sock);
+    }
     free(req);
 }
 
 
-HttpResponse* http_response_create(Connection *conn) {
-    assert(conn != NULL);
-
-    assert(conn != NULL);
-
+HttpResponse* http_response_create(void) {
     HttpResponse *res = malloc(sizeof(res));
     if(res == NULL) {
         return NULL;
     }
 
-    res->header_in = buffer_create(HEADER_IN_BUF_SIZE);
-    if(res->header_in == NULL) {
+    res->raw_head = buffer_create(RAW_HEAD_BUF_SIZE);
+    if(res->raw_head == NULL) {
         free(res);
         return NULL;
     }
-    res->conn = conn;
+    res->sock = INVALID_SOCKET;
 
-    res->status_line = NULL_STRING;
+    res->status_line = EMPTY_STRING;
 
     res->version = HTTP_NOT_SUPPORTED_VERSION;
     res->status_code = HTTP_OK;
 
-    res->headers = NULL_STRING;
+    res->headers = EMPTY_STRING;
 
     res->content_length = 0;
     res->has_body = false;
@@ -86,7 +84,10 @@ HttpResponse* http_response_create(Connection *conn) {
 
 void http_response_destroy(HttpResponse *res) {
     assert(res != NULL);
-    buffer_destroy(res->header_in);
+    buffer_destroy(res->raw_head);
+    if(res->sock != INVALID_SOCKET) {
+        close_socket(res->sock);
+    }
     free(res->body);
     free(res);
 }

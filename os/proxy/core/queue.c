@@ -2,6 +2,7 @@
 
 
 #include <assert.h>
+#include <stdlib.h>
 
 
 Queue* queue_create(void) {

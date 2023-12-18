@@ -2,29 +2,22 @@
 #define _LOG_H_INCLUDED_
 
 
+#include <stdio.h>
+#include <string.h>
+
+
 #ifdef NDEBUG
 #define LOG_DEBUG(...) do {} while (0)
 #else
-#define LOG_DEBUG(...) do { fprintf(stderr, __VA_ARGS__); } while (0)
+#define LOG_DEBUG(...) do { fprintf(stdout, __VA_ARGS__); } while (0)
 #endif
 
 
-/**
- * Prints error message and code representation.
-*/
-void log_error_code(int code, char *msg);
+#define LOG_ERR(...) do { fprintf(stderr, __VA_ARGS__); } while (0)
 
 
-/**
- * Prints error message.
-*/
-void log_error(char *msg);
+#define LOG_ERRNO(er, msg) do { fprintf(stderr, "%s: %s\n", msg, strerror(er)); } while (0)
 
-
-/**
- * Prints information message.
-*/
-void log_info(char *msg);
 
 
 #endif // _LOG_H_INCLUDED_

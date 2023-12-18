@@ -2,8 +2,6 @@
 #define _PROXY_H_INCLUDED_
 
 
-#include <pthread.h>
-#include <stdbool.h>
 #include <netinet/in.h>
 
 
@@ -12,8 +10,7 @@
 
 typedef struct Proxy {
     BlockingCache *cache;
-    bool running;
-    pthread_attr_t handler_attr;
+    int listen_sock;
 } Proxy;
 
 
@@ -21,14 +18,14 @@ typedef struct Proxy {
  * Initializes the proxy.
  * @returns new proxy, or NULL on error.
 */
-Proxy* proxy_create(size_t cache_size);
+Proxy* proxy_create(size_t cache_size, struct sockaddr_in const *sockaddr);
 
 
 /**
  * Starts to listen to incoming connections and serve its.
- * @returns ERRC_FAILED on some error.
+ * @returns ERROR on error.
 */
-int proxy_listen(Proxy *proxy, struct sockaddr_in const *sockaddr);
+int proxy_listen(Proxy *proxy);
 
 
 /**

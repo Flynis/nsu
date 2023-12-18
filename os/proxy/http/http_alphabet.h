@@ -6,7 +6,7 @@
 
 
 /**
- * Defined syntax in rfc 1945.
+ * Defined syntax in rfc 1945 section 2.2
 */
 
        

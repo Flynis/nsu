@@ -48,8 +48,8 @@ Hashmap* hashmap_create(size_t capacity, bool resizable);
 
 /**
  * Adds an element to the hashmap.
- * @returns ERRC_OK on success, 
- * ERRC_FAILED if rehash failed or ERRC_FULL if hashmap is full.
+ * @returns OK on success, 
+ * ERROR if rehash failed or FULL if hashmap is full.
 */
 int hashmap_put(Hashmap *map, String key, void *value);
 
