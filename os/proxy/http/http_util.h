@@ -27,4 +27,11 @@ char const* http_parse_code_tostring(HttpParseCode parse_code);
 int send_error_response(int sock, HttpStatus status);
 
 
+/**
+ * Allocates new http response and copy res into it.
+ * @returns copy of res or NULL on failure.
+*/
+HttpResponse* http_response_dup(HttpResponse* res);
+
+
 #endif // _HTTP_UTIL_H_INCLUDED_

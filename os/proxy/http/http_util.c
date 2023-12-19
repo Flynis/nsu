@@ -8,6 +8,7 @@
 
 
 #include "core/status.h"
+#include "core/str.h"
 
 
 char const* http_status_tostring(HttpStatus status) {
@@ -97,4 +98,44 @@ int send_error_response(int sock, HttpStatus http_status) {
         return ERROR;
     }
     return OK;
+}
+
+HttpResponse* http_response_dup(HttpResponse* res) {
+    HttpResponse *result = malloc(sizeof(res));
+    if(result == NULL) {
+        return NULL;
+    }
+
+    size_t head_size = res->raw_head->pos - res->raw_head->start;
+    result->raw_head = buffer_create(head_size);
+    if(result->raw_head == NULL) {
+        free(result);
+        return NULL;
+    }
+
+    // copy body if res has content_length
+    if(res->is_content_len_set) {
+        result->body = malloc(res->content_length);
+        if(result->body == NULL) {
+            buffer_destroy(result->raw_head);
+            free(result);
+            return NULL;
+        }
+        memcpy(result->body, res->body, res->content_length);
+    }
+
+    memcpy(result->raw_head, res->raw_head, head_size);
+
+    result->sock = -1;
+    result->status_line = EMPTY_STRING;
+
+    result->version = res->version;
+    result->status_code = res->status_code;
+
+    result->headers = EMPTY_STRING;
+
+    result->content_length = res->content_length;
+    result->is_content_len_set = res->is_content_len_set;
+
+    return result;
 }

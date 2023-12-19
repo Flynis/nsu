@@ -22,7 +22,6 @@ typedef struct CacheElement {
 typedef struct Cache {
     size_t capacity;
     size_t size;
-    size_t val_size;
     
     Hashmap *map;
     Queue *lru;
@@ -36,7 +35,7 @@ typedef struct Cache {
  * Creates cache with the specified capacity.
  * @returns new cache on success, or NULL otherwise. 
 */
-Cache* cache_create(size_t capacity, size_t val_size);
+Cache* cache_create(size_t capacity);
 
 
 /**

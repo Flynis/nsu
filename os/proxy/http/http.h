@@ -84,7 +84,7 @@ typedef struct HttpResponse {
     bool is_content_len_set;
     void *body;
 
-    struct timespec insert_time; // for tracking ttl
+    time_t insert_time; // for tracking ttl
 } HttpResponse;
 
 

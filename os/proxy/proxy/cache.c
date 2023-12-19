@@ -9,9 +9,8 @@
 #include "core/status.h"
 
 
-Cache* cache_create(size_t capacity, size_t val_size) {
+Cache* cache_create(size_t capacity) {
     assert(capacity > 0);
-    assert(val_size > 0);
 
     Cache *cache = malloc(sizeof(cache));
     if(cache == NULL) {
@@ -34,7 +33,6 @@ Cache* cache_create(size_t capacity, size_t val_size) {
 
     // successfully allocate all resources
     cache->capacity = capacity;
-    cache->val_size = val_size;
     cache->size = 0;
     cache->empty_node_index = 0;
     return cache;
@@ -68,12 +66,11 @@ void* cache_peek(Cache *cache, String key) {
 
 static void element_destroy(CacheElement *el) {
     free(el->key.data);
-    free(el->value);
     free(el);
 }
 
 
-static CacheElement* element_create(String key, void *value, size_t val_size) {
+static CacheElement* element_create(String key, void *value) {
     CacheElement *el = malloc(sizeof(el));
     if(el == NULL) {
         return NULL;
@@ -81,22 +78,13 @@ static CacheElement* element_create(String key, void *value, size_t val_size) {
 
     el->key = string_dup(key);
     if(string_equals(el->key, EMPTY_STRING)) {
-        goto fail_str_dup;
-    }
-    el->value = malloc(val_size);
-    if(el->value == NULL) {
-        goto fail_val_alloc;
+        free(el);
+        return NULL;
     }
 
     // successfully allocate all the memory
-    memcpy(el->value, value, val_size);
+    el->value = value;
     return el;
-
-fail_val_alloc:
-    free(el->key.data);
-fail_str_dup:
-    free(el);
-    return NULL;
 }
 
 
@@ -104,7 +92,7 @@ int cache_push(Cache *cache, String key, void *val) {
     assert(cache != NULL);
     assert(val != NULL);
 
-    CacheElement *el = element_create(key, val, cache->val_size);
+    CacheElement *el = element_create(key, val);
     if(el == NULL) {
         LOG_ERR("Failed to create cache element");
         return ERROR;
