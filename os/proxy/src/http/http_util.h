@@ -21,17 +21,10 @@ char const* http_parse_code_tostring(HttpParseCode parse_code);
 
 
 /**
- * Sends full response with specified status code.
- * @returns OK on success, ERROR otherwise.
+ * Prints full response with specified status code.
+ * @param buf dest buffer, should be at least 256 in size.
 */
-int send_error_response(int sock, HttpStatus status);
-
-
-/**
- * Allocates new http response and copy res into it.
- * @returns copy of res or NULL on failure.
-*/
-HttpResponse* http_response_dup(HttpResponse* res);
+void print_error_response(char *buf, HttpStatus status);
 
 
 #endif // _HTTP_UTIL_H_INCLUDED_

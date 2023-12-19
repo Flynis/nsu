@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 #include "core/inet_limits.h"
@@ -17,21 +18,17 @@ void http_request_parser_init(HttpParser *p, HttpRequest *req) {
     p->state = sw_req_start;
 
     p->is_request_parser = true;
-    p->request = req;
-    p->response = NULL;
+    p->req = req;
+    p->res = NULL;
 
     p->http_major = 1;
     p->http_minor = 0;
 
-    p->line_start = NULL;
-    p->line_end = NULL;
-    p->method_end = NULL;    
+    p->req_start = NULL;
+    p->req_end = NULL;
     p->host_start = NULL;
     p->host_end = NULL;
     p->port = 0;
-    
-    p->headers_start = NULL;
-    p->headers_end = NULL;
 }
 
 
@@ -42,18 +39,15 @@ void http_response_parser_init(HttpParser *p, HttpResponse *res) {
     p->state = sw_res_start;
     
     p->is_request_parser = false;
-    p->request = NULL;
-    p->response = res;
+    p->req = NULL;
+    p->res = res;
 
     p->http_major = 1;
     p->http_minor = 0;
 
-    p->line_start = NULL;
-    p->line_end = NULL;
+    p->req_start = NULL;
+    p->req_end = NULL;
     p->status = 0;
-
-    p->headers_start = NULL;
-    p->headers_end = NULL;
 }
 
 
@@ -61,18 +55,18 @@ int http_parse_request_line(HttpParser *parser) {
     assert(parser != NULL);
     assert(parser->is_request_parser);
 
-    HttpRequest *req = parser->request;
-    Buffer *buf = req->raw_head;
+    HttpRequest *req = parser->req;
+    Buffer *buf = &req->raw->buf;
     unsigned int state = parser->state;
 
-    char *p; // we need to update buf->pos after parsing
-    for(p = buf->pos; p < buf->last; p++) {
+    unsigned char *p; // we need to update buf->pos after parsing
+    for(p = buf->pos; p < buf->last; p += 1) {
         char ch = *p;
 
         switch(state) {
         // HTTP methods: GET, HEAD, POST section 5.1.1
         case sw_req_start:
-            parser->line_start = p;
+            parser->req_start = p;
             if(!is_http_token(ch)) {
                 return HTTP_INVALID_METHOD;
             }
@@ -81,23 +75,22 @@ int http_parse_request_line(HttpParser *parser) {
 
         case sw_req_method:
             if(ch == ' ') {
-                parser->method_end = p;
-                unsigned char *method = parser->line_start;
-                size_t len = parser->method_end - method;
+                unsigned char *method_start = parser->req_start;
+                size_t len = p - method_start;
                 // determine method
                 switch(len) {
                 case 3:
-                    if(string_equal_chararray(req->method_name, "GET")) {
+                    if(strncmp((char*)method_start, "GET", len) == 0) {
                         req->method = HTTP_GET;
                     }
                     break;
                 case 4:
-                    if(method[1] == 'O') {
-                        if(string_equal_chararray(req->method_name, "POST")) {
+                    if(method_start[1] == 'O') {
+                        if(strncmp((char*)method_start, "POST", len) == 0) {
                             req->method = HTTP_POST;
                         }
                     } else {
-                        if(string_equal_chararray(req->method_name, "HEAD")) {
+                        if(strncmp((char*)method_start, "HEAD", len) == 0) {
                             req->method = HTTP_HEAD;
                         }
                     }
@@ -222,6 +215,7 @@ int http_parse_request_line(HttpParser *parser) {
             default:
                 return HTTP_INVALID_REQUEST;
             }
+            break;
         case sw_req_port:
             if(is_http_digit(ch)) {
                 req->port = req->port * 10 + (ch - '0');
@@ -382,7 +376,7 @@ int http_parse_request_line(HttpParser *parser) {
 
 done:
     buf->pos = p + 1;
-    parser->line_end = p + 1;
+    parser->req_end = p + 1;
 
     // HTTP 0.9
     if(parser->http_major == 0 && parser->http_minor == 9) {
@@ -397,9 +391,8 @@ done:
         return HTTP_INVALID_09_METHOD;
     }
 
-    string_set(&req->method_name, parser->line_start, parser->method_end);
     string_set(&req->host, parser->host_start, parser->host_end);
-    string_set(&req->request_line, parser->line_start, parser->line_end);
+    string_set(&req->request_line, parser->req_start, parser->req_end);
     req->port = parser->port;
 
     parser->state = sw_header_start;
@@ -408,24 +401,25 @@ done:
 }
 
 
-int http_parse_header_line(HttpParser *parser, HttpHeader *out_header) {
+int http_parse_header_line(HttpParser *parser) {
     assert(parser != NULL);
-    assert(out_header != NULL);
 
     Buffer *buf;
     if(parser->is_request_parser) {
-        buf = parser->request->raw_head;
+        buf = &parser->req->raw->buf;
     } else {
-        buf = parser->response->raw_head;
+        buf = &parser->res->raw->buf;
     }
     parser->header_name_start = NULL;
     parser->header_name_end = NULL;
     parser->header_val_start = NULL;
     parser->header_val_end = NULL;
+    parser->header.name = EMPTY_STRING;
+    parser->header.val = EMPTY_STRING;
     unsigned int state = parser->state;
 
-    char *p; // we need to update buf->pos after parsing
-    for (p = buf->pos; p < buf->last; p++) {
+    unsigned char *p; // we need to update buf->pos after parsing
+    for (p = buf->pos; p < buf->last; p += 1) {
         char ch = *p;
 
         switch(state) {
@@ -556,24 +550,18 @@ done:
     buf->pos = p + 1;
     parser->state = sw_header_start;
 
+    HttpHeader *header = &parser->header;
     if(parser->header_name_start != NULL) {
-        string_set(&out_header->name, parser->header_name_start, parser->header_name_end);
+        string_set(&header->name, parser->header_name_start, parser->header_name_end);
     }
     if(parser->header_val_start != NULL) {
-        string_set(&out_header->val, parser->header_val_start, parser->header_val_end);
+        string_set(&header->val, parser->header_val_start, parser->header_val_end);
     }
 
     return HTTP_MORE_HEADERS;
 
 all_headers_done:
     buf->pos = p + 1;
-    if(parser->is_request_parser) {
-        parser->state = sw_req_start;
-        string_set(&parser->request->headers, parser->line_end, p + 1);
-    } else {
-        parser->state = sw_res_start;
-        string_set(&parser->response->headers, parser->line_end, p + 1);
-    }
     return OK;
 }
 
@@ -582,19 +570,19 @@ int http_parse_status_line(HttpParser *parser) {
     assert(parser != NULL);
     assert(!parser->is_request_parser);
 
-    HttpResponse *res = parser->response;
-    Buffer *buf = res->raw_head;
+    HttpResponse *res = parser->res;
+    Buffer *buf = &res->raw->buf;
     unsigned int state = sw_res_start;
 
-    char *p; // we need to update buf->pos after parsing
-    for(p = buf->pos; p < buf->last; p++) {
+    unsigned char *p; // we need to update buf->pos after parsing
+    for(p = buf->pos; p < buf->last; p += 1) {
         char ch = *p;
 
         switch(state) {
         // "HTTP/"
         case sw_res_start:
             if(ch == 'H') {
-                parser->line_start = p;
+                parser->req_start = p;
                 state = sw_res_H;
             } else {
                 return HTTP_INVALID_RESPONSE;
@@ -737,13 +725,12 @@ int http_parse_status_line(HttpParser *parser) {
 
 done:
     buf->pos = p + 1;
-    parser->line_end = p + 1;
+    parser->req_end = p + 1;
 
     if(parser->http_major == 1 && parser->http_minor == 0) {
         res->version = HTTP_10;
     }
 
-    string_set(&res->status_line, parser->line_start, parser->line_end);
     res->status_code = parser->status;
 
     parser->state = sw_header_start;

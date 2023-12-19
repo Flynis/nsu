@@ -50,7 +50,7 @@ fail_nodes_create:
 void* cache_peek(Cache *cache, String key) {
     assert(cache != NULL);
 
-    QueueNode *node = hashmap_get(&cache->map, key);
+    QueueNode *node = hashmap_get(cache->map, key);
     if(node == NULL) {
         // cache miss
         return NULL;
@@ -76,7 +76,7 @@ static CacheElement* element_create(String key, void *value) {
         return NULL;
     }
 
-    el->key = string_dup(key);
+    el->key = string_clone(key);
     if(string_equals(el->key, EMPTY_STRING)) {
         free(el);
         return NULL;

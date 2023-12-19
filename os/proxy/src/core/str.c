@@ -2,6 +2,8 @@
 
 
 #include <assert.h>
+#include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -18,7 +20,7 @@ void string_set(String *s, unsigned char const *start, unsigned char const *end)
 }
 
 
-String string_dup(String s) {
+String string_clone(String s) {
     assert(s.data != NULL);
 
     String result = EMPTY_STRING;
@@ -40,10 +42,10 @@ unsigned int string_hash(String str) {
 
     unsigned int hash = 5381;
     unsigned char *s = str.data;
-    int c;
 
-    while (c = *s++)
-        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    for(size_t i = 0; i < str.len; i += 1) {
+        hash = ((hash << 5) + hash) + s[i]; /* hash * 33 + c */
+    }        
 
     return hash;
 }
@@ -61,7 +63,7 @@ bool string_equals(String str1, String str2) {
         return false;
     }
 
-    return strncmp(str1.data, str2.data, str1.len) == 0;
+    return memcmp(str1.data, str2.data, str1.len) == 0;
 }
 
 
@@ -69,7 +71,7 @@ bool string_equal_chararray(String str1, char const *str2) {
     assert(str1.data != NULL);
     assert(str2 != NULL);
 
-    return strncmp(str1.data, str2, str1.len) == 0;
+    return memcmp(str1.data, str2, str1.len) == 0;
 }
 
 
@@ -97,9 +99,7 @@ int string_to_long(String str, long *result) {
 
     size_t remaining = end - i + 1;
 	if (remaining == 0 || remaining >= sizeof(buf)) {
-        if(result != NULL) {
-            *result = 0;
-        }
+        *result = 0;
 		return ERROR;
 	}
 
@@ -108,8 +108,6 @@ int string_to_long(String str, long *result) {
 	buf[remaining] = '\0';
 
 	long ret = strtol(buf, NULL, 10);
-	if(result != NULL) {
-        *result = 0;
-    }
+	*result = ret;
 	return OK;
 }

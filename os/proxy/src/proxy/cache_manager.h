@@ -12,14 +12,11 @@
 
 
 #include "cache.h"
-#include "core/hashmap.h"
 #include "http/http.h"
 
 
 typedef struct CacheManager {
     Cache *cache;
-	Hashmap *pending_requests;
-
     pthread_mutex_t lock;
     pthread_cond_t cond;
 } CacheManager;

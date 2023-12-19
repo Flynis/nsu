@@ -19,14 +19,14 @@
 */
 typedef struct HandlerArgs {
     HttpRequest *req;
-    Cache *cache;
+    CacheManager *manager;
 } HandlerArgs;
 
 
-static HandlerArgs* create_handler_args(Cache *cache) {
+static HandlerArgs* create_handler_args(CacheManager *manager) {
     HandlerArgs *args = malloc(sizeof(args));
     if(args == NULL) {
-        return ERROR;
+        return NULL;
     }
 
     args->req = http_request_create();
@@ -35,7 +35,7 @@ static HandlerArgs* create_handler_args(Cache *cache) {
         return NULL;
     }
 
-    args->cache = cache;
+    args->manager = manager;
     return args;
 }
 
@@ -56,10 +56,10 @@ Proxy* proxy_create(size_t cache_size, struct sockaddr_in const *sockaddr) {
         return NULL;    
     }
 
-    proxy->cache = cache_create(cache_size);
-    if(proxy->cache == NULL) {
+    proxy->manager = cache_manager_create(cache_size);
+    if(proxy->manager == NULL) {
         LOG_ERR("Proxy cache create failed\n");
-        goto fail_cache_create;
+        goto fail_cache_manager_create;
     }
 
 	proxy->listen_sock = open_listening_socket(sockaddr);
@@ -72,8 +72,8 @@ Proxy* proxy_create(size_t cache_size, struct sockaddr_in const *sockaddr) {
     return proxy;
 
 fail_open_socket:
-    cache_destroy(proxy->cache);
-fail_cache_create:
+    cache_manager_destroy(proxy->manager);
+fail_cache_manager_create:
     free(proxy);
     return NULL;
 }
@@ -84,7 +84,7 @@ static void* connection_handler(void *data) {
     
     HandlerArgs *args = (HandlerArgs*)data;
     HttpRequest *req = args->req;
-    Cache *cache = args->cache;
+    CacheManager *manager = args->manager;
 
     HttpState state = HTTP_READ_REQUEST_HEAD;
     while(1) {
@@ -95,17 +95,35 @@ static void* connection_handler(void *data) {
             break;
 
         case HTTP_PROCESS_REQUEST:
-            state = http_process_request(req);
+            if(req->method == HTTP_GET || req->method == HTTP_HEAD) {
+                HttpResponse *res = cache_manager_get_response(manager, req);
+                if(res == NULL) {
+                    req->state = HTTP_TERMINATE_REQUEST;
+                    if(req->status == HTTP_OK) {
+                        req->status = HTTP_INTERNAL_SERVER_ERROR;
+                    }
+                    break;
+                }
+                http_send_response(req, res);
+                state = HTTP_CLOSE_REQUEST;
+            } else {
+                state = http_process_request(req);
+            }
             break;
 
         case HTTP_TERMINATE_REQUEST:
-            destroy_handler_args(req);
+            http_terminate_request(req);
+            state = HTTP_CLOSE_REQUEST;
+            break;
+        
+        case HTTP_CLOSE_REQUEST:
+            destroy_handler_args(args);
             break;
 
         default: abort();
         }
 
-        if(state == HTTP_TERMINATE_REQUEST) {
+        if(state == HTTP_CLOSE_REQUEST) {
             break;
         }
     }
@@ -114,7 +132,7 @@ static void* connection_handler(void *data) {
 
 
 int start_connection_handler(Proxy *proxy, int sock) {
-    HandlerArgs *args = create_handler_args(proxy->cache);
+    HandlerArgs *args = create_handler_args(proxy->manager);
     if(args == NULL) {
         LOG_ERR("Failed to create handler args\n");
         return ERROR;
@@ -160,7 +178,7 @@ int proxy_listen(Proxy *proxy) {
 
 void proxy_destroy(Proxy *proxy) {
     if(proxy == NULL) return;
-    cache_destroy(proxy->cache);
+    cache_manager_destroy(proxy->manager);
     close_socket(proxy->listen_sock);
     free(proxy);
 }

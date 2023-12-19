@@ -8,7 +8,7 @@
 #include "core/socket.h"
 
 
-#define RAW_HEAD_BUF_SIZE 4096
+#define HEAD_BUF_SIZE 4096
 #define INVALID_SOCKET -1
 
 
@@ -18,24 +18,21 @@ HttpRequest* http_request_create(void) {
         return NULL;
     }
 
-    req->raw_head = buffer_create(RAW_HEAD_BUF_SIZE);
-    if(req->raw_head == NULL) {
+    req->raw = chain_create(HEAD_BUF_SIZE);
+    if(req->raw == NULL) {
         free(req);
         return NULL;
     }
+
     req->sock = INVALID_SOCKET;
+    req->state = HTTP_READ_REQUEST_HEAD;
+    req->status = HTTP_OK;
 
     req->request_line = EMPTY_STRING;
-
     req->version = HTTP_NOT_SUPPORTED_VERSION;
-
     req->method = HTTP_UNKNOWN;
-    req->method_name = EMPTY_STRING;
-
     req->host = EMPTY_STRING;
     req->port = 80;
-
-    req->headers = EMPTY_STRING;
 
     req->content_length = 0;
     req->is_content_len_set = false;
@@ -46,7 +43,7 @@ HttpRequest* http_request_create(void) {
 
 void http_request_destroy(HttpRequest *req) {
     assert(req != NULL);
-    buffer_destroy(req->raw_head);
+    chain_destroy(req->raw);
     if(req->sock != INVALID_SOCKET) {
         close_socket(req->sock);
     }
@@ -60,34 +57,54 @@ HttpResponse* http_response_create(void) {
         return NULL;
     }
 
-    res->raw_head = buffer_create(RAW_HEAD_BUF_SIZE);
-    if(res->raw_head == NULL) {
+    res->raw = chain_create(HEAD_BUF_SIZE);
+    if(res->raw == NULL) {
         free(res);
         return NULL;
     }
     res->sock = INVALID_SOCKET;
 
-    res->status_line = EMPTY_STRING;
-
     res->version = HTTP_NOT_SUPPORTED_VERSION;
     res->status_code = HTTP_OK;
 
-    res->headers = EMPTY_STRING;
-
     res->content_length = 0;
     res->is_content_len_set = false;
-    res->body = NULL;
 
     return res;
 }
 
 
+HttpResponse* http_response_clone(HttpResponse* res) {
+    assert(res != NULL);
+
+    HttpResponse *result = malloc(sizeof(res));
+    if(result == NULL) {
+        return NULL;
+    }
+
+    result->raw = chain_clone(res->raw);
+    if(result->raw == NULL) {
+        free(result);
+        return NULL;
+    }
+
+    result->sock = INVALID_SOCKET;
+
+    result->version = res->version;
+    result->status_code = res->status_code;
+
+    result->content_length = res->content_length;
+    result->is_content_len_set = res->is_content_len_set;
+
+    return result;
+}
+
+
 void http_response_destroy(HttpResponse *res) {
     assert(res != NULL);
-    buffer_destroy(res->raw_head);
+    chain_destroy(res->raw);
     if(res->sock != INVALID_SOCKET) {
         close_socket(res->sock);
     }
-    free(res->body);
     free(res);
 }

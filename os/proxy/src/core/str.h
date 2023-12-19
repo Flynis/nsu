@@ -10,7 +10,7 @@
  * Not nul terminated string
 */
 typedef struct String {
-    unsigned char const *data;
+    unsigned char *data;
     size_t len;
 } String;
 
@@ -29,7 +29,7 @@ void string_set(String *s, unsigned char const *start, unsigned char const *end)
  * Allocates new string and copy s into it.
  * @returns new string or EMPTY_STRING on failure.
 */
-String string_dup(String s);
+String string_clone(String s);
 
 
 /**

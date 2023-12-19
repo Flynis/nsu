@@ -48,21 +48,25 @@ typedef enum HttpStatus {
 } HttpStatus;
 
 
+typedef enum HttpState {
+    HTTP_READ_REQUEST_HEAD,
+    HTTP_PROCESS_REQUEST,
+    HTTP_TERMINATE_REQUEST,
+    HTTP_CLOSE_REQUEST
+} HttpState;
+
+
 typedef struct HttpRequest {
-    Buffer *raw_head; // contains request line and headers
+    Chain *raw; // raw request string
     int sock; // connection with client
+    HttpState state;
+    HttpStatus status;
 
     String request_line;
-
     HttpVersion version;
-
     HttpMethod method;
-    String method_name;
-    
     String host;
     unsigned int port;
-
-    String headers;
 
     size_t content_length;
     bool is_content_len_set;
@@ -70,21 +74,16 @@ typedef struct HttpRequest {
 
 
 typedef struct HttpResponse {
-    Buffer *raw_head; // contains status line and headers
+    Chain *raw; // raw response string
     int sock; // connection with upstream
    
-    String status_line;
-
     HttpVersion version;
     unsigned int status_code;
 
-    String headers;
-
     size_t content_length;
     bool is_content_len_set;
-    void *body;
 
-    time_t insert_time; // for tracking ttl
+    time_t recv_time; // for tracking ttl
 } HttpResponse;
 
 
@@ -94,15 +93,36 @@ typedef struct HttpHeader {
 } HttpHeader;
 
 
+/**
+ * Creates http request.
+ * @return new http request or NULL if error occurred.
+*/
 HttpRequest* http_request_create(void);
 
 
+/**
+ * Destroys http request and releases all resources.
+*/
 void http_request_destroy(HttpRequest *req);
 
 
+/**
+ * Creates http response.
+ * @return new http response or NULL if error occurred.
+*/
 HttpResponse* http_response_create(void);
 
 
+/**
+ * Allocates new http response and copy res into it.
+ * @returns copy of res or NULL on failure.
+*/
+HttpResponse* http_response_clone(HttpResponse *res);
+
+
+/**
+ * Destroys http response and releases all resources.
+*/
 void http_response_destroy(HttpResponse *res);
 
 

@@ -5,17 +5,19 @@
 #include "http.h"
 
 
-typedef enum HttpState {
-    HTTP_READ_REQUEST_HEAD,
-    HTTP_PROCESS_REQUEST,
-    HTTP_TERMINATE_REQUEST
-} HttpState;
+void http_terminate_request(HttpRequest *req);
 
 
 HttpState http_read_request_head(HttpRequest *req);
 
 
 HttpState http_process_request(HttpRequest *req);
+
+
+HttpState http_load_response(HttpRequest *req, HttpResponse **out_res);
+
+
+void http_send_response(HttpRequest *req, HttpResponse *res);
 
 
 #endif // _HTTP_PROCESS_H_INCLUDED_

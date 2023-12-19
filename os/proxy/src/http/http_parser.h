@@ -3,6 +3,7 @@
 
 
 #include "http.h"
+#include "core/str.h"
 
 
 typedef enum HttpParseCode {
@@ -75,23 +76,21 @@ typedef struct HttpParser {
     ParserState state;
 
     bool is_request_parser;
-    HttpRequest *request; // if parse request
-    HttpResponse *response; // if parse response
+    HttpRequest *req; // if parse request
+    HttpResponse *res; // if parse response
 
     unsigned short http_major;
     unsigned short http_minor;
 
     int status;
 
-    unsigned char *line_start; // request or status line data
-    unsigned char *line_end;
-    unsigned char *method_end;
+    unsigned char *req_start;
+    unsigned char *req_end;
     unsigned char *host_start;
     unsigned char *host_end;
     int port;
 
-    unsigned char *headers_start;
-    unsigned char *headers_end;
+    HttpHeader header;
     unsigned char *header_name_start;
     unsigned char *header_name_end;
     unsigned char *header_val_start;
@@ -131,7 +130,7 @@ int http_parse_request_line(HttpParser *parser);
  * @returns HTTP_MORE_HEADERS if there are more headers to parse.
  * @returns HTTP_INVALID_HEADER if header line is not valid.
 */
-int http_parse_header_line(HttpParser *parser, HttpHeader *out_header);
+int http_parse_header_line(HttpParser *parser);
 
 
 /**

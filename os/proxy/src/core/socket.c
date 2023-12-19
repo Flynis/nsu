@@ -20,7 +20,7 @@
 #define MAX_PENDING_CONNECTIONS 256 
 
 
-static void print_addr(char const *msg, int sock, struct sockaddr_in *addr) {
+static void print_addr(char const *msg, int sock, struct sockaddr_in const *addr) {
 #ifndef NDEBUG
     char addrstr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, addr, addrstr, sizeof(addrstr));
@@ -46,7 +46,7 @@ int open_listening_socket(struct sockaddr_in const *sockaddr) {
         LOG_ERRNO(errno, "setsockopt(SO_REUSEADDR) failed");
         goto fail_configure;
     }
-    err = bind(sock, sockaddr, sizeof(sockaddr));
+    err = bind(sock, (struct sockaddr const*)sockaddr, sizeof(sockaddr));
     if(err) {
         LOG_ERRNO(errno, "Failed to bind listening socket");
         goto fail_configure;
@@ -99,7 +99,7 @@ int open_and_connect_socket(char const *host, int port) {
 
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
-    hitns.ai_family = AF_INET;
+    hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 

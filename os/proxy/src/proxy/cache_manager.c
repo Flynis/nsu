@@ -7,10 +7,10 @@
 
 #include "core/log.h"
 #include "core/status.h"
-#include "http/http_util.h"
+#include "http/http_process.h"
 
 
-#define PENDING_REQUESTS_INITIAL_SIZE 512
+#define TTL 10 // sec
 
 
 /**
@@ -44,17 +44,10 @@ CacheManager* cache_manager_create(size_t cache_capacity) {
     if(m->cache == NULL) {
         goto fail_cache_create;
     }
-    size_t size = PENDING_REQUESTS_INITIAL_SIZE;
-    m->pending_requests = hashmap_create(size, true);
-    if(m->pending_requests == NULL) {
-        goto fail_pending_req_create;
-    }
 
     // all resourses successfully allocated
     return m;
 
-fail_pending_req_create:
-    cache_destroy(m->cache);
 fail_cache_create:
     pthread_cond_destroy(&m->cond);
 fail_cond_init:
@@ -66,12 +59,36 @@ fail_lock_init:
 
 
 static void* cache_loader(void *data) {
-    // TODO
+    pthread_detach(pthread_self());
+    
+    LoaderArgs *args = (LoaderArgs*)data;
+    HttpRequest *req = args->req;
+    CacheManager *manager = args->manager;
+
+    HttpResponse *res;
+    HttpState state = http_load_response(req, &res);
+    req->state = state;
+
+    pthread_mutex_lock(&manager->lock);
+
+    if(state == HTTP_PROCESS_REQUEST) {
+        int ret = cache_push(manager->cache, req->request_line, res);
+        if(ret == ERROR) {
+            req->status = HTTP_INTERNAL_SERVER_ERROR;
+            req->state = HTTP_TERMINATE_REQUEST;
+        }
+    }
+
+    pthread_cond_broadcast(&manager->cond);
+
+    pthread_mutex_unlock(&manager->lock);
+    free(args);
+    return NULL;
 }
 
 
 static int start_connection_handler(CacheManager *m, HttpRequest *req) {
-    LoaderArgs *args = malloc(args);
+    LoaderArgs *args = malloc(sizeof(args));
     if(args == NULL) {
         LOG_ERR("Failed to create loader args\n");
         return ERROR;
@@ -96,45 +113,35 @@ HttpResponse* cache_manager_get_response(CacheManager *m, HttpRequest* req) {
     assert(m != NULL);
     assert(req != NULL);
 
-    HttpResponse *res;
     pthread_mutex_lock(&m->lock);
 
     HttpResponse *cached = cache_peek(m->cache, req->request_line);
-    if(cached != NULL) {
+    if(cached != NULL && difftime(cached->recv_time, time(NULL)) < TTL) {
         // cache hit
-
-        // TODO check TTL
-        res = http_response_dup(cached);
+        HttpResponse *res = http_response_clone(cached);
         pthread_mutex_unlock(&m->lock);
         return res;
     }
-
     // cache miss
 
-    HttpRequest *pending = hashmap_get(m->pending_requests, req->request_line);
-    if(pending == NULL) {
-        // this request isn't pending, so start loader
-        int ret = hashmap_put(m->pending_requests, req->request_line, req);
-        if(ret != OK) {
-            LOG_ERR("Failed to put request into pending requests\n");
-            pthread_mutex_unlock(&m->lock);
-            return NULL;
-        }
-        ret = start_connection_handler(m, req);
-        if(ret != OK) {
-            LOG_ERR("Failed to start cache loader\n");
-            pthread_mutex_unlock(&m->lock);
-            return NULL;
-        }
-    } 
+    int ret = start_connection_handler(m, req);
+    if(ret != OK) {
+        LOG_ERR("Failed to start cache loader\n");
+        pthread_mutex_unlock(&m->lock);
+        return NULL;
+    }
 
     while(cached == NULL) {
         pthread_cond_wait(&m->cond, &m->lock);
+        // request already handled
+        if(req->state == HTTP_TERMINATE_REQUEST) {
+            pthread_mutex_unlock(&m->lock);
+            return NULL;
+        }
         cached = cache_peek(m->cache, req->request_line);
     }
 
-    // TODO
-
+    HttpResponse *res = http_response_clone(cached);
     pthread_mutex_unlock(&m->lock);
     return res;
 }
@@ -142,7 +149,6 @@ HttpResponse* cache_manager_get_response(CacheManager *m, HttpRequest* req) {
 
 void cache_manager_destroy(CacheManager *m) {
     assert(m != NULL);
-    hashmap_destroy(m->pending_requests);
     cache_destroy(m->cache);
     pthread_cond_destroy(&m->cond);
     pthread_mutex_destroy(&m->lock);
