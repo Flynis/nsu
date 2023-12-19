@@ -18,6 +18,22 @@ void string_set(String *s, unsigned char const *start, unsigned char const *end)
 }
 
 
+String string_dup(String s) {
+    assert(s.data != NULL);
+
+    String result = EMPTY_STRING;
+
+    result.data = malloc(s.len);
+    if(result.data == NULL) {
+        return result;
+    }
+
+    memcpy(result.data, s.data, s.len);
+    result.len = s.len;
+    return result;
+}
+
+
 // djb2 algorithm
 unsigned int string_hash(String str) {
     assert(str.data != NULL);
@@ -34,10 +50,14 @@ unsigned int string_hash(String str) {
 
 
 bool string_equals(String str1, String str2) {
-    assert(str1.data != NULL);
-    assert(str2.data != NULL);
-
     if(str1.len != str2.len) {
+        return false;
+    }
+
+    if(str1.data == NULL && str2.data == NULL) {
+        return true;
+    }
+    if(str1.data == NULL || str2.data == NULL) {
         return false;
     }
 

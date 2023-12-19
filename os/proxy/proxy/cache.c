@@ -2,37 +2,24 @@
 
 
 #include <assert.h>
-#include <stdbool.h>
+#include <stdlib.h>
 
 
-#define PENDING_REQUESTS_INITIAL_SIZE 512
+#include "core/log.h"
+#include "core/status.h"
 
 
-Cache* cache_create(size_t capacity) {
+Cache* cache_create(size_t capacity, size_t val_size) {
     assert(capacity > 0);
+    assert(val_size > 0);
 
     Cache *cache = malloc(sizeof(cache));
     if(cache == NULL) {
         return NULL;
     }
 
-    int err;
-    err = pthread_mutex_init(&cache->lock, NULL);
-    if(err) {
-        goto fail_lock_init;
-    }
-    err = pthread_cond_init(&cache->cond, NULL);
-    if(err) {
-        goto fail_cond_init;        
-    }
-
-    size_t pending_req_size = PENDING_REQUESTS_INITIAL_SIZE;
-    cache->pending_requests = hashmap_create(pending_req_size, true);
-    if(cache->pending_requests == NULL) {
-        goto fail_pending_req_create;
-    }
-    size_t nodes_size = (capacity * 4) / 3; // * 4/3 to avoid hash collisions
-    cache->map = hashmap_create(nodes_size, false);
+    size_t map_cap = (capacity * 4) / 3; // * 4/3 to avoid hash collisions
+    cache->map = hashmap_create(map_cap, false);
     if(cache->map == NULL) {
         goto fail_nodes_create;
     } 
@@ -47,6 +34,7 @@ Cache* cache_create(size_t capacity) {
 
     // successfully allocate all resources
     cache->capacity = capacity;
+    cache->val_size = val_size;
     cache->size = 0;
     cache->empty_node_index = 0;
     return cache;
@@ -56,152 +44,122 @@ fail_qnode_pool_create:
 fail_queue_create:
     hashmap_destroy(cache->map);
 fail_nodes_create:
-    hashmap_destroy(cache->pending_requests);
-fail_pending_req_create:
-    pthread_cond_destroy(&cache->cond);
-fail_cond_init:
-    pthread_mutex_destroy(&cache->lock);
-fail_lock_init:
     free(cache);
     return NULL;
 }
 
 
-void* cache_peek(Cache *cache, String key, void *dest) {
+void* cache_peek(Cache *cache, String key) {
     assert(cache != NULL);
-    assert(dest != NULL);
-    pthread_rwlock_rdlock(&cache->map_lock);
-    cnode_t *node = hashmap_get(&cache->hashmap, key);
-    pthread_rwlock_unlock(&cache->map_lock);
 
+    QueueNode *node = hashmap_get(&cache->map, key);
     if(node == NULL) {
         // cache miss
         return NULL;
     }
-    
-    // cache hit
-    void *ret = NULL;
-    cdata_t *data = node->data;
-    pthread_rwlock_rdlock(&node->lock);
-    // make sure that another thread has not replaced the data
-    if(strcmp(key, data->key) == 0) {
-        memcpy(dest, data->value, data->val_size);
-        node->referenceBit = 1;
-        ret = dest;
-    }
-    pthread_rwlock_unlock(&node->lock);
 
-    return ret;
+    // move node to head of queue
+    queue_remove(cache->lru, node);
+    queue_push(cache->lru, node);
+
+    return node->value;
 }
 
 
-static void data_destroy(cdata_t *data) {
-    free(data->key);
-    free(data->value);
-    free(data);
+static void element_destroy(CacheElement *el) {
+    free(el->key.data);
+    free(el->value);
+    free(el);
 }
 
 
-static cdata_t* data_create(char *key, void *value, size_t val_size) {
-    cdata_t *data = malloc(sizeof(data));
-    if(!data) {
+static CacheElement* element_create(String key, void *value, size_t val_size) {
+    CacheElement *el = malloc(sizeof(el));
+    if(el == NULL) {
         return NULL;
     }
 
-    data->value = NULL;
-    data->key = malloc(sizeof(char) * strlen(key));
-    if(!data->key) {
-        data_destroy(data);
-        return NULL;
+    el->key = string_dup(key);
+    if(string_equals(el->key, EMPTY_STRING)) {
+        goto fail_str_dup;
+    }
+    el->value = malloc(val_size);
+    if(el->value == NULL) {
+        goto fail_val_alloc;
     }
 
-    data->value = malloc(sizeof(char) * val_size);
-    if(!data->value) {
-        data_destroy(data);
-        return NULL;
-    }
+    // successfully allocate all the memory
+    memcpy(el->value, value, val_size);
+    return el;
 
-    strcpy(data->key, key);
-    memcpy(data->value, value, val_size);
-    data->val_size = val_size;
-
-    return data;
+fail_val_alloc:
+    free(el->key.data);
+fail_str_dup:
+    free(el);
+    return NULL;
 }
 
 
-int cache_push(Cache *cache, char *key, void *data, size_t data_size) {
-    cdata_t *new_data = data_create(key, data, data_size);
-    if(!new_data) {
-        perror("Cache data object create failed");
-        return ENOMEM;
+int cache_push(Cache *cache, String key, void *val) {
+    assert(cache != NULL);
+    assert(val != NULL);
+
+    CacheElement *el = element_create(key, val, cache->val_size);
+    if(el == NULL) {
+        LOG_ERR("Failed to create cache element");
+        return ERROR;
     }
 
-    pthread_mutex_lock(&cache->replace_lock);
-    cnode_t *nodes = cache->map;
-    if(cache->nnodes < cache->capacity) {
+    QueueNode *pool = cache->qnode_pool;
+    if(cache->size < cache->capacity) {
         // cache is not full
-        cnode_t *free_node = &nodes[cache->nnodes];
-        cache->nnodes++;
-        pthread_rwlock_wrlock(&free_node->lock);
+        QueueNode *empty_node = &pool[cache->empty_node_index];
+        cache->empty_node_index += 1;
 
-        // we acquire needed node so another thread may continue replace
-        pthread_mutex_unlock(&cache->replace_lock);
-        
-        free_node->data = new_data;
-        free_node->referenceBit = 0;
-
+        empty_node->value = el;
         // insert new node in map
-        pthread_rwlock_wrlock(&cache->map_lock);
-        hashmap_put(&cache->hashmap, new_data->key, free_node);
-        pthread_rwlock_unlock(&cache->map_lock);
+        int ret = hashmap_put(cache->map, el->key, empty_node);
+        if(ret != OK) {
+            LOG_ERR("hashmap_put() failed");
+        }
+        cache->size += 1;
+        return OK;
+    } 
 
-        pthread_rwlock_unlock(&free_node->lock);
-    } else {
-        // looking for node to replace
-        int found = 0;
-        cnode_t *node = NULL;
-        do {
-            node = &nodes[cache->head];
-            // moving along ring buffer
-            cache->head = (cache->head + 1) % cache->capacity;
-            int busy = pthread_rwlock_trywrlock(&node->lock);
-            if(!busy) {
-                if(node->referenceBit == 0) {
-                    found = 1;
-                } else {
-                    node->referenceBit = 0;
-                    pthread_rwlock_unlock(&node->lock);
-                }
-            }
-        } while (found);
+    // cache is full need to replace some node
+    // get least recently used node
+    QueueNode *node = queue_pop(cache->lru);
 
-        // we acquire needed node so another thread may continue replace
-        pthread_mutex_unlock(&cache->replace_lock);
+    // replace data
+    CacheElement *replaced = node->value;
+    node->value = el;
 
-        // replace data in map
-        cdata_t *replaced = node->data;
-        pthread_rwlock_wrlock(&cache->map_lock);
-        hashmap_remove(&cache->hashmap, replaced->key);
-        hashmap_put(&cache->hashmap, new_data->key, node);
-        pthread_rwlock_unlock(&cache->map_lock);
-
-        node->data = new_data;
-        pthread_rwlock_unlock(&node->lock);
+    // replace in map and queue
+    hashmap_remove(cache->map, replaced->key);
+    int ret = hashmap_put(cache->map, el->key, node);
+    if(ret != OK) {
+        LOG_ERR("hashmap_put() failed");
     }
+    queue_push(cache->lru, node);
 
-    return 0;
+    element_destroy(replaced);
+    return OK;
 }
 
 
 void cache_destroy(Cache *cache) {
     assert(cache != NULL);
 
+    // destroy allocated elements
+    QueueNode *cur = cache->lru->head;
+    while(cur != NULL) {
+        element_destroy(cur->value);
+        cur = cur->next;
+    }
+
     free(cache->qnode_pool);
     queue_destroy(cache->lru);
     hashmap_destroy(cache->map);
-    hashmap_destroy(cache->pending_requests);
-    pthread_cond_destroy(&cache->cond);
-    pthread_mutex_destroy(&cache->lock);
     free(cache);
 }
 

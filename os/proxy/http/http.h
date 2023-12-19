@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <time.h>
 
 
 #include "core/buffer.h"
@@ -82,6 +83,8 @@ typedef struct HttpResponse {
     size_t content_length;
     bool is_content_len_set;
     void *body;
+
+    struct timespec insert_time; // for tracking ttl
 } HttpResponse;
 
 

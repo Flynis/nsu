@@ -2,14 +2,7 @@
 #define _CACHE_H_INCLUDED_
 
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-
-#include <pthread.h>
 #include <stddef.h>
-#include <time.h>
 
 
 #include "core/hashmap.h"
@@ -20,25 +13,20 @@
 typedef struct CacheElement {
     String key;
 	void *value;
-    size_t val_size;
-    struct timespec insert_time; // for tracking ttl
 } CacheElement;
 
 
 /**
- * LRU replacement policy based cache. 
+ * LRU replacement policy based cache. Not synchronized. 
 */
 typedef struct Cache {
     size_t capacity;
     size_t size;
-
-    pthread_mutex_t lock;
-    pthread_cond_t cond;
-
-	Hashmap *pending_requests;
+    size_t val_size;
+    
     Hashmap *map;
-
     Queue *lru;
+
     QueueNode *qnode_pool;
     size_t empty_node_index;
 } Cache;
@@ -48,14 +36,21 @@ typedef struct Cache {
  * Creates cache with the specified capacity.
  * @returns new cache on success, or NULL otherwise. 
 */
-Cache* cache_create(size_t capacity);
+Cache* cache_create(size_t capacity, size_t val_size);
 
 
 /**
- * Writes data with the specified key to the dest buffer.
- * @returns dest on success, or NULL if there was a cache miss.
+ * Gets value with specified key.
+ * @returns value, or NULL if there was a cache miss.
 */
-void* cache_peek(Cache *cache, String key, void *dest);
+void* cache_peek(Cache *cache, String key);
+
+
+/**
+ * Puts value with specified key.
+ * @returns OK on success, ERROR otherwise.
+*/
+int cache_push(Cache *cache, String key, void *val);
 
 
 /**

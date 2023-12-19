@@ -26,6 +26,13 @@ void string_set(String *s, unsigned char const *start, unsigned char const *end)
 
 
 /**
+ * Allocates new string and copy s into it.
+ * @returns new string or EMPTY_STRING on failure.
+*/
+String string_dup(String s);
+
+
+/**
  * Returns hash of string.
  * @returns hash of string.
 */
