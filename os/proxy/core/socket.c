@@ -159,6 +159,9 @@ ssize_t sock_send(int sock, unsigned char const *buf, size_t size) {
         LOG_ERRNO(errno, "socket send() failed");
         return IO;
     }
+    if(n == 0) {
+        return END_OF_STREAM;
+    }
     return n;
 }
 

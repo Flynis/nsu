@@ -15,7 +15,6 @@
 #include "core/hashmap.h"
 #include "core/queue.h"
 #include "core/str.h"
-#include "http/http.h"
 
 
 typedef struct CacheElement {
@@ -29,7 +28,7 @@ typedef struct CacheElement {
 /**
  * LRU replacement policy based cache. 
 */
-typedef struct BlockingCache {
+typedef struct Cache {
     size_t capacity;
     size_t size;
 
@@ -42,27 +41,27 @@ typedef struct BlockingCache {
     Queue *lru;
     QueueNode *qnode_pool;
     size_t empty_node_index;
-} BlockingCache;
+} Cache;
 
 
 /**
  * Creates cache with the specified capacity.
  * @returns new cache on success, or NULL otherwise. 
 */
-BlockingCache* cache_create(size_t capacity);
+Cache* cache_create(size_t capacity);
 
 
 /**
  * Writes data with the specified key to the dest buffer.
  * @returns dest on success, or NULL if there was a cache miss.
 */
-void* cache_peek(BlockingCache *cache, String key, void *dest);
+void* cache_peek(Cache *cache, String key, void *dest);
 
 
 /**
  * Destroys cache
 */
-void cache_destroy(BlockingCache *cache);
+void cache_destroy(Cache *cache);
 
 
 #endif // _CACHE_H_INCLUDED_

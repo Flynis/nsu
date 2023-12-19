@@ -10,7 +10,7 @@
 #include "core/status.h"
 
 
-char const* http_status_tostring(HttpStatusCode status) {
+char const* http_status_tostring(HttpStatus status) {
     switch(status) {
     case 200:
         return "OK";
@@ -74,7 +74,7 @@ char const* http_parse_code_tostring(HttpParseCode parse_code) {
 }
 
 
-int send_error_response(int sock, HttpStatusCode http_status) {
+int send_error_response(int sock, HttpStatus http_status) {
     char msg[256];
     char body[128];
 

@@ -38,7 +38,7 @@ HttpRequest* http_request_create(void) {
     req->headers = EMPTY_STRING;
 
     req->content_length = 0;
-    req->has_body = false;
+    req->is_content_len_set = false;
 
     return req;
 }
@@ -75,7 +75,7 @@ HttpResponse* http_response_create(void) {
     res->headers = EMPTY_STRING;
 
     res->content_length = 0;
-    res->has_body = false;
+    res->is_content_len_set = false;
     res->body = NULL;
 
     return res;

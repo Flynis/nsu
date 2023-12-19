@@ -9,7 +9,7 @@
 
 
 typedef struct Proxy {
-    BlockingCache *cache;
+    Cache *cache;
     int listen_sock;
 } Proxy;
 

@@ -32,6 +32,7 @@ int open_and_connect_socket(char const *host, int port);
  * Receives data from sock and store it in buf.
  * @returns number of bytes read.
  * @returns IO on I/O error.
+ * @returns END_OF_STREAM on sock stream shutdown.
 */
 ssize_t sock_recv(int sock, unsigned char *buf, size_t size);
 

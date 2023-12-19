@@ -18,11 +18,11 @@
 */
 typedef struct HandlerArgs {
     HttpRequest *req;
-    BlockingCache *cache;
+    Cache *cache;
 } HandlerArgs;
 
 
-static HandlerArgs* create_handler_args(BlockingCache *cache) {
+static HandlerArgs* create_handler_args(Cache *cache) {
     HandlerArgs *args = malloc(sizeof(args));
     if(args == NULL) {
         return ERROR;
@@ -83,7 +83,7 @@ static void* connection_handler(void *data) {
     
     HandlerArgs *args = (HandlerArgs*)data;
     HttpRequest *req = args->req;
-    BlockingCache *cache = args->cache;
+    Cache *cache = args->cache;
 
     HttpState state = HTTP_READ_REQUEST_HEAD;
     while(1) {
@@ -93,7 +93,7 @@ static void* connection_handler(void *data) {
             state = http_read_request_head(req);
             break;
 
-        case HTTP_PROCESS:
+        case HTTP_PROCESS_REQUEST:
             state = http_process_request(req);
             break;
 

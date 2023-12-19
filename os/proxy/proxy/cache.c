@@ -8,10 +8,10 @@
 #define PENDING_REQUESTS_INITIAL_SIZE 512
 
 
-BlockingCache* cache_create(size_t capacity) {
+Cache* cache_create(size_t capacity) {
     assert(capacity > 0);
 
-    BlockingCache *cache = malloc(sizeof(cache));
+    Cache *cache = malloc(sizeof(cache));
     if(cache == NULL) {
         return NULL;
     }
@@ -67,7 +67,7 @@ fail_lock_init:
 }
 
 
-void* cache_peek(BlockingCache *cache, String key, void *dest) {
+void* cache_peek(Cache *cache, String key, void *dest) {
     assert(cache != NULL);
     assert(dest != NULL);
     pthread_rwlock_rdlock(&cache->map_lock);
@@ -129,7 +129,7 @@ static cdata_t* data_create(char *key, void *value, size_t val_size) {
 }
 
 
-int cache_push(BlockingCache *cache, char *key, void *data, size_t data_size) {
+int cache_push(Cache *cache, char *key, void *data, size_t data_size) {
     cdata_t *new_data = data_create(key, data, data_size);
     if(!new_data) {
         perror("Cache data object create failed");
@@ -193,7 +193,7 @@ int cache_push(BlockingCache *cache, char *key, void *data, size_t data_size) {
 }
 
 
-void cache_destroy(BlockingCache *cache) {
+void cache_destroy(Cache *cache) {
     assert(cache != NULL);
 
     free(cache->qnode_pool);

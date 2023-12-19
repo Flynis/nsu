@@ -25,7 +25,7 @@ typedef enum HttpMethod {
 } HttpMethod;
 
 
-typedef enum HttpStatusCode {
+typedef enum HttpStatus {
     HTTP_OK = 200,
     HTTP_CREATED = 201,
     HTTP_ACCEPTED = 202,
@@ -44,7 +44,7 @@ typedef enum HttpStatusCode {
     HTTP_NOT_IMPLEMENTED = 501,
     HTTP_BAD_GATEWAY = 502,
     HTTP_SERVICE_UNAVAILABLE = 503
-} HttpStatusCode;
+} HttpStatus;
 
 
 typedef struct HttpRequest {
@@ -64,7 +64,7 @@ typedef struct HttpRequest {
     String headers;
 
     size_t content_length;
-    bool has_body;
+    bool is_content_len_set;
 } HttpRequest;
 
 
@@ -80,7 +80,7 @@ typedef struct HttpResponse {
     String headers;
 
     size_t content_length;
-    bool has_body;
+    bool is_content_len_set;
     void *body;
 } HttpResponse;
 

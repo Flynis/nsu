@@ -8,6 +8,7 @@
 #define FULL -3
 #define UNKNOWN_HOST -4
 #define IO -5
+#define END_OF_STREAM -6
 
 
 #endif // _STATUS_H_INCLUDED_

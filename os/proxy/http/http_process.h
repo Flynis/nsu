@@ -7,7 +7,7 @@
 
 typedef enum HttpState {
     HTTP_READ_REQUEST_HEAD,
-    HTTP_PROCESS,
+    HTTP_PROCESS_REQUEST,
     HTTP_TERMINATE_REQUEST
 } HttpState;
 
