@@ -3,6 +3,7 @@
 
 
 #include <stddef.h>
+#include <sys/types.h>
 
 
 /**
@@ -11,42 +12,49 @@
 typedef struct Buffer{
     unsigned char *start;
     unsigned char *end;
-    unsigned char *pos;
+    unsigned char *pos; // for reading
     unsigned char *last;
 } Buffer;
 
 
 typedef struct Chain {
-    Buffer buf;
+    Buffer *buf;
     struct Chain *next;
 } Chain;
 
 
 /**
- * Creates buffers chain with specified first buffer size.
- * @returns new chain on success, NULL otherwise.
+ * Creates new buffer.
+ * @returns new buffer on success, NULL otherwise.
 */
-Chain* chain_create(size_t first_buf_size);
+Buffer* buffer_create(size_t capacity);
 
 
 /**
- * Allocates new buffer and adds it to the chain.
- * @returns buffer on success, NULL otherwise.
+ * Receives data from sock and store it in buf.
+ * Stores data from last to end of buf
+ * @returns number of bytes read.
+ * @returns FULL if buffer is full, i.e. end - last == 0.
+ * @returns IO on I/O error.
+ * @returns END_OF_STREAM on sock stream shutdown.
 */
-Buffer* chain_alloc_next_buf(Chain *chain, size_t buf_size);
+ssize_t buffer_recv(int sock, Buffer *buf);
 
 
 /**
- * Allocates new chain and copy specified chain into it.
- * @returns copy of chain or NULL on failure.
+ * Sends data to sock from buf.
+ * Sends data between start and last of buf, and resets last and pos.
+ * @returns number of bytes sent.
+ * @returns IO on I/O error.
+ * @returns CONN_RESET if connection reset by peer.
 */
-Chain* chain_clone(Chain *chain);
+ssize_t buffer_send(int sock, Buffer *buf);
 
 
 /**
- * Destroys the chain.
+ * Destroys buffer.
 */
-void chain_destroy(Chain *chain);
+void buffer_destroy(Buffer *buffer);
 
 
 #endif // _BUFFER_H_INCLUDED_

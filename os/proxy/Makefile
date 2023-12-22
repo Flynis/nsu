@@ -16,7 +16,7 @@ SRCS += src/core/hashmap.c
 SRCS += src/core/queue.c
 SRCS += src/core/socket.c
 
-CFLAGS = -g -std=c11 -Wall -Wextra -Wpedantic \
+CFLAGS = -g -std=gnu99 -Wall -Wextra -Wpedantic \
           -Wformat=2 -Wno-unused-parameter -Wshadow \
           -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \
           -Wredundant-decls -Wnested-externs -Wmissing-include-dirs \

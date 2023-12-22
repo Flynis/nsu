@@ -56,7 +56,7 @@ int http_parse_request_line(HttpParser *parser) {
     assert(parser->is_request_parser);
 
     HttpRequest *req = parser->req;
-    Buffer *buf = &req->raw->buf;
+    Buffer *buf = req->raw;
     unsigned int state = parser->state;
 
     unsigned char *p; // we need to update buf->pos after parsing
@@ -393,7 +393,9 @@ done:
 
     string_set(&req->host, parser->host_start, parser->host_end);
     string_set(&req->request_line, parser->req_start, parser->req_end);
-    req->port = parser->port;
+    if(parser->port != 0) {
+        req->port = parser->port;
+    }
 
     parser->state = sw_header_start;
 
@@ -406,16 +408,17 @@ int http_parse_header_line(HttpParser *parser) {
 
     Buffer *buf;
     if(parser->is_request_parser) {
-        buf = &parser->req->raw->buf;
+        buf = parser->req->raw;
     } else {
-        buf = &parser->res->raw->buf;
+        buf = parser->res->raw;
     }
     parser->header_name_start = NULL;
     parser->header_name_end = NULL;
     parser->header_val_start = NULL;
     parser->header_val_end = NULL;
-    parser->header.name = EMPTY_STRING;
-    parser->header.val = EMPTY_STRING;
+    HttpHeader *header = &parser->header;
+    header->name = EMPTY_STRING;
+    header->val = EMPTY_STRING;
     unsigned int state = parser->state;
 
     unsigned char *p; // we need to update buf->pos after parsing
@@ -550,7 +553,6 @@ done:
     buf->pos = p + 1;
     parser->state = sw_header_start;
 
-    HttpHeader *header = &parser->header;
     if(parser->header_name_start != NULL) {
         string_set(&header->name, parser->header_name_start, parser->header_name_end);
     }
@@ -571,7 +573,7 @@ int http_parse_status_line(HttpParser *parser) {
     assert(!parser->is_request_parser);
 
     HttpResponse *res = parser->res;
-    Buffer *buf = &res->raw->buf;
+    Buffer *buf = res->raw;
     unsigned int state = sw_res_start;
 
     unsigned char *p; // we need to update buf->pos after parsing
@@ -727,11 +729,12 @@ done:
     buf->pos = p + 1;
     parser->req_end = p + 1;
 
+    // HTTp 1.0
     if(parser->http_major == 1 && parser->http_minor == 0) {
         res->version = HTTP_10;
     }
 
-    res->status_code = parser->status;
+    res->status = parser->status;
 
     parser->state = sw_header_start;
 

@@ -2,15 +2,35 @@
 
 
 #include <assert.h>
+#include <linux/futex.h>
 #include <stdlib.h>
+#include <sys/syscall.h>
+#include <time.h>
+#include <unistd.h>
 
 
+#include "core/buffer.h"
 #include "core/log.h"
 #include "core/status.h"
 #include "http/http_process.h"
 
 
 #define TTL 10 // sec
+
+
+typedef enum LoadStatus {
+    LOADING_RESPONSE,
+    UNCACHEABLE_RESPONSE,
+    SUCC_LOADED_RESPONSE
+} LoadStatus;
+
+
+typedef struct CachedResponse {
+    Buffer *res;
+    int last; // for synchronization
+    time_t recv_time; // for tracking ttl
+    LoadStatus status;
+} CachedResponse;
 
 
 /**
@@ -20,6 +40,11 @@ typedef struct LoaderArgs {
     HttpRequest *req;
     CacheManager *manager;
 } LoaderArgs;
+
+
+static int futex(int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, int val3) {
+    return syscall(SYS_futex, uaddr, futex_op, val, timeout, uaddr2, val3);
+}
 
 
 CacheManager* cache_manager_create(size_t cache_capacity) {
@@ -109,13 +134,13 @@ static int start_connection_handler(CacheManager *m, HttpRequest *req) {
 }
 
 
-HttpResponse* cache_manager_get_response(CacheManager *m, HttpRequest* req) {
+HttpState process_cacheable_request(CacheManager *m, HttpRequest* req) {
     assert(m != NULL);
     assert(req != NULL);
 
     pthread_mutex_lock(&m->lock);
 
-    HttpResponse *cached = cache_peek(m->cache, req->request_line);
+    CachedResponse *cached = cache_peek(m->cache, req->request_line);
     if(cached != NULL && difftime(cached->recv_time, time(NULL)) < TTL) {
         // cache hit
         HttpResponse *res = http_response_clone(cached);

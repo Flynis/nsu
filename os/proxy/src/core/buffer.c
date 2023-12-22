@@ -2,101 +2,86 @@
 
 
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 
 
+#include "log.h"
 #include "status.h"
 
 
-Chain* chain_create(size_t first_buf_size) {
-    assert(first_buf_size > 0);
+Buffer* buffer_create(size_t capacity) {
+    assert(capacity > 0);
 
-    Chain *chain = malloc(sizeof(chain));
-    if(chain == NULL) {
+    Buffer *buf = malloc(sizeof(Buffer));
+    if(buf == NULL) {
         return NULL;
     }
 
-    Buffer *buf = &chain->buf;
-    buf->start = malloc(first_buf_size);
+    buf->start = malloc(capacity);
     if(buf->start == NULL) {
-        free(chain);
+        free(buf);
         return NULL;
     }
 
-    buf->end = buf->start + first_buf_size;
+    buf->end = buf->start + capacity;
     buf->pos = buf->start;
     buf->last = buf->start;
-    chain->next = NULL;
 
-    return chain;
-}
-
-Buffer* chain_alloc_next_buf(Chain *chain, size_t buf_size) {
-    assert(chain != NULL);
-    assert(buf_size > 0);
-
-    Chain *new_chain = chain_create(buf_size);
-    if(new_chain == NULL) {
-        return NULL;
-    }
-
-    // lookup tail of chain
-    Chain *cur = chain;
-    while(cur->next != NULL) {
-        cur = cur->next;
-    }
-
-    cur->next = new_chain;
-    return &new_chain->buf;
+    return buf;
 }
 
 
-static void buffer_copy(Buffer *dest, Buffer *src) {
-    size_t payload_size = src->last - src->start;
-    memcpy(dest->start, src->start, payload_size);
-    size_t read_bytes = src->pos - src->start;
-    dest->pos = dest->start + read_bytes;
-    dest->last = dest->start + payload_size;
+ssize_t buffer_recv(int sock, Buffer *buf) {
+    assert(sock >= 0);
+    assert(buf != NULL);
+
+    size_t free_space = buf->end - buf->last;
+    if(free_space == 0) {
+        return FULL;
+    }
+
+    ssize_t n = recv(sock, buf->last, free_space, 0);
+    if(n < 0) {
+        return IO;
+        LOG_ERRNO(errno, "socket recv() failed");
+    }
+
+    // update buf length
+    buf->last += n;
+    
+    return (n == 0) ? END_OF_STREAM : n;
 }
 
 
-Chain* chain_clone(Chain *chain) {
-    assert(chain != NULL);
+ssize_t buffer_send(int sock, Buffer *buf) {
+    assert(sock >= 0);
+    assert(buf != NULL);
 
-    // clone head
-    size_t size = chain->buf.end - chain->buf.start;
-    Chain *new_chain = chain_create(size);
-    if(new_chain == NULL) {
-        return NULL;
-    }
-    buffer_copy(&new_chain->buf, &chain->buf);
-
-    Chain *clone = new_chain;
-    Chain *cur = chain->next;
-    while(cur != NULL) {
-        size_t new_buf_size = cur->buf.end - cur->buf.start;
-        Buffer *new_buf = chain_alloc_next_buf(clone, new_buf_size);
-        if(new_buf == NULL) {
-            chain_destroy(new_chain);
-            return NULL;
+    size_t payload_size = buf->last - buf->start;
+    size_t remaining = payload_size;
+    while(remaining > 0) {
+        ssize_t n = send(sock, buf->start, remaining, 0);
+        if(n < 0) {
+            LOG_ERRNO(errno, "socket send() failed");
+            return (errno == ECONNRESET) ? CONN_RESET : IO;
         }
-        buffer_copy(new_buf, &cur->buf);
-        cur = cur->next;
-        clone = clone->next;
+        remaining -= n;
     }
-    return new_chain;
+
+    // clear buffer
+    buf->pos = buf->start;
+    buf->last = buf->start;
+
+    return payload_size;
 }
 
 
-void chain_destroy(Chain *chain) {
-    assert(chain != NULL);
-    Chain *cur = chain;
-    while(cur != NULL) {
-        Chain *tmp = cur;
-        cur = cur->next;
-        free(tmp->buf.start);
-        free(tmp);
-    }
+void buffer_destroy(Buffer *buffer) {
+    assert(buffer != NULL);
+    free(buffer->start);
+    free(buffer);
 }

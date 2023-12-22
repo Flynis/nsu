@@ -15,14 +15,14 @@ typedef struct String {
 } String;
 
 
-const String EMPTY_STRING = { NULL, 0};
+static const String EMPTY_STRING = { NULL, 0};
 
 
 /**
  * Sets string data and length by two points. 
  * Pointers should be from same array.
 */
-void string_set(String *s, unsigned char const *start, unsigned char const *end);
+void string_set(String *s, unsigned char *start, unsigned char *end);
 
 
 /**

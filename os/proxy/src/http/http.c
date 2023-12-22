@@ -18,7 +18,7 @@ HttpRequest* http_request_create(void) {
         return NULL;
     }
 
-    req->raw = chain_create(HEAD_BUF_SIZE);
+    req->raw = buffer_create(HEAD_BUF_SIZE);
     if(req->raw == NULL) {
         free(req);
         return NULL;
@@ -43,7 +43,7 @@ HttpRequest* http_request_create(void) {
 
 void http_request_destroy(HttpRequest *req) {
     assert(req != NULL);
-    chain_destroy(req->raw);
+    buffer_destroy(req->raw);
     if(req->sock != INVALID_SOCKET) {
         close_socket(req->sock);
     }
@@ -57,7 +57,7 @@ HttpResponse* http_response_create(void) {
         return NULL;
     }
 
-    res->raw = chain_create(HEAD_BUF_SIZE);
+    res->raw = buffer_create(HEAD_BUF_SIZE);
     if(res->raw == NULL) {
         free(res);
         return NULL;
@@ -65,7 +65,7 @@ HttpResponse* http_response_create(void) {
     res->sock = INVALID_SOCKET;
 
     res->version = HTTP_NOT_SUPPORTED_VERSION;
-    res->status_code = HTTP_OK;
+    res->status = HTTP_OK;
 
     res->content_length = 0;
     res->is_content_len_set = false;
@@ -74,35 +74,9 @@ HttpResponse* http_response_create(void) {
 }
 
 
-HttpResponse* http_response_clone(HttpResponse* res) {
-    assert(res != NULL);
-
-    HttpResponse *result = malloc(sizeof(res));
-    if(result == NULL) {
-        return NULL;
-    }
-
-    result->raw = chain_clone(res->raw);
-    if(result->raw == NULL) {
-        free(result);
-        return NULL;
-    }
-
-    result->sock = INVALID_SOCKET;
-
-    result->version = res->version;
-    result->status_code = res->status_code;
-
-    result->content_length = res->content_length;
-    result->is_content_len_set = res->is_content_len_set;
-
-    return result;
-}
-
-
 void http_response_destroy(HttpResponse *res) {
     assert(res != NULL);
-    chain_destroy(res->raw);
+    buffer_destroy(res->raw);
     if(res->sock != INVALID_SOCKET) {
         close_socket(res->sock);
     }

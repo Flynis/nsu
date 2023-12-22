@@ -107,9 +107,14 @@ int open_and_connect_socket(char const *host, int port) {
     struct addrinfo *addr_list;
     int err = getaddrinfo(host, port_str, &hints, &addr_list);
     if(err) {
-        LOG_ERR("Hostname resolve failed: %s", gai_strerror(err));
         close_socket(sock);
-        return IO;
+        if(err == EAI_SYSTEM) {
+            LOG_ERRNO(errno, "getaddrinfo() failed");
+            return IO;
+        } else {
+            LOG_ERR("Hostname resolve failed: %s", gai_strerror(err));
+            return UNKNOWN_HOST;
+        }
     }
   
     // try to connect to any address
@@ -118,7 +123,7 @@ int open_and_connect_socket(char const *host, int port) {
         err = connect(sock, cur->ai_addr, cur->ai_addrlen);
         if(err == 0) {
             // successful connect 
-            print_addr("Connect socket", sock, cur->ai_addr);
+            print_addr("Connect socket", sock, (struct sockaddr_in const*)cur->ai_addr);
             break; 
         }
         cur = cur->ai_next;
@@ -128,41 +133,10 @@ int open_and_connect_socket(char const *host, int port) {
     if(cur == NULL) { 
         // all connects failed
         close_socket(sock);
-        return IO;
+        return UNKNOWN_HOST;
     } 
     
     return sock;    
-}
-
-
-ssize_t sock_recv(int sock, unsigned char *buf, size_t size) {
-    assert(sock >= 0);
-    assert(buf != NULL);
-    assert(size > 0);
-
-    ssize_t n = recv(sock, buf, size, 0);
-    if(n < 0) {
-        LOG_ERRNO(errno, "socket recv() failed");
-        return IO;
-    }
-    return n;
-}
-
-
-ssize_t sock_send(int sock, unsigned char const *buf, size_t size) {
-    assert(sock >= 0);
-    assert(buf != NULL);
-    assert(size > 0);
-
-    ssize_t n = send(sock, buf, size, 0);
-    if(n < 0) {
-        LOG_ERRNO(errno, "socket send() failed");
-        return IO;
-    }
-    if(n == 0) {
-        return END_OF_STREAM;
-    }
-    return n;
 }
 
 

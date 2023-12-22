@@ -9,6 +9,7 @@
 #define UNKNOWN_HOST -4
 #define IO -5
 #define END_OF_STREAM -6
+#define CONN_RESET -7
 
 
 #endif // _STATUS_H_INCLUDED_

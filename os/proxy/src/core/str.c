@@ -10,7 +10,7 @@
 #include "status.h"
 
 
-void string_set(String *s, unsigned char const *start, unsigned char const *end) {
+void string_set(String *s, unsigned char *start, unsigned char *end) {
     assert(s != NULL);
     assert(start != NULL);
     assert(end != NULL);
@@ -82,7 +82,7 @@ int string_to_long(String str, long *result) {
 	// Expect that digit representation of LONG_MAX/MIN
 	// not greater than this buffer 
 	char buf[24];
-	const char *s = str.data;
+	const char *s = (char*)str.data;
     size_t len = str.len;
 
 	// Skip leading spaces 

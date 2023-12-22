@@ -25,7 +25,7 @@ typedef struct CacheManager {
 CacheManager* cache_manager_create(size_t cache_capacity);
 
 
-HttpResponse* cache_manager_get_response(CacheManager *m, HttpRequest* req);
+HttpState process_cacheable_request(CacheManager *m, HttpRequest* req);
 
 
 void cache_manager_destroy(CacheManager *m);

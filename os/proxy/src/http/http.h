@@ -4,7 +4,6 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <time.h>
 
 
 #include "core/buffer.h"
@@ -51,13 +50,14 @@ typedef enum HttpStatus {
 typedef enum HttpState {
     HTTP_READ_REQUEST_HEAD,
     HTTP_PROCESS_REQUEST,
+    HTTP_UNCACHEABLE_REQUEST,
     HTTP_TERMINATE_REQUEST,
     HTTP_CLOSE_REQUEST
 } HttpState;
 
 
 typedef struct HttpRequest {
-    Chain *raw; // raw request string
+    Buffer *raw; // raw request string
     int sock; // connection with client
     HttpState state;
     HttpStatus status;
@@ -74,16 +74,14 @@ typedef struct HttpRequest {
 
 
 typedef struct HttpResponse {
-    Chain *raw; // raw response string
+    Buffer *raw; // raw response string
     int sock; // connection with upstream
    
     HttpVersion version;
-    unsigned int status_code;
+    unsigned int status;
 
     size_t content_length;
     bool is_content_len_set;
-
-    time_t recv_time; // for tracking ttl
 } HttpResponse;
 
 
@@ -111,13 +109,6 @@ void http_request_destroy(HttpRequest *req);
  * @return new http response or NULL if error occurred.
 */
 HttpResponse* http_response_create(void);
-
-
-/**
- * Allocates new http response and copy res into it.
- * @returns copy of res or NULL on failure.
-*/
-HttpResponse* http_response_clone(HttpResponse *res);
 
 
 /**
