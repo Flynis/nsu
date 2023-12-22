@@ -52,6 +52,22 @@ ssize_t buffer_send(int sock, Buffer *buf);
 
 
 /**
+ * Sends data to sock from buf.
+ * Sends data between start and last of buf, and resets last and pos.
+ * @returns number of bytes sent.
+ * @returns IO on I/O error.
+ * @returns CONN_RESET if connection reset by peer.
+*/
+ssize_t buffer_send_range(int sock, Buffer *buf, size_t pos, size_t len);
+
+
+/**
+ * Clears the buffer.
+*/
+void buffer_clear(Buffer *buf);
+
+
+/**
  * Destroys buffer.
 */
 void buffer_destroy(Buffer *buffer);

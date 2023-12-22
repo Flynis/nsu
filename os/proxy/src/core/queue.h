@@ -36,13 +36,6 @@ void queue_push(Queue *queue, QueueNode *node);
 
 
 /**
- * Removes and returns node from head of the queue.
- * @returns removed node or NULL if the queue is empty.
-*/
-QueueNode* queue_pop(Queue *queue);
-
-
-/**
  * Removes node from the queue.
  * The node must be in the queue.
 */

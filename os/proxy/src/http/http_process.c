@@ -211,7 +211,7 @@ HttpState http_read_request_head(HttpRequest *req) {
 }
 
 
-static int read_response_head(HttpResponse *res) {
+int http_read_response_head(HttpResponse *res) {
     HttpParser parser;
     http_response_parser_init(&parser, res);
 
@@ -219,11 +219,14 @@ static int read_response_head(HttpResponse *res) {
     if(status != OK) {
         return status;
     }
+    if(res->version != HTTP_10) {
+        return ERROR;
+    }
     return process_headers(&parser);
 }
 
 
-static int connect_to_upstream(HttpRequest *req, HttpResponse *res) {
+int http_connect_to_upstream(HttpRequest *req, HttpResponse *res) {
     // make null-terminated string
     char host[DOMAIN_NAME_STR_LEN];
     memcpy(host, req->host.data, req->host.len);
@@ -245,6 +248,7 @@ static int transfer_content_len(int from, int to, Buffer *buf, size_t cont_len) 
     }
     size_t len = cont_len - read_body_size;
     while(len > 0) {
+        buffer_clear(buf);
         n = buffer_recv(from, buf);
         if(n < 0) {
             return n;
@@ -267,6 +271,7 @@ static int transfer_until_eos(int from, int to, Buffer* buf) {
     }
     bool eos = false;
     while(!eos) {
+        buffer_clear(buf);
         n = buffer_recv(from, buf);
         if(n < 0) {
             if(n == END_OF_STREAM) {
@@ -290,7 +295,7 @@ static int transfer_response(HttpRequest *req, HttpResponse *res) {
         return transfer_until_eos(res->sock, req->sock, buf);
     }
 
-    int status = read_response_head(res);
+    int status = http_read_response_head(res);
     if(status != OK) {
         return status;
     }
@@ -333,6 +338,11 @@ static HttpState handle_req_process_err(HttpRequest *req, int status, bool upstr
 }
 
 
+int http_send_request(HttpRequest *req, int dest) {
+    return transfer_content_len(req->sock, dest, req->raw, req->content_length);
+}
+
+
 HttpState http_process_request(HttpRequest *req) {
     assert(req != NULL);
 
@@ -342,12 +352,12 @@ HttpState http_process_request(HttpRequest *req) {
         return HTTP_TERMINATE_REQUEST;
     }
 
-    int status = connect_to_upstream(req, res);
+    int status = http_connect_to_upstream(req, res);
     if(status != OK) {
         http_response_destroy(res);
         return handle_req_process_err(req, status, true);
     }
-    status = send_request(req, res->sock);
+    status = http_send_request(req, res->sock);
     if(status != OK) {
         http_response_destroy(res);
         return handle_req_process_err(req, status, true);
@@ -360,187 +370,4 @@ HttpState http_process_request(HttpRequest *req) {
 
     http_response_destroy(res);
     return HTTP_CLOSE_REQUEST;
-}
-
-
-static int read_response_body_eof(HttpResponse *res) {
-    Chain *head = res->raw;
-    size_t res_size = head->buf.last - head->buf.start; 
-    Chain *cur = head;
-    while(res_size < RESPONSE_MAX_SIZE) {
-        Buffer *buf = &cur->buf;
-        size_t free_space = buf->end - buf->last;
-        if(free_space == 0) {
-            Buffer *ret = chain_alloc_next_buf(cur, IO_BUFFER_SIZE);
-            if(ret == NULL) {
-                return ERROR;
-            }
-            cur = cur->next;
-            continue;
-        }
-
-        ssize_t nread = sock_recv(res->sock, buf->last, free_space);
-        if(nread > 0) {
-            buf->last += nread;
-            res_size += nread;
-            continue;
-        }
-        if(nread == END_OF_STREAM) {
-            return OK;
-        } else {
-            return ERROR;
-        }
-    }
-    // too large response
-    return ERROR;
-}
-
-
-static int transfer_response_chain_eof(int from, int to, Chain *chain) {
-    Chain *cur = chain;
-    while(cur != NULL) {
-        Buffer *buf = &cur->buf;
-        size_t len = buf->last - buf->start;
-        ssize_t n = sock_send(to, buf->start, len);
-        if(n == IO) {
-            return ERROR;
-        }
-        cur = cur->next;
-    }
-    
-    Buffer *buf = &chain->buf;
-    size_t len = buf->end - buf->start;
-    while(1) {
-        ssize_t nread = sock_recv(from, buf->start, len);
-        if(nread < 0) {
-            if(nread == END_OF_STREAM) {
-                return OK;
-            } else {
-                return ERROR;
-            }
-        }
-        ssize_t nsend = sock_send(to, buf->start, nread);
-        if(nsend == IO) {
-            return IO;
-        }        
-    }
-    return ERROR; // unreachable
-}
-
-
-static int read_response_content(HttpResponse *res) {
-    size_t content_len = res->content_length;
-    Buffer *buf = &res->raw->buf;
-    size_t size = buf->end - buf->last;
-    if(size > content_len) {
-        size = content_len;
-    }
-    while(size > 0) {
-        ssize_t nread = sock_recv(res->sock, buf->last, size);
-        if(nread < 0) {
-            return ERROR;
-        }
-        buf->last += nread;
-        size -= nread;
-        content_len -= nread;        
-    }
-    if(content_len == 0) {
-        return OK;
-    }
-    buf = chain_alloc_next_buf(res->raw, content_len);
-    if(buf == NULL) {
-        return ERROR;
-    }
-    while(content_len > 0) {
-        ssize_t nread = sock_recv(res->sock, buf->last, content_len);
-        if(nread < 0) {
-            return ERROR;
-        }
-        buf->last += nread;
-        content_len -= nread;        
-    }
-    return OK;
-}
-
-
-static int read_response(HttpRequest *req, HttpResponse *res) {
-    int status;
-    if(req->version == HTTP_9) {
-        status = read_response_body_eof(res);
-        if(status == OK) {
-            return OK;
-        } else {
-            return transfer_response_chain_eof(res->sock, req->sock, res->raw);
-        }
-    }
-
-    status = read_response_head(res, req);
-    if(status != OK) {
-        return status;
-    }
-
-    if(res->is_content_len_set) {
-        status = read_response_content(res);
-    } else {
-        status = read_response_body_eof(res);
-        if(status == OK) {
-            return OK;
-        } else {
-            return transfer_response_chain_eof(res->sock, req->sock, res->raw);
-        }
-    }
-    return status;
-}
-
-
-HttpState http_load_response(HttpRequest *req, HttpResponse **out_res) {
-    assert(req != NULL);
-    assert(out_res != NULL);
-
-    HttpResponse *res = http_response_create();
-    if(res == NULL) {
-        req->status = HTTP_INTERNAL_SERVER_ERROR;
-        return HTTP_TERMINATE_REQUEST;
-    }
-
-    HttpStatus status = connect_to_upstream(req, res);
-    if(status != OK) {
-        goto fail;
-    }
-    status = send_request(req, res->sock);
-    if(status != OK) {
-        goto fail;
-    }
-    status = read_response(req, res);
-    if(status != OK) {
-        goto fail;
-    }
-
-    res->recv_time = time(NULL);
-    *out_res = res;
-    return HTTP_PROCESS_REQUEST;
-
-fail:
-    if(req->status == HTTP_OK) {
-        req->status = HTTP_INTERNAL_SERVER_ERROR;
-    }
-    http_response_destroy(res);
-    return HTTP_TERMINATE_REQUEST;
-}
-
-
-void http_send_response(HttpRequest *req, HttpResponse *res) {
-    assert(req != NULL);
-    assert(res != NULL);
-
-    Chain *cur = res->raw;
-    while(cur != NULL) {
-        Buffer *buf = &cur->buf;
-        size_t len = buf->last - buf->start;
-        ssize_t n = sock_send(req->sock, buf->start, len);
-        if(n == IO) {
-            return;
-        }
-        cur = cur->next;
-    }
 }

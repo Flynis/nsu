@@ -5,11 +5,11 @@
 #include <netinet/in.h>
 
 
-#include "cache_manager.h"
+#include "cache.h"
 
 
 typedef struct Proxy {
-    CacheManager *manager;
+    Cache *cache;
     int listen_sock;
 } Proxy;
 

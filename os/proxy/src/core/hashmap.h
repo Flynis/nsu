@@ -26,13 +26,11 @@ typedef struct HashElement {
 
 
 /**
- * Hashmap with string keys. Not synchronized.
+ * Hashmap with string keys. Not resizable, not synchronized.
 */
 typedef struct {
 	HashElement *elements;
     Hashfunc hashfunc;
-    bool resizable;
-    double load_factor; // ignored if resizable is false
     int max_chain_length; // max linear probing chain length
 	size_t capacity;
     size_t nelements;
@@ -43,13 +41,13 @@ typedef struct {
  * Creates hashmap with the specified capacity.
  * @returns new hashmap on success, NULL otherwise. 
 */
-Hashmap* hashmap_create(size_t capacity, bool resizable);
+Hashmap* hashmap_create(size_t capacity);
 
 
 /**
  * Adds an element to the hashmap.
  * @returns OK on success, 
- * ERROR if rehash failed or FULL if hashmap is full.
+ * @returns FULL if hashmap is full.
 */
 int hashmap_put(Hashmap *map, String key, void *value);
 

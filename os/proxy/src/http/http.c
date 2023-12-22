@@ -42,7 +42,7 @@ HttpRequest* http_request_create(void) {
 
 
 void http_request_destroy(HttpRequest *req) {
-    assert(req != NULL);
+    if(req == NULL) return;
     buffer_destroy(req->raw);
     if(req->sock != INVALID_SOCKET) {
         close_socket(req->sock);
@@ -75,7 +75,7 @@ HttpResponse* http_response_create(void) {
 
 
 void http_response_destroy(HttpResponse *res) {
-    assert(res != NULL);
+    if(res == NULL) return;
     buffer_destroy(res->raw);
     if(res->sock != INVALID_SOCKET) {
         close_socket(res->sock);

@@ -9,18 +9,9 @@
 
 
 #define DEFAULT_CHAIN_LENGTH 8
-#define DEFAULT_LOAD_FACTOR 0.75
 
 
-static void init_elements(HashElement *elements, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        elements[i].is_empty = true;
-        elements[i].value = NULL;
-    }
-}
-
-
-Hashmap* hashmap_create(size_t capacity, bool resizable) {
+Hashmap* hashmap_create(size_t capacity) {
     assert(capacity > 0);
 
     Hashmap *map = malloc(sizeof(map));
@@ -38,10 +29,11 @@ Hashmap* hashmap_create(size_t capacity, bool resizable) {
     map->nelements = 0;
     map->elements = elements;
     map->hashfunc = string_hash;
-    map->load_factor = DEFAULT_LOAD_FACTOR;
     map->max_chain_length = DEFAULT_CHAIN_LENGTH;
-    map->resizable = resizable;
-    init_elements(map->elements, map->capacity);
+    for (size_t i = 0; i < capacity; i++) {
+        elements[i].is_empty = true;
+        elements[i].value = NULL;
+    }
 
     return map;
 }
@@ -81,75 +73,14 @@ static HashElement* find_element(Hashmap *map, String key) {
 }
 
 
-/**
- * Doubles the capacity of the map, and rehashes all the elements.
- * @returns OK on success, or ERROR otherwise.
-*/
-static int rehash(Hashmap *map) {
-    assert(map->resizable);
-
-    HashElement *new_elements = 
-                        malloc(2 * map->capacity * sizeof(HashElement));
-    if(new_elements == NULL) {
-        return ERROR;
-    }
-
-    HashElement *old_elements = map->elements;
-    size_t old_capacity = map->capacity;
-
-    // update map array and capacity
-    map->capacity *= 2;
-    map->elements = new_elements;
-    init_elements(map->elements, map->capacity);
-
-    // rehash all elements
-    for(size_t i = 0; i < old_capacity; i += 1) {
-        if(old_elements[i].is_empty) {
-            continue;
-        }
-
-        int ret = hashmap_put(map, old_elements[i].key, old_elements[i].value);
-        // TODO log error
-        assert(ret == OK);
-    }
-
-    free(old_elements);
-    return OK;
-}
-
-
 int hashmap_put(Hashmap *map, String key, void *value) {
     assert(map != NULL);
     assert(value != NULL);
 
-    if(map->resizable) {
-        size_t max_load = (size_t) (map->capacity * map->load_factor);
-        // check for overflow
-        if(map->nelements >= max_load) {
-            int ret = rehash(map);
-            if(ret != OK) {
-                return ret;
-            }
-        }
-    }
-
     // find a place to put our value
     HashElement *el = find_element(map, key);
     if(el == NULL) {
-        if(!map->resizable) {
-            // map is full
-            return FULL;
-        } else {
-            // increase capacity
-            // TODO log this
-            do {
-                int ret = rehash(map);
-                if(ret != OK) {
-                    return ret;
-                }
-                el = find_element(map, key);
-            } while(el == NULL);
-        }
+        return FULL;
     }
     
     el->key = key;
@@ -208,7 +139,7 @@ void hashmap_remove(Hashmap *map, String key) {
 
 
 void hashmap_destroy(Hashmap *map) {
-    assert(map != NULL);
+    if(map == NULL) return;
     free(map->elements);
     free(map);
 }

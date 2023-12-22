@@ -36,23 +36,6 @@ void queue_push(Queue *queue, QueueNode *node) {
 }
 
 
-QueueNode* queue_pop(Queue *queue) {
-    assert(queue != NULL);
-
-    if(queue->size == 0) {
-        return NULL;
-    }
-    QueueNode *node = queue->head;
-    queue->head = queue->head->next;
-    queue->head->prev = NULL;
-
-    queue->size--;
-    node->next = NULL;
-    node->prev = NULL;
-    return node;
-}
-
-
 void queue_remove(Queue *queue, QueueNode *node) {
     assert(queue != NULL);
     assert(node != NULL);

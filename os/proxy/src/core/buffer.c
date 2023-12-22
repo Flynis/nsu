@@ -49,7 +49,6 @@ ssize_t buffer_recv(int sock, Buffer *buf) {
         return IO;
         LOG_ERRNO(errno, "socket recv() failed");
     }
-
     // update buf length
     buf->last += n;
     
@@ -63,25 +62,51 @@ ssize_t buffer_send(int sock, Buffer *buf) {
 
     size_t payload_size = buf->last - buf->start;
     size_t remaining = payload_size;
+    unsigned char *pos = buf->start;
     while(remaining > 0) {
-        ssize_t n = send(sock, buf->start, remaining, 0);
+        ssize_t n = send(sock, pos, remaining, 0);
         if(n < 0) {
             LOG_ERRNO(errno, "socket send() failed");
             return (errno == ECONNRESET) ? CONN_RESET : IO;
         }
         remaining -= n;
+        pos += n;
     }
-
-    // clear buffer
-    buf->pos = buf->start;
-    buf->last = buf->start;
-
     return payload_size;
 }
 
 
+ssize_t buffer_send_range(int sock, Buffer *buf, size_t pos, size_t len) {
+    assert(sock >= 0);
+    assert(buf != NULL);
+    assert(pos >= 0);
+    assert(len > 0);
+
+    size_t remaining = len;
+    unsigned char *start = buf->start + pos;
+    while(remaining > 0) {
+        ssize_t n = send(sock, start, remaining, 0);
+        if(n < 0) {
+            LOG_ERRNO(errno, "socket send() failed");
+            return (errno == ECONNRESET) ? CONN_RESET : IO;
+        }
+        remaining -= n;
+        start += n;
+    }
+
+    return len;
+}
+
+
+void buffer_clear(Buffer *buf) {
+    assert(buf != NULL);
+    buf->pos = buf->start;
+    buf->last = buf->start;
+}
+
+
 void buffer_destroy(Buffer *buffer) {
-    assert(buffer != NULL);
+    if(buffer == NULL) return;
     free(buffer->start);
     free(buffer);
 }
