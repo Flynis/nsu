@@ -242,7 +242,7 @@ int http_connect_to_upstream(HttpRequest *req, HttpResponse *res) {
 
 static int transfer_content_len(int from, int to, Buffer *buf, size_t cont_len) {
     size_t read_body_size = buf->last - buf->pos;
-    ssize_t n = buffer_send(to, buf);
+    ssize_t n = buffer_send_all(to, buf);
     if(n < 0) {
         return n;
     }
@@ -253,7 +253,7 @@ static int transfer_content_len(int from, int to, Buffer *buf, size_t cont_len) 
         if(n < 0) {
             return n;
         }
-        n = buffer_send(to, buf);
+        n = buffer_send_all(to, buf);
         if(n < 0) {
             return n;
         }
@@ -265,7 +265,7 @@ static int transfer_content_len(int from, int to, Buffer *buf, size_t cont_len) 
 
 static int transfer_until_eos(int from, int to, Buffer* buf) {
     size_t read_body_size = buf->last - buf->pos;
-    ssize_t n = buffer_send(to, buf);
+    ssize_t n = buffer_send_all(to, buf);
     if(n < 0) {
         return n;
     }
@@ -280,7 +280,7 @@ static int transfer_until_eos(int from, int to, Buffer* buf) {
                 return n;
             }
         }
-        n = buffer_send(to, buf);
+        n = buffer_send_all(to, buf);
         if(n < 0) {
             return n;
         }

@@ -60,7 +60,7 @@ int http_parse_request_line(HttpParser *parser) {
     unsigned int state = parser->state;
 
     unsigned char *p; // we need to update buf->pos after parsing
-    for(p = buf->pos; p < buf->last; p += 1) {
+    for(p = buf->pos; p != buf->last; p += 1) {
         char ch = *p;
 
         switch(state) {
@@ -422,7 +422,7 @@ int http_parse_header_line(HttpParser *parser) {
     unsigned int state = parser->state;
 
     unsigned char *p; // we need to update buf->pos after parsing
-    for (p = buf->pos; p < buf->last; p += 1) {
+    for (p = buf->pos; p != buf->last; p += 1) {
         char ch = *p;
 
         switch(state) {
@@ -577,7 +577,7 @@ int http_parse_status_line(HttpParser *parser) {
     unsigned int state = sw_res_start;
 
     unsigned char *p; // we need to update buf->pos after parsing
-    for(p = buf->pos; p < buf->last; p += 1) {
+    for(p = buf->pos; p != buf->last; p += 1) {
         char ch = *p;
 
         switch(state) {

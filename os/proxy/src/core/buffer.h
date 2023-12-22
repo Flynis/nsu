@@ -31,6 +31,13 @@ Buffer* buffer_create(size_t capacity);
 
 
 /**
+ * Resizes buffer.
+ * @returns OK on success, ERROR otherwise.
+*/
+int buffer_resize(Buffer *buf, size_t capacity);
+
+
+/**
  * Receives data from sock and store it in buf.
  * Stores data from last to end of buf
  * @returns number of bytes read.
@@ -48,7 +55,7 @@ ssize_t buffer_recv(int sock, Buffer *buf);
  * @returns IO on I/O error.
  * @returns CONN_RESET if connection reset by peer.
 */
-ssize_t buffer_send(int sock, Buffer *buf);
+ssize_t buffer_send_all(int sock, Buffer *buf);
 
 
 /**

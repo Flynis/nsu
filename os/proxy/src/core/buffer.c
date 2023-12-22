@@ -35,6 +35,28 @@ Buffer* buffer_create(size_t capacity) {
 }
 
 
+int buffer_resize(Buffer *buf, size_t capacity) {
+    assert(buf != NULL);
+    assert(capacity > 0);
+
+    unsigned char *new_start = realloc(buf->start, capacity);
+    if(new_start == NULL) {
+        return ERROR;
+    }
+
+    unsigned char *old_start = buf->start;
+    buf->start = new_start;
+    buf->end = new_start + capacity;
+    if(buf->last - old_start > capacity) {
+        buf->last = buf->end;
+    }
+    if(buf->pos - old_start > capacity) {
+        buf->pos = buf->end;
+    }
+    return OK;
+}
+
+
 ssize_t buffer_recv(int sock, Buffer *buf) {
     assert(sock >= 0);
     assert(buf != NULL);
@@ -56,7 +78,7 @@ ssize_t buffer_recv(int sock, Buffer *buf) {
 }
 
 
-ssize_t buffer_send(int sock, Buffer *buf) {
+ssize_t buffer_send_all(int sock, Buffer *buf) {
     assert(sock >= 0);
     assert(buf != NULL);
 

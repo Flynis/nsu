@@ -97,19 +97,14 @@ static void* connection_handler(void *data) {
 
         case HTTP_PROCESS_REQUEST:
             if(req->method == HTTP_GET || req->method == HTTP_HEAD) {
-                HttpResponse *res = cache_manager_get_response(cache, req);
-                if(res == NULL) {
-                    req->state = HTTP_TERMINATE_REQUEST;
-                    if(req->status == HTTP_OK) {
-                        req->status = HTTP_INTERNAL_SERVER_ERROR;
-                    }
-                    break;
-                }
-                http_send_response(req, res);
-                state = HTTP_CLOSE_REQUEST;
+                state = cache_process_request(cache, req);                
             } else {
                 state = http_process_request(req);
             }
+            break;
+
+        case HTTP_UNCACHEABLE_REQUEST:
+            state = http_process_request(req);
             break;
 
         case HTTP_TERMINATE_REQUEST:

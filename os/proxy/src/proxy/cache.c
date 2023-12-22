@@ -164,10 +164,50 @@ static void* cache_loader(void *data) {
         elem->status = UNCACHEABLE_RESPONSE;
         goto fail;
     }
-    // TODO read
+    
+    Buffer *buf = res->raw;
+    size_t res_head_len = buf->pos - buf->start;
+    size_t capacity = buf->end - buf->start;
+    size_t content_len = res->content_length;
+    if(res_head_len + content_len > capacity) {
+        int err = buffer_resize(buf, res_head_len + content_len);
+        if(err == ERROR) {
+            elem->status = INTERNAL_ERROR;
+            goto fail;
+        }
+    }
+    elem->res = buf;
+    elem->last = buf->last - buf->start;
+    while(1) {
+        int err = futex(&elem->last, FUTEX_WAKE_PRIVATE, INT_MAX);
+        if(err == -1) {
+            LOG_ERRNO(errno, "futex() wake failed");
+            elem->status = INTERNAL_ERROR;
+            goto fail;
+        }
+        if(elem->status == SUCC_LOADED_RESPONSE) {
+            break;
+        }
+        ssize_t n = buffer_recv(res->sock, buf);
+        if(n < 0) {
+            if(n == FULL) {
+                elem->status = SUCC_LOADED_RESPONSE;
+                continue;
+            } else {
+                elem->status = (n == END_OF_STREAM) ? BAD_UPSTREAM : INTERNAL_ERROR;
+                goto fail;
+            }
+        }
+        elem->last += n;
+    }
+
+    res->raw = NULL;
+    free(args);
+    http_response_destroy(res);
     return NULL;
 
 fail:
+    free(args);
     http_response_destroy(res);
     int err = futex(&elem->last, FUTEX_WAKE_PRIVATE, INT_MAX);
     if(err == -1) {
@@ -294,6 +334,7 @@ static CacheElem* prepare_elem_for_loading(Cache *cache, CacheElem *elem, HttpRe
     }
     elem->last = 0;
     elem->nreaders = 0;
+    buffer_destroy(elem->res);
     elem->res = NULL;
     elem->status = LOADING_RESPONSE_HEAD;
     return elem;
@@ -353,7 +394,7 @@ static void handle_cache_elem_transfer_err(CacheElem *elem, HttpRequest *req) {
 }
 
 
-HttpState process_cacheable_request(Cache *cache, HttpRequest* req) {
+HttpState cache_process_request(Cache *cache, HttpRequest* req) {
     assert(cache != NULL);
     assert(req != NULL);
 
@@ -424,6 +465,7 @@ void cache_destroy(Cache *cache) {
         CacheElem *elem = cur->value;
         cur = cur->next;
         free(elem->key.data);
+        buffer_destroy(elem->res);
     }
 
     pthread_cond_destroy(&cache->evict_cond);

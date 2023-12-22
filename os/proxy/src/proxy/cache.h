@@ -59,7 +59,7 @@ typedef struct Cache {
 Cache* cache_create(size_t capacity);
 
 
-HttpState process_cacheable_request(Cache *cache, HttpRequest* req);
+HttpState cache_process_request(Cache *cache, HttpRequest* req);
 
 
 /**
