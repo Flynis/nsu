@@ -37,14 +37,14 @@ String string_clone(String s) {
 
 
 // djb2 algorithm
-unsigned int string_hash(String str) {
+unsigned long string_hash(String str) {
     assert(str.data != NULL);
 
-    unsigned int hash = 5381;
+    unsigned long hash = 5381;
     unsigned char *s = str.data;
 
     for(size_t i = 0; i < str.len; i += 1) {
-        hash = ((hash << 5) + hash) + s[i]; /* hash * 33 + c */
+        hash = ((hash << 5) + hash) + s[i]; // hash * 33 + c
     }        
 
     return hash;

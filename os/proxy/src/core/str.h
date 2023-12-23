@@ -36,7 +36,7 @@ String string_clone(String s);
  * Returns hash of string.
  * @returns hash of string.
 */
-unsigned int string_hash(String str);
+unsigned long string_hash(String str);
 
 
 /**

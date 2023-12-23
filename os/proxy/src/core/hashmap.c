@@ -14,7 +14,7 @@
 Hashmap* hashmap_create(size_t capacity) {
     assert(capacity > 0);
 
-    Hashmap *map = malloc(sizeof(map));
+    Hashmap *map = malloc(sizeof(Hashmap));
     if(map == NULL) {
         return NULL;
     }

@@ -9,6 +9,7 @@
 
 
 #include "core/inet_limits.h"
+#include "core/log.h"
 #include "core/socket.h"
 #include "core/status.h"
 #include "core/str.h"
@@ -16,13 +17,11 @@
 #include "http_util.h"
 
 
-#define RESPONSE_MAX_SIZE 1024 * 1024 // 1 mb
-
-
 void http_terminate_request(HttpRequest *req) {
     char response[256];
+    LOG_DEBUG("Terminate status: %d for req [%.*s]\n", req->status, (int)req->request_line.len - 2, req->request_line.data);
     print_error_response(response, req->status);
-    sock_send(req->sock, (unsigned char*)response, strlen(response));
+    byte_array_send_all(req->sock, response, strlen(response));
 }
 
 
@@ -192,6 +191,7 @@ HttpState http_read_request_head(HttpRequest *req) {
     if(status != OK) {
         return handle_req_read_err(req, status);;
     }
+    LOG_DEBUG("Req: [%.*s] content-len: %lu\n", (int)req->request_line.len - 2, req->request_line.data, req->content_length); 
 
     // analyse headers
     if(req->method == HTTP_GET || req->method == HTTP_HEAD) {
@@ -219,10 +219,14 @@ int http_read_response_head(HttpResponse *res) {
     if(status != OK) {
         return status;
     }
-    if(res->version != HTTP_10) {
-        return ERROR;
-    }
-    return process_headers(&parser);
+    // LOG_DEBUG("Status line: [%.*s]\n", (int)(res->raw->pos - res->raw->start) - 2, res->raw->start);
+
+    // if(res->version != HTTP_10) {
+    //     return ERROR;
+    // }
+    status = process_headers(&parser);
+    LOG_DEBUG("Res: [v%d] status:%d content-len: %lu\n", res->version, res->status, res->content_length); 
+    return status;
 }
 
 
@@ -264,7 +268,6 @@ static int transfer_content_len(int from, int to, Buffer *buf, size_t cont_len) 
 
 
 static int transfer_until_eos(int from, int to, Buffer* buf) {
-    size_t read_body_size = buf->last - buf->pos;
     ssize_t n = buffer_send_all(to, buf);
     if(n < 0) {
         return n;

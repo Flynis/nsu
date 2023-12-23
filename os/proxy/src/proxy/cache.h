@@ -4,6 +4,7 @@
 
 #include <pthread.h>
 #include <stddef.h>
+#include <stdint.h>
 
 
 #include "core/buffer.h"
@@ -14,7 +15,7 @@
 
 
 typedef enum LoadStatus {
-    LOADING_RESPONSE_HEAD,
+    LOADING_RESPONSE_HEAD = 15,
     LOADING_RESPONSE_BODY,
     UNCACHEABLE_RESPONSE,
     SUCC_LOADED_RESPONSE,
@@ -29,8 +30,8 @@ typedef struct CacheElem {
     Buffer *res;
     time_t recv_time;
     LoadStatus status;
-    int last; // futex word
-    int nreaders;
+    uint32_t last; // futex word
+    unsigned int nreaders;
 } CacheElem;
 
 

@@ -24,7 +24,7 @@ typedef struct HandlerArgs {
 
 
 static HandlerArgs* create_handler_args(Cache *cache) {
-    HandlerArgs *args = malloc(sizeof(args));
+    HandlerArgs *args = malloc(sizeof(HandlerArgs));
     if(args == NULL) {
         return NULL;
     }
@@ -52,7 +52,7 @@ Proxy* proxy_create(size_t cache_size, struct sockaddr_in const *sockaddr) {
         return NULL;
     }
 
-    Proxy *proxy = malloc(sizeof(proxy));
+    Proxy *proxy = malloc(sizeof(Proxy));
     if(proxy == NULL) {
         return NULL;    
     }
@@ -64,7 +64,7 @@ Proxy* proxy_create(size_t cache_size, struct sockaddr_in const *sockaddr) {
     }
 
 	proxy->listen_sock = open_listening_socket(sockaddr);
-    if(proxy->listen_sock == ERROR) {
+    if(proxy->listen_sock == IO) {
         LOG_ERR("Proxy listening socket open failed\n");
         goto fail_open_socket;
     }
@@ -88,7 +88,8 @@ static void* connection_handler(void *data) {
     Cache *cache = args->cache;
 
     HttpState state = HTTP_READ_REQUEST_HEAD;
-    while(1) {
+    bool not_closed_request = true;
+    while(not_closed_request) {
         switch(state)
         {
         case HTTP_READ_REQUEST_HEAD:
@@ -114,13 +115,10 @@ static void* connection_handler(void *data) {
         
         case HTTP_CLOSE_REQUEST:
             destroy_handler_args(args);
+            not_closed_request = false;
             break;
 
         default: abort();
-        }
-
-        if(state == HTTP_CLOSE_REQUEST) {
-            break;
         }
     }
     return NULL;
@@ -156,10 +154,11 @@ int proxy_listen(Proxy *proxy) {
     // listen for new connections
     while(1) {
         int sock = accept_socket(proxy->listen_sock);
-        if(sock == ERROR) {
+        if(sock == IO) {
             return ERROR;
         }
 
+        LOG_DEBUG("Starting connection handler for %d\n", sock);
         int ret = start_connection_handler(proxy, sock);
         if(ret != OK) {
             LOG_ERR("Failed to start client connection handler\n");

@@ -39,19 +39,25 @@ int buffer_resize(Buffer *buf, size_t capacity) {
     assert(buf != NULL);
     assert(capacity > 0);
 
+    size_t payload = buf->last - buf->start;
+    size_t nread = buf->pos - buf->start;
+
     unsigned char *new_start = realloc(buf->start, capacity);
     if(new_start == NULL) {
         return ERROR;
     }
 
-    unsigned char *old_start = buf->start;
     buf->start = new_start;
     buf->end = new_start + capacity;
-    if(buf->last - old_start > capacity) {
+    if(payload > capacity) {
         buf->last = buf->end;
+    } else {
+        buf->last = buf->start + payload;
     }
-    if(buf->pos - old_start > capacity) {
+    if(nread > capacity) {
         buf->pos = buf->end;
+    } else {
+        buf->pos = buf->start + nread;
     }
     return OK;
 }
@@ -98,10 +104,29 @@ ssize_t buffer_send_all(int sock, Buffer *buf) {
 }
 
 
+ssize_t byte_array_send_all(int sock, char const *buf, size_t len) {
+    assert(sock >= 0);
+    assert(buf != NULL);
+    assert(len > 0);
+
+    size_t remaining = len;
+    char const *pos = buf;
+    while(remaining > 0) {
+        ssize_t n = send(sock, pos, remaining, 0);
+        if(n < 0) {
+            LOG_ERRNO(errno, "socket send() failed");
+            return (errno == ECONNRESET) ? CONN_RESET : IO;
+        }
+        remaining -= n;
+        pos += n;
+    }
+    return len;
+}
+
+
 ssize_t buffer_send_range(int sock, Buffer *buf, size_t pos, size_t len) {
     assert(sock >= 0);
     assert(buf != NULL);
-    assert(pos >= 0);
     assert(len > 0);
 
     size_t remaining = len;

@@ -342,11 +342,11 @@ int http_parse_request_line(HttpParser *parser) {
 
         // minor HTTP version or end of request line
         case sw_req_minor_digit:
-            switch(ch) {
-            case '\r':
+            if(ch == '\r') {
                 state = sw_req_almost_done;
                 break;
-            case '\n':
+            }
+            if(ch == '\n') {
                 goto done;
             }
             if(!is_http_digit(ch)) {
@@ -584,7 +584,6 @@ int http_parse_status_line(HttpParser *parser) {
         // "HTTP/"
         case sw_res_start:
             if(ch == 'H') {
-                parser->req_start = p;
                 state = sw_res_H;
             } else {
                 return HTTP_INVALID_RESPONSE;
@@ -727,9 +726,8 @@ int http_parse_status_line(HttpParser *parser) {
 
 done:
     buf->pos = p + 1;
-    parser->req_end = p + 1;
 
-    // HTTp 1.0
+    // HTTP 1.0
     if(parser->http_major == 1 && parser->http_minor == 0) {
         res->version = HTTP_10;
     }

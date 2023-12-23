@@ -12,7 +12,7 @@
 /**
  * Hash function for strings.
 */
-typedef unsigned int (*Hashfunc)(String string);
+typedef unsigned long (*Hashfunc)(String string);
 
 
 /**

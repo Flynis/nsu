@@ -8,17 +8,17 @@
 #include "core/socket.h"
 
 
-#define HEAD_BUF_SIZE 4096
+#define INITIAL_BUF_SIZE 4096
 #define INVALID_SOCKET -1
 
 
 HttpRequest* http_request_create(void) {
-    HttpRequest *req = malloc(sizeof(req));
+    HttpRequest *req = malloc(sizeof(HttpRequest));
     if(req == NULL) {
         return NULL;
     }
 
-    req->raw = buffer_create(HEAD_BUF_SIZE);
+    req->raw = buffer_create(INITIAL_BUF_SIZE);
     if(req->raw == NULL) {
         free(req);
         return NULL;
@@ -52,12 +52,12 @@ void http_request_destroy(HttpRequest *req) {
 
 
 HttpResponse* http_response_create(void) {
-    HttpResponse *res = malloc(sizeof(res));
+    HttpResponse *res = malloc(sizeof(HttpResponse));
     if(res == NULL) {
         return NULL;
     }
 
-    res->raw = buffer_create(HEAD_BUF_SIZE);
+    res->raw = buffer_create(INITIAL_BUF_SIZE);
     if(res->raw == NULL) {
         free(res);
         return NULL;

@@ -1,15 +1,17 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 #include "core/inet_limits.h"
+#include "core/log.h"
 #include "core/status.h"
 #include "proxy/proxy.h"
 
 
 #define CACHE_SIZE 1024
-#define DEFAULT_PORT 3128
+#define DEFAULT_PORT 1080
 
 
 int main(int argc, char const **argv) {
@@ -28,10 +30,12 @@ int main(int argc, char const **argv) {
 
     // proxy address
     struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET; 
     addr.sin_addr.s_addr = htonl(INADDR_ANY); 
     addr.sin_port = htons((unsigned short)port); 
 
+    LOG_DEBUG("Binding proxy to port %d\n", port);
     Proxy *proxy = proxy_create(CACHE_SIZE, &addr);
     if(proxy == NULL) {
 		puts("Failed to start proxy server");

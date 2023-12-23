@@ -23,8 +23,9 @@
 static void print_addr(char const *msg, int sock, struct sockaddr_in const *addr) {
 #ifndef NDEBUG
     char addrstr[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, addr, addrstr, sizeof(addrstr));
-    LOG_DEBUG("%s %d[%s]\n", msg, sock, addrstr);
+    int port = ntohs(addr->sin_port);
+    inet_ntop(AF_INET, &addr->sin_addr, addrstr, sizeof(addrstr));
+    LOG_DEBUG("%s %d [%s:%d]\n", msg, sock, addrstr, port);
 #endif
 }
 
@@ -46,7 +47,7 @@ int open_listening_socket(struct sockaddr_in const *sockaddr) {
         LOG_ERRNO(errno, "setsockopt(SO_REUSEADDR) failed");
         goto fail_configure;
     }
-    err = bind(sock, (struct sockaddr const*)sockaddr, sizeof(sockaddr));
+    err = bind(sock, (struct sockaddr const*)sockaddr, sizeof(struct sockaddr_in));
     if(err) {
         LOG_ERRNO(errno, "Failed to bind listening socket");
         goto fail_configure;
@@ -71,7 +72,7 @@ int accept_socket(int listen_sock) {
     assert(listen_sock >= 0);
 
     struct sockaddr_in clientaddr;
-    socklen_t clientlen = sizeof(clientaddr);
+    socklen_t clientlen = sizeof(struct sockaddr_in);
 
     int sock = accept(listen_sock, (struct sockaddr*)&clientaddr, &clientlen);
     if(sock < 0) {

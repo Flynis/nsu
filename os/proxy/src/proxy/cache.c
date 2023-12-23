@@ -17,6 +17,7 @@
 
 
 #define TTL 10 // sec
+#define RESPONSE_MAX_SIZE 1024UL * 1024UL * 1024UL // 1 gb
 
 
 /**
@@ -25,12 +26,18 @@
 typedef struct LoaderArgs {
     HttpRequest *req;
     CacheElem *elem;
-    Cache *cache;
 } LoaderArgs;
 
 
-static int futex(int *uaddr, int futex_op, int val) {
+static int futex(uint32_t *uaddr, int futex_op, uint32_t val) {
     return syscall(SYS_futex, uaddr, futex_op, val, NULL, NULL, 0);
+}
+
+
+static bool ttl_expired(CacheElem *elem) {
+    return elem->status != LOADING_RESPONSE_HEAD &&
+            elem->status != LOADING_RESPONSE_BODY && 
+            difftime(time(NULL), elem->recv_time) > TTL;
 }
 
 
@@ -55,7 +62,7 @@ static void init_pools(Cache *cache) {
 Cache* cache_create(size_t capacity) {
     assert(capacity > 0);
 
-    Cache *c = malloc(sizeof(c));
+    Cache *c = malloc(sizeof(Cache));
     if(c == NULL) {
         return NULL;
     }
@@ -86,7 +93,6 @@ Cache* cache_create(size_t capacity) {
     if(err) {
         goto fail_evict_cond_init;
     }
-
 
     // successfully allocate all resources
     c->capacity = capacity;
@@ -137,15 +143,18 @@ static void* cache_loader(void *data) {
     LoaderArgs *args = (LoaderArgs*)data;
     HttpRequest *req = args->req;
     CacheElem *elem = args->elem;
-    Cache *cache = args->cache;
+    int status, err;
+    Buffer *buf;
+    size_t res_head_len, capacity, content_len;
+    ssize_t n;
 
     HttpResponse *res = http_response_create();
     if(res == NULL) {
-        elem->status = HTTP_INTERNAL_SERVER_ERROR;
+        elem->status = INTERNAL_ERROR;
         goto fail;
     }
 
-    int status = http_connect_to_upstream(req, res);
+    status = http_connect_to_upstream(req, res);
     if(status != OK) {
         handle_loader_err(elem, status);
         goto fail;
@@ -160,17 +169,17 @@ static void* cache_loader(void *data) {
         handle_loader_err(elem, status);
         goto fail;
     }
-    if(!res->is_content_len_set) {
+    if(!res->is_content_len_set || res->content_length >= RESPONSE_MAX_SIZE) {
         elem->status = UNCACHEABLE_RESPONSE;
         goto fail;
     }
     
-    Buffer *buf = res->raw;
-    size_t res_head_len = buf->pos - buf->start;
-    size_t capacity = buf->end - buf->start;
-    size_t content_len = res->content_length;
+    buf = res->raw;
+    res_head_len = buf->pos - buf->start;
+    capacity = buf->end - buf->start;
+    content_len = res->content_length;
     if(res_head_len + content_len > capacity) {
-        int err = buffer_resize(buf, res_head_len + content_len);
+        err = buffer_resize(buf, res_head_len + content_len);
         if(err == ERROR) {
             elem->status = INTERNAL_ERROR;
             goto fail;
@@ -178,19 +187,21 @@ static void* cache_loader(void *data) {
     }
     elem->res = buf;
     elem->last = buf->last - buf->start;
+    elem->status = LOADING_RESPONSE_BODY;
     while(1) {
-        int err = futex(&elem->last, FUTEX_WAKE_PRIVATE, INT_MAX);
+        err = futex(&elem->last, FUTEX_WAKE_PRIVATE, INT_MAX);
         if(err == -1) {
-            LOG_ERRNO(errno, "futex() wake failed");
+            LOG_ERRNO(errno, "load futex() wake failed");
             elem->status = INTERNAL_ERROR;
             goto fail;
         }
         if(elem->status == SUCC_LOADED_RESPONSE) {
             break;
         }
-        ssize_t n = buffer_recv(res->sock, buf);
+        n = buffer_recv(res->sock, buf);
         if(n < 0) {
             if(n == FULL) {
+                elem->recv_time = time(NULL);
                 elem->status = SUCC_LOADED_RESPONSE;
                 continue;
             } else {
@@ -209,21 +220,22 @@ static void* cache_loader(void *data) {
 fail:
     free(args);
     http_response_destroy(res);
-    int err = futex(&elem->last, FUTEX_WAKE_PRIVATE, INT_MAX);
+    elem->res = NULL;
+    elem->recv_time = time(NULL);
+    err = futex(&elem->last, FUTEX_WAKE_PRIVATE, INT_MAX);
     if(err == -1) {
-        LOG_ERRNO(errno, "futex() wake failed");
+        LOG_ERRNO(errno, "loader error futex() wake failed");
     }
     return NULL;
 }
 
 
-static int start_loader(Cache *cache, CacheElem *elem, HttpRequest *req) {
-    LoaderArgs *args = malloc(sizeof(args));
+static int start_loader(CacheElem *elem, HttpRequest *req) {
+    LoaderArgs *args = malloc(sizeof(LoaderArgs));
     if(args == NULL) {
         return ERROR;
     }
 
-    args->cache = cache;
     args->elem = elem;
     args->req = req;
 
@@ -244,9 +256,6 @@ static CacheElem* cache_peek(Cache *cache, String key) {
         // cache miss
         return NULL;
     }
-
-    // TODO check ttl
-
     // move node to head of queue
     queue_remove(cache->lru, node);
     queue_push(cache->lru, node);
@@ -268,7 +277,7 @@ static QueueNode* get_empty_node_or_evict(Cache *cache) {
     // cache is full need to evict some node
     // search least recently used node 
     while(cache->busy_elems == cache->size) {
-        pthread_cond_wait(&cache->lock, &cache->evict_cond);
+        pthread_cond_wait(&cache->evict_cond, &cache->lock);
     }
     QueueNode *node = cache->lru->head;
     while(1) {
@@ -289,12 +298,19 @@ static QueueNode* get_empty_node_or_evict(Cache *cache) {
 
 
 static HttpState process_cache_hit(Cache *cache, CacheElem *elem, HttpRequest *req) {
+    LOG_DEBUG("Cache hit [%.*s] status: %d time: %.0lf\n", (int)req->request_line.len - 2, 
+            req->request_line.data, elem->status, difftime(time(NULL), elem->recv_time));
+    if(elem->status == INTERNAL_ERROR || ttl_expired(elem)) {
+        while(elem->nreaders != 0) {
+            pthread_cond_wait(&cache->evict_cond, &cache->lock);
+        }
+    }
+    if(ttl_expired(elem)) {
+        return HTTP_PROCESS_REQUEST;
+    }
     switch(elem->status)
     {
     case INTERNAL_ERROR:
-        while(elem->nreaders != 0) {
-            pthread_cond_wait(&cache->evict_cond, &cache->lock);
-        }  
         // fall through
     case LOADING_RESPONSE_HEAD:
         // fall through
@@ -342,12 +358,12 @@ static CacheElem* prepare_elem_for_loading(Cache *cache, CacheElem *elem, HttpRe
 
 
 static HttpState transfer_cache_elem(CacheElem *elem, HttpRequest *req) {
-    int pos = 0;
+    uint32_t pos = 0;
     // wait until loader not read response head
     while(elem->status == LOADING_RESPONSE_HEAD) {
         int err = futex(&elem->last, FUTEX_WAIT_PRIVATE, pos);
-        if(err != 0 && err != EAGAIN) {
-            LOG_ERRNO(errno, "futex() wait failed");
+        if(err == -1 && errno != EAGAIN) {
+            LOG_ERRNO(errno, "load head futex() wait failed");
             return HTTP_TERMINATE_REQUEST;
         }
     }
@@ -356,12 +372,12 @@ static HttpState transfer_cache_elem(CacheElem *elem, HttpRequest *req) {
         return (elem->status == UNCACHEABLE_RESPONSE) ? HTTP_UNCACHEABLE_REQUEST : HTTP_TERMINATE_REQUEST;
     }
     Buffer *buf = elem->res;
-    int end = buf->end - buf->start;
+    uint32_t end = buf->end - buf->start;
     while(pos < end) {
         if(pos == elem->last) {
             int err = futex(&elem->last, FUTEX_WAIT_PRIVATE, pos);
-            if(err != 0 && err != EAGAIN) {
-                LOG_ERRNO(errno, "futex() wait failed");
+            if(err == -1 && errno != EAGAIN) {
+                LOG_ERRNO(errno, "load body futex() wait failed");
                 return HTTP_CLOSE_REQUEST;
             }
         }
@@ -390,6 +406,8 @@ static void handle_cache_elem_transfer_err(CacheElem *elem, HttpRequest *req) {
     case HOST_UNREACHEABLE:
         req->status = HTTP_NOT_FOUND;
         break;
+    default: 
+        break;
     }
 }
 
@@ -407,7 +425,7 @@ HttpState cache_process_request(Cache *cache, HttpRequest* req) {
             return state;
         }
     }
-    bool starting_loader = (elem == NULL || elem->status == INTERNAL_ERROR);
+    bool starting_loader = (elem == NULL || elem->status == INTERNAL_ERROR || ttl_expired(elem));
     if(starting_loader) {
         elem = prepare_elem_for_loading(cache, elem, req);
         if(elem == NULL) {
@@ -424,13 +442,14 @@ HttpState cache_process_request(Cache *cache, HttpRequest* req) {
 
     // starting loader or read response
     if(starting_loader) {
-        int ret = start_loader(cache, elem, req);
+        LOG_DEBUG("Starting loader for [%.*s]\n", (int)req->request_line.len - 2, req->request_line.data);
+        int ret = start_loader(elem, req);
         if(ret == ERROR) {
             elem->status = INTERNAL_ERROR;
             req->status = HTTP_INTERNAL_SERVER_ERROR;
             int err = futex(&elem->last, FUTEX_WAKE_PRIVATE, INT_MAX);
             if(err == -1) {
-                LOG_ERRNO(errno, "futex() wake failed");
+                LOG_ERRNO(errno, "start error futex() wake failed");
             }
         }
     }

@@ -4,7 +4,6 @@ CC = gcc
 SRCS = src/main.c
 SRCS += src/proxy/proxy.c
 SRCS += src/proxy/cache.c
-SRCS += src/proxy/cache_manager.c
 SRCS += src/http/http.c
 SRCS += src/http/http_process.c
 SRCS += src/http/http_alphabet.c

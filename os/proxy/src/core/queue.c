@@ -6,7 +6,7 @@
 
 
 Queue* queue_create(void) {
-    Queue *queue = malloc(sizeof(queue));
+    Queue *queue = malloc(sizeof(Queue));
     if(queue == NULL) {
         return NULL;
     }

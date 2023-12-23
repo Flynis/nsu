@@ -11,8 +11,8 @@
 
 
 typedef enum HttpVersion {
-    HTTP_9,
-    HTTP_10,
+    HTTP_9 = 9,
+    HTTP_10 = 10,
     HTTP_NOT_SUPPORTED_VERSION,
 } HttpVersion;
 

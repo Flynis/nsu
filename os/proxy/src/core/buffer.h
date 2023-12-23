@@ -50,7 +50,7 @@ ssize_t buffer_recv(int sock, Buffer *buf);
 
 /**
  * Sends data to sock from buf.
- * Sends data between start and last of buf, and resets last and pos.
+ * Sends data between start and last of buf.
  * @returns number of bytes sent.
  * @returns IO on I/O error.
  * @returns CONN_RESET if connection reset by peer.
@@ -60,7 +60,16 @@ ssize_t buffer_send_all(int sock, Buffer *buf);
 
 /**
  * Sends data to sock from buf.
- * Sends data between start and last of buf, and resets last and pos.
+ * @returns number of bytes sent.
+ * @returns IO on I/O error.
+ * @returns CONN_RESET if connection reset by peer.
+*/
+ssize_t byte_array_send_all(int sock, char const *buf, size_t len);
+
+
+/**
+ * Sends data to sock from buf.
+ * Sends data between start and last of buf.
  * @returns number of bytes sent.
  * @returns IO on I/O error.
  * @returns CONN_RESET if connection reset by peer.
