@@ -5,7 +5,7 @@ import grammar/nemo;
 export {
 
     AssignmentOp : (varName: string, expr: Expr, labels: [int]);
-    TestOp : (cond: BooleanExpr, thenLabels: [int], elseLabels : [int]);
+    TestOp : (cond: BoolExpr, thenLabels: [int], elseLabels : [int]);
     VmOp ::= AssignmentOp, TestOp;
     
 
@@ -50,5 +50,5 @@ operation2s(operation: VmOp) -> string {
 
 
 operator2s(operator: Operator) -> string {
-    i2s(operator.label) + ": " + operation2s(operator.op) + ";";    
+    i2s(operator.label) + ": " + operation2s(operator.op);    
 }

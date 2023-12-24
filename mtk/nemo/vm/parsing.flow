@@ -90,11 +90,6 @@ buildNotEqual(a: [flow]) {
 }
 
 
-buildAnd(a: [flow]) {
-    Not(Or(Not(a[0]), Not(a[1])));
-}
-
-
 buildLabels(a: [flow]) -> flow {
     if (length(a) <= 1) {
         a;
@@ -123,7 +118,6 @@ specialPegActions = {
         Pair("buildGreater", buildGreater),
         Pair("buildGreaterOrEqual", buildGreaterOrEqual),
         Pair("buildNotEqual", buildNotEqual),
-        Pair("buildAnd", buildAnd),
         Pair("buildVmProgram", buildVmProgram),
         Pair("buildLabels", buildLabels)
     ];

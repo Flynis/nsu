@@ -1,10 +1,10 @@
 program = ws varDeclList:vdl operator*:ops { buildVmProgram(:vdl, :ops) };
 
 
-operator = ws intNumber$d ws ':' ws operation:op ws ';' ws { Operator(s2i($d), :op) };
+operator = ws intNumber$d ws ':' ws operation:op ws { Operator(s2i($d), :op) };
 operation = assignmentVmOp | conditionVmOp;
 assignmentVmOp = varName:v ws ":=" ws expr:e ws "goto" ws labels:ls { AssignmentOp(:v, :e, :ls) };
-conditionVmOp = 'if' ws '(' ws boolExpr:cond ws ')' ws 'then' ws labels:thenLabels ws 'else' ws labels:elseLabels { TestOp(:cond, :thenLabels, :elseLabels)};
+conditionVmOp = "if" ws '(' ws boolExpr:cond ws ')' ws "then" ws labels:thenLabels ws "else" ws labels:elseLabels { TestOp(:cond, :thenLabels, :elseLabels) };
 labels = '{' ws '}' { buildLabels() }
     | '{' label:f labelsSetElement*:s ws '}' { buildLabels(:f, :s) };
 labelsSetElement = ws ',' ws label:l {:l};
@@ -17,7 +17,7 @@ expr = boolExpr | arithmExpr | varExpr | arrayOp | const;
 boolExpr = ws orOp:o ws {:o};
 orOp = andOp:a ws or ws orOp:o { Or(:a, :o) }
     | andOp:a {:a};
-andOp = boolTerm:t ws and ws andOp:a { buildAnd(:t, :a) }
+andOp = boolTerm:t ws and ws andOp:a { And(:t, :a) }
     | boolTerm:t {:t};
 boolTerm = boolTermWithoutParentheses:t {:t}
     | '(' ws boolTerm:t ws ')' {:t};
@@ -83,7 +83,6 @@ keyword = var
     | apply
     | concat
     | length
-    | nonDeterChoiceSymbol
     | not
     | and
     | or;
@@ -96,13 +95,12 @@ update = "UPD";
 apply = "APP";
 concat = "CONCAT";
 length = "LENGTH";
-nonDeterChoiceSymbol = "U";
 not = "NOT";
 and = "AND";
 or = "OR";
 
 
-varName = !keyword (letter (letter | digit)*):n {:n};
+varName = !keyword (letter (letter | digit)*)$n {:n};
 intNumber = '-'? positiveIntNumber;
 positiveIntNumber = '0' | digitExceptZero digit*;
 letter = 'a' - 'z' | 'A' - 'Z';

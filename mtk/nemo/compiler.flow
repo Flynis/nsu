@@ -4,7 +4,6 @@ import compiler/translation;
 
 main() {
     program = parse("#include program.nemo");
-    println(program2s(program));
     result = analyse(program);
     if (result == Success()) {
         ret = setFileContent("./program.out", translate(program));

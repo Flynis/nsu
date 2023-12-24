@@ -2,12 +2,12 @@ VAR n : INT;
 VAR x : INT;
 VAR y : INT;
 
-0: n := 12 goto {1};
-1: x := 0 goto {2};
-2: y := 0 goto {3};
-3: if (true) then {4, 7} else {};
-4: if ((y = n) OR (y < n)) then {5} else {};
-5: y := (y + (x + (x + 1))) goto {6};
-6: x := (x + 1) goto {3};
-7: if (NOT((y = n) OR (y < n))) then {8} else {};
-8: x := (x - 1) goto {9};
+0: n := 12 goto {1}
+1: x := 0 goto {2}
+2: y := 0 goto {3}
+3: if (true) then {4, 7} else {}
+4: if ((y == n) OR (y < n)) then {5} else {}
+5: y := (y + (x + (x + 1))) goto {6}
+6: x := (x + 1) goto {3}
+7: if (NOT((y == n) OR (y < n))) then {8} else {}
+8: x := (x - 1) goto {9}

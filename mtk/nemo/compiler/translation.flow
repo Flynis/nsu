@@ -14,7 +14,7 @@ findMaxLabelOfOp(operation: VmOp) -> int {
     
     switch (operation) {
         AssignmentOp(varName, expr, labels): findMaxOfArray(labels);
-        TestOp(cond, ifLabels, elseLabels): max(findMaxOfArray(ifLabels), findMaxOfArray(elseLabels));
+        TestOp(cond, thenLabels, elseLabels): max(findMaxOfArray(thenLabels), findMaxOfArray(elseLabels));
     }
 }
 
@@ -69,11 +69,6 @@ increaseLabelsOfOperators(operators: Set<Operator>, delta: int) -> Set<Operator>
 }
 
 
-incrementLabelsOfOperators(operators: Set<Operator>) -> Set<Operator> {
-    increaseLabelsOfOperators(operators, 1);
-}
-
-
 replaceLabelsOfOperators(operators: Set<Operator>, newLabel: int, oldLabel: int) -> Set<Operator> {
     replaceLabelsOfOperator = \operator -> Operator(
         replaceLabel(operator.label, newLabel, oldLabel),
@@ -104,53 +99,35 @@ bodyToOperators(body: Body) ->  Set<Operator> {
     switch (body) {
         Assignment(varName, expr): makeSet1(createStartOperator(AssignmentOp(varName, expr, [1])));
         
-        Test(booleanExpr): makeSet1(createStartOperator(TestOp(booleanExpr, [1], [])));
+        Test(boolExpr): makeSet1(createStartOperator(TestOp(boolExpr, [1], [])));
                 
         BodiesSeq(bodies): bodiesToOperators(
-            bodies, \firstElement, tailElements -> {
-                s1 = bodyToOperators(firstElement);
-                l1 = findMaxLabelOfOperators(s1);
-
-                s2 = increaseLabelsOfOperators(
-                    bodyToOperators(BodiesSeq(tailElements)),
-                    l1
-                );
-
-                mergeSets(s1, s2);
+            bodies, \firstElem, tailElems -> {
+                sl = bodyToOperators(firstElem);
+                endl = findMaxLabelOfOperators(sl);
+                sm = increaseLabelsOfOperators(bodyToOperators(BodiesSeq(tailElems)), endl);
+                mergeSets(sl, sm);
             }
         );
                     
         NonDeterChoice(bodies): bodiesToOperators(
-            bodies, \firstElement, tailElements -> {
-                s1 = incrementLabelsOfOperators(bodyToOperators(bodies[0]));
-                l1 = findMaxLabelOfOperators(s1);
+            bodies, \firstElem, tailElems -> {
+                sl = increaseLabelsOfOperators(bodyToOperators(firstElem), 1);
+                endl = findMaxLabelOfOperators(sl);
+                sm = increaseLabelsOfOperators(bodyToOperators(NonDeterChoice(tailElems)), endl);
+                endm = findMaxLabelOfOperators(sm);
 
-                s2 = increaseLabelsOfOperators(
-                    bodyToOperators(NonDeterChoice(tail(bodies))),
-                    l1
-                );
-                l2 = findMaxLabelOfOperators(s2);
-
-                s3 = makeSet1(createBranchingGoto(l1));
-
-                mergeSetsA([
-                    replaceLabelsOfOperators(s1, l2, l1),
-                    s2,
-                    s3
-                ]);
+                s = makeSet1(createBranchingGoto(endl));
+                mergeSetsA([s, replaceLabelsOfOperators(sl, endm, endl), sm]);
             }
         );
 
         NonDeterIteration(b1): {
-            s1 = incrementLabelsOfOperators(bodyToOperators(b1));
-            l1 = findMaxLabelOfOperators(s1);
+            sl = increaseLabelsOfOperators(bodyToOperators(b1), 1);
+            endl = findMaxLabelOfOperators(sl);
 
-            s2 = makeSet1(createBranchingGoto(l1));
-
-            mergeSets(
-                replaceLabelsOfOperators(s1, 0, l1),
-                s2
-            );
+            s = makeSet1(createBranchingGoto(endl));
+            mergeSets(s, replaceLabelsOfOperators(sl, 0, endl));
         }
     }
 }

@@ -206,7 +206,7 @@ calculateTypeOfArrayOp(op: ArrayOp, variablesTypes: Tree<string, ExprType>) -> E
 }
 
 
-isBooleanExprCorrect(b: BooleanExpr, variablesTypes: Tree<string, ExprType>) -> bool {
+isBoolExprCorrect(b: BoolExpr, variablesTypes: Tree<string, ExprType>) -> bool {
     switch (b) {
         Comparison(l, r, cmpType): {
             lType = calculateTypeOfExpr(l, variablesTypes);
@@ -220,8 +220,9 @@ isBooleanExprCorrect(b: BooleanExpr, variablesTypes: Tree<string, ExprType>) -> 
                 }
             }
         }
-        Not(e): isBooleanExprCorrect(e, variablesTypes);
-        Or(l, r) : isBooleanExprCorrect(l, variablesTypes) && isBooleanExprCorrect(r, variablesTypes);
+        Not(e): isBoolExprCorrect(e, variablesTypes);
+        Or(l, r) : isBoolExprCorrect(l, variablesTypes) && isBoolExprCorrect(r, variablesTypes);
+        And(l, r) : isBoolExprCorrect(l, variablesTypes) && isBoolExprCorrect(r, variablesTypes);
         BoolConst(value) : true;
     }
 }
@@ -237,7 +238,7 @@ calculateTypeOfExpr(e: Expr, variablesTypes: Tree<string, ExprType>) -> ExprType
 
         ArrayOp(arr, opType): calculateTypeOfArrayOp(e, variablesTypes);
 
-        BooleanExpr(): if (isBooleanExprCorrect(e, variablesTypes)) Bool() else NoType();
+        BoolExpr(): if (isBoolExprCorrect(e, variablesTypes)) Bool() else NoType();
     }
 }
 

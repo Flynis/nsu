@@ -51,9 +51,10 @@ export {
     Comparison : (l: Expr, r: Expr, comparisonType: ComparisonType);
 
 
-    Not : (e: BooleanExpr);
-    Or : (l: BooleanExpr, r: BooleanExpr);
-    BooleanExpr ::= Comparison, Not, Or, BoolConst;
+    Not : (e: BoolExpr);
+    Or : (l: BoolExpr, r: BoolExpr);
+    And : (l: BoolExpr, r:BoolExpr);
+    BoolExpr ::= Comparison, Not, Or, And, BoolConst;
     
 
     ArrayUpdateOp : (i: Expr, v: Expr);
@@ -64,17 +65,17 @@ export {
     ArrayOp : (arr: Expr, opType: ArrayOpType);
 
 
-    Expr ::= Var, Const, ArithmExpr, ArrayOp, BooleanExpr;
+    Expr ::= Var, Const, ArithmExpr, ArrayOp, BoolExpr;
     expr2s(e: Expr) -> string;
 
 
     Assignment : (varName: string, expr: Expr);
     BodiesSeq : (bodies: [Body]);
-    Test : (b: BooleanExpr);
+    Test : (b: BoolExpr);
     NonDeterChoice : (bodies: [Body]);
     NonDeterIteration : (body: Body);
     Body ::= Assignment, BodiesSeq, Test, NonDeterChoice, NonDeterIteration;
-    body2s(b: Body) -> string;
+    body2s(b: Body, depth: int) -> string;
 
 
     Program : (varDeclList: VarDeclList, body: Body);
@@ -177,17 +178,18 @@ arrayOp2s(arrayOp: ArrayOp) -> string {
 
 comparisonType2s(ct: ComparisonType) -> string {
     switch (ct) {
-        Equal(): " = ";
+        Equal(): " == ";
         Less(): " < ";
     }
 }
 
 
-booleanExpr2s(bexpr: BooleanExpr) -> string {
+boolExpr2s(bexpr: BoolExpr) -> string {
     switch (bexpr) {
         Comparison(l, r, ct): expr2s(l) + comparisonType2s(ct) + expr2s(r);
-        Not(e): "NOT(" + booleanExpr2s(e) + ")";
-        Or(l, r): "(" + booleanExpr2s(l) + ") OR (" + booleanExpr2s(r) + ")";
+        Not(e): "NOT(" + boolExpr2s(e) + ")";
+        Or(l, r): "(" + boolExpr2s(l) + ") OR (" + boolExpr2s(r) + ")";
+        And(l, r): "(" + boolExpr2s(l) + ") AND (" + boolExpr2s(r) + ")";
         BoolConst(value): boolConst2s(bexpr);
     }
 }
@@ -199,47 +201,53 @@ expr2s(e: Expr) -> string {
         NonBoolConst(): const2s(e);
         ArithmExpr(): arithmExpr2s(e);
         ArrayOp(arr, opType): arrayOp2s(e);
-        BooleanExpr(): booleanExpr2s(e);
+        BoolExpr(): boolExpr2s(e);
     }
 }
 
 
-bodiesSeq2s(bodies: [Body]) -> string {
-    str = fold(bodies, "", \s, b -> {
-        s + body2s(b);
-    })
-    "{\n" + str + "}\n";
-}
-
-
-nonDeterChoice2s(bodies: [Body]) -> string {
-    foldi(
+bodiesSeq2s(bodies: [Body], depth: int) -> string {
+    offset = fold(range(depth), "", \acc, b -> acc + "\t");
+    str = foldi(
         bodies, 
-        "",
+        "BodiesSeq(",
         \i, acc, b -> {
-            tmp = acc + body2s(b);
-            if (i == length(bodies) - 1) tmp else tmp + "U\n";
+            acc + "\n\t" + offset + body2s(b, depth + 1);
         }
     );
+    str + "\n" + offset +")";
 }
 
 
-body2s(body: Body) -> string {
+nonDeterChoice2s(bodies: [Body], depth: int) -> string {
+    offset = fold(range(depth), "", \acc, b -> acc + "\t");
+    str = foldi(
+        bodies, 
+        "NonDeterChoice(",
+        \i, acc, b -> {
+            acc + "\n\t" + offset + body2s(b, depth + 1);
+        }
+    );
+    str + "\n" + offset +")";
+}
+
+
+body2s(body: Body, depth: int) -> string {
     switch (body) {
-        Assignment(varName, expr): varName + " := " + expr2s(expr) + ";\n";
+        Assignment(varName, expr): "Assign(" + varName + ", " + expr2s(expr) + ")";
 
-        BodiesSeq(bodies): bodiesSeq2s(bodies);
+        BodiesSeq(bodies): bodiesSeq2s(bodies, depth);
 
-        Test(bexpr): "(" + booleanExpr2s(bexpr) + ")?;\n";
+        Test(bexpr): "Test(" + boolExpr2s(bexpr) + ")";
 
-        NonDeterChoice(bodies): nonDeterChoice2s(bodies);
+        NonDeterChoice(bodies): nonDeterChoice2s(bodies, depth);
 
-        NonDeterIteration(b): "{\n" + body2s(b) + "}*\n";
+        NonDeterIteration(b): "NonDeterIter(" + body2s(b, depth) + ")";
     }
 }
 
 
 program2s(p: Program) -> string {
-    varDeclList2s(p.varDeclList) + body2s(p.body);
+    varDeclList2s(p.varDeclList) + body2s(p.body, 0);
 }
 
