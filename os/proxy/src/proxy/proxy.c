@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdlib.h>
 
 
@@ -47,6 +48,11 @@ static void destroy_handler_args(HandlerArgs *args) {
 }
 
 
+static void sig_pipe_handler(int sig) {
+	LOG_DEBUG("SIGPIPE signal trapped.\n");
+}
+
+
 Proxy* proxy_create(size_t cache_size, struct sockaddr_in const *sockaddr) {
     if(cache_size == 0 || sockaddr == NULL) {
         return NULL;
@@ -57,6 +63,7 @@ Proxy* proxy_create(size_t cache_size, struct sockaddr_in const *sockaddr) {
         return NULL;    
     }
 
+    int err;
     proxy->cache = cache_create(cache_size);
     if(proxy->cache == NULL) {
         LOG_ERR("Proxy cache create failed\n");
@@ -69,9 +76,21 @@ Proxy* proxy_create(size_t cache_size, struct sockaddr_in const *sockaddr) {
         goto fail_open_socket;
     }
 
+    struct sigaction action, old_action;
+    action.sa_handler = sig_pipe_handler;  
+    sigemptyset(&action.sa_mask); // block sigs of type being handled
+    action.sa_flags = SA_RESTART; // restart syscalls if possible 
+    err = sigaction(SIGPIPE, &action, &old_action);
+    if(err == -1) {
+        LOG_ERRNO(errno, "sigaction() failed");
+        goto fail_sigaction;
+    }
+
     // successfully allocate all resources 
     return proxy;
 
+fail_sigaction:
+    close_socket(proxy->listen_sock);
 fail_open_socket:
     cache_destroy(proxy->cache);
 fail_cache_manager_create:
