@@ -1,0 +1,56 @@
+import expression;
+
+export {
+    ExpressionsSet : (elements: [Expr], elementsSize: int, currentElementIndex: ref int);
+
+    makeExpressionsSet(elements: [Expr]) -> ExpressionsSet;
+
+    makeExpressionsSet1(element: Expr) -> ExpressionsSet;
+
+    getElement(es: ExpressionsSet, index: int) -> Expr;
+
+    getFirstElement(es: ExpressionsSet) -> Expr;
+
+    getCurrentElement(es: ExpressionsSet) -> Expr;
+
+    hasNextElement(es: ExpressionsSet) -> bool;
+
+    tryToAppendElement(es: ExpressionsSet, element: Expr) -> ExpressionsSet;
+}
+
+makeExpressionsSet(elements: [Expr]) -> ExpressionsSet {
+    fold(tail(elements), makeExpressionsSet1(elements[0]), tryToAppendElement);
+}
+
+makeExpressionsSet1(element: Expr) -> ExpressionsSet {
+    ExpressionsSet([element], getSize(element), ref 0);
+}
+
+getElement(es: ExpressionsSet, index: int) -> Expr {
+    es.elements[index];
+}
+
+getFirstElement(es: ExpressionsSet) -> Expr {
+    getElement(es, 0);
+}
+
+getCurrentElement(es: ExpressionsSet) -> Expr {
+    result = getElement(es, ^(es.currentElementIndex));
+    es.currentElementIndex := ^(es.currentElementIndex) + 1;
+    result;
+}
+
+hasNextElement(es: ExpressionsSet) -> bool {
+    ^(es.currentElementIndex) < length(es.elements);
+}
+
+tryToAppendElement(es: ExpressionsSet, element: Expr) -> ExpressionsSet {
+    newElementSize = getSize(element);    
+    if (newElementSize < es.elementsSize) {
+        makeExpressionsSet1(element);
+    } else if (newElementSize == es.elementsSize && !contains(es.elements, element)) {
+        ExpressionsSet(arrayPush(es.elements, element), newElementSize, es.currentElementIndex);
+    } else {
+        es;
+    }
+}

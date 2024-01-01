@@ -1,0 +1,112 @@
+program = ws varDeclList:vdl ws body:b ws { Program(:vdl, :b) };
+
+
+body = assignment | test | iteration | choice | bodiesSeq;
+assignment = varName:n ws ":=" ws expr:e ws ';' { Assignment(:n, :e) };
+test = '(' ws boolExpr:b ws ')' ws '?' ws ';' { Test(:b) };
+bodiesSeq = '{' ws bodiesSeqElem*:s '}' { buildBodiesSeq(:s) };
+bodiesSeqElem = body:b ws {:b};
+choice = '{' ws body:b choiceElem+:s ws '}' { buildNonDeterChoice(:b, :s) };   
+choiceElem = ws nonDeterChoiceSymbol ws body:b {:b};
+iteration = bodiesSeq:b '*' { NonDeterIteration(:b) };
+
+
+expr = boolExpr | arithmExpr | varExpr | arrayOp | const;
+
+
+boolExpr = ws orOp:o ws {:o};
+orOp = andOp:a ws or ws orOp:o { Or(:a, :o) }
+    | andOp:a {:a};
+andOp = boolTerm:t ws and ws andOp:a { And(:t, :a) }
+    | boolTerm:t {:t};
+boolTerm = boolTermWithoutParentheses:t {:t}
+    | '(' ws boolTerm:t ws ')' {:t};
+boolTermWithoutParentheses = boolVar:t1 ws "==" ws boolVar:t2 { buildEqual(:t1, :t2) }
+    | boolVar:t1 ws '<' ws boolVar:t2 { buildLess(:t1, :t2) }
+    | boolVar:t1 ws "<=" ws boolVar:t2 { buildLessOrEqual(:t1, :t2) }
+    | boolVar:t1 ws ">" ws boolVar:t2 { buildGreater(:t1, :t2) }
+    | boolVar:t1 ws ">=" ws boolVar:t2 { buildGreaterOrEqual(:t1, :t2) }
+    | boolVar:t1 ws "!=" ws boolVar:t2 { buildNotEqual(:t1, :t2) }
+    | not ws boolExpr:e { Not(:e) }
+    | '(' ws boolExpr:e ws ')' {:e}
+    | boolConst:c {:c};
+boolVar = arithmExpr | varExpr | arrayOp | const;
+
+
+arithmExpr = ws secPrior:sec ws {:sec};
+secPrior = fstPrior:fst subtrahend*:sub ws '+' ws secPrior:sec { ArithmBinary(buildArithmSub(:fst, :sub),:sec, ArithmAddOp()) }
+    | fstPrior:fst subtrahend*:sub { buildArithmSub(:fst, :sub) };
+fstPrior = term:t divisor*:div ws '*' ws fstPrior:fst { ArithmBinary(buildArithmDiv(:t, :div),:fst, ArithmMulOp()) }
+    | term:t divisor*:div { buildArithmDiv(:t, :div)};
+divisor = ws '/' ws term:t {:t};
+subtrahend = ws '-' ws fstPrior:fst {:fst};
+term = '+'? const:e {:e}
+    | '-' const:e { ArithmNeg(:e) }
+    | '+'? varExpr:e {:e}
+    | '-' varExpr:e { ArithmNeg(:e) }
+    | '+'? arrayOp:e {:e}
+    | '-' arrayOp:e { ArithmNeg(:e) }
+    | '+'? '(' ws expr:e ws ')' {:e}
+    | '-(' ws expr:e ws ')' { ArithmNeg(:e) };
+varExpr = varName:n { Var(:n) };
+
+
+arrayOp = arrayUpdate | arrayApply | arrayConcat | arrayLength;
+arrayUpdate = update '(' ws expr:a ws ',' ws expr:i ws ',' ws expr:v ws ')' { ArrayOp(:a, ArrayUpdateOp(:i, :v)) };
+arrayApply = apply '(' ws expr:a ws ',' ws expr:i ws ')' { ArrayOp(:a, ArrayApplyOp(:i)) };
+arrayConcat = concat '(' ws expr:a1 ws ',' ws expr:a2 ws ')' { ArrayOp(:a1, ArrayConcatOp(:a2)) };
+arrayLength = length '(' ws expr:a ws ')' { ArrayOp(:a, ArrayLengthOp()) };
+
+
+const = intConst | boolConst | arrayConst;
+intConst = intNumber$d { IntConst(s2i($d)) };
+boolConst = true { buildTrueConst() } | false { buildFalseConst() };
+arrayConst = '[' ws ']'{ buildArrayConst() }
+    | '[' ws const:c constEnum*:ce ws ']' { buildArrayConst(:c, :ce) };
+constEnum = ws ',' ws const:c {:c};
+
+
+varDeclList = varDecl*:vdl { buildVarDeclList(:vdl) };
+varDecl = ws var ws varName:n ws ':' ws type:t ws ';' ws { VarDecl(:n, :t) };
+type = intType | boolType | arrayType;
+intType = int { Int() };
+boolType = bool { Bool() };
+arrayType = '[' ws type:t ws ']' { Array(:t) };
+
+
+keyword = var
+    | int
+    | bool
+    | true
+    | false
+    | update
+    | apply
+    | concat
+    | length
+    | nonDeterChoiceSymbol
+    | not
+    | and
+    | or;
+var = "VAR";
+int = "INT";
+bool = "BOOL";
+true = "true";
+false = "false";
+update = "UPD";
+apply = "APP";
+concat = "CONCAT";
+length = "LENGTH";
+nonDeterChoiceSymbol = "U";
+not = "NOT";
+and = "AND";
+or = "OR";
+
+
+varName = !keyword (letter (letter | digit)*)$n {:n};
+intNumber = '-'? positiveIntNumber;
+positiveIntNumber = '0' | digitExceptZero digit*;
+letter = 'a' - 'z' | 'A' - 'Z';
+digit = '0' - '9';
+digitExceptZero = !'0' digit;
+ws = sp*;
+sp = ' ' | '\t' | '\n' | '\r';

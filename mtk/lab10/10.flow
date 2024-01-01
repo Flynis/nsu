@@ -1,0 +1,31 @@
+import expression;
+import rule;
+import rational_function;
+import simplification;
+
+main() {
+
+    input: string = "(x*x - y*y) / (a*a - b*b)";
+
+    rawRules: [Pair<string, string>] = [
+        Pair("a + 0", "a"),
+        Pair("-(-a)", "a"),
+        Pair("a/a", "1"),
+        Pair("a + (-a)", "0"),
+        Pair("(a + b) + c", "a + (b + c)"),
+        Pair("(a * b) * c", "a * (b * c)"),
+        Pair("x*x - y*y", "(x - y)*(x + y)")
+    ];
+
+    expression = parse(input);
+    rules: Set<MapRule> = buildSet(map(rawRules, \pair -> MapRule(parse(pair.first), parse(pair.second))));
+
+    println("expression: " + expr2s(expression));
+    iterSet(rules, \rule -> println(rule2s(rule)));
+    simplified = simplify(expression, rules);
+    println("simplified: " + expr2s(simplified));
+    f: RFunc = expr2rfunc(simplified);
+    println("simplified rational function: " + rfunc2s(f));
+    
+    quit(0);
+}

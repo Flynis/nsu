@@ -1,0 +1,56 @@
+import algorithms;
+import grammar/nemo;
+
+
+export {
+
+    AssignmentOp : (varName: string, expr: Expr, labels: [int]);
+    TestOp : (cond: BoolExpr, thenLabels: [int], elseLabels : [int]);
+    ReturnOp : ();
+    VmOp ::= AssignmentOp, TestOp, ReturnOp;
+    
+
+    Operator : (label: int, op: VmOp);    
+    sortOperators(operators: [Operator]) -> [Operator];
+    operator2s(operator: Operator) -> string;
+    
+
+    VmProgram : (varDeclList: VarDeclList, operators: [Operator]);
+
+}
+
+
+sortOperators(operators: [Operator]) -> [Operator] {
+    mergeSort(operators, \o1, o2 -> {
+        l1 = o1.label;
+        l2 = o2.label;
+        l1 - l2;
+    });
+}
+
+
+labels2s(labels: [int]) -> string {
+    s = foldi(
+        sort(labels),
+        "",
+        \i, acc, e -> {
+            tmp = acc + i2s(e);
+            if (i == length(labels) - 1) tmp else tmp + ", ";
+        }
+    );
+    "{" + s + "}";
+}
+
+
+operation2s(operation: VmOp) -> string {
+    switch (operation) {
+        AssignmentOp(varName, expr, labels): varName + " := " + expr2s(expr) + " goto " + labels2s(labels);
+        TestOp(cond, thenLabels, elseLabels): "if (" + expr2s(cond) + ") then " + labels2s(thenLabels) + " else " + labels2s(elseLabels);
+        ReturnOp(): "";
+    }
+}
+
+
+operator2s(operator: Operator) -> string {
+    i2s(operator.label) + ": " + operation2s(operator.op);    
+}

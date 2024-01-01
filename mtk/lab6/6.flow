@@ -1,0 +1,78 @@
+import lingo/peg;
+import lingo/pegcode/driver;
+import lingo/pegcode/parsic;
+
+import stack;
+
+Expr ::= Sum, Mul, Int;
+Sum: (left: Expr, right: Expr);
+Mul: (left: Expr, right: Expr);
+Int: (val: int);
+
+expr2Rpn(e: Expr) -> string {
+    switch (e) {
+        Sum(left, right): expr2Rpn(left) + " " + expr2Rpn(right) + " + ";
+        Mul(left, right): expr2Rpn(left) + " " + expr2Rpn(right) + " * ";
+        Int(val): i2s(val);
+    }
+}
+
+calcOperation(operation: string, x: int, y: int) -> int {
+    if(operation == "+") {
+        x + y;
+    } else if(operation == "*") {
+        x * y;
+    } else {
+        println("Unknown operation: " + operation);
+        -1;
+    }
+}
+
+handleToken(token: string, stack: ref Stack<int>) -> void {
+    if(isSpace(token)) {
+        {}
+    } else if (isDigits(token)) {
+        n = s2i(token);
+        stack := pushStack(^stack, n);
+    } else {
+        a = popStack(^stack);
+        b = popStack(a.stack);
+        c = eitherFn2(
+            a.value, b.value, 
+            \x, y -> calcOperation(token, x, y), 
+            \x -> { println("Handle token failed"); -1 }, 
+            \ -> { println("Handle token failed"); -1 });
+        stack := pushStack(b.stack, c);
+    }
+}
+
+calcRpn(s: string) -> int {
+    stack: ref Stack<int> = ref makeStack();
+    tokens = strSplit(s, " ");
+    iter(tokens, \token -> handleToken(token, stack));
+    result = popStack(^stack);
+    switch(result.value) {
+        Some(v): v;
+        None(): {
+            println("Calc rpn failed");
+            -1;
+        }
+    }
+}
+
+s2expr(str: string) -> Expr {
+    e_gr = "#include simple_arith.lingo";
+    parsic(
+        compilePegGrammar(e_gr), 
+        str, 
+        SemanticActions(setTree(defaultPegActions.t, "CreateInt", \s -> Int(s2i(s[0]))))
+    );
+}
+
+main() {
+    expr = s2expr("((1 * 0) + ((10 + 20) * (1 * 8)))");
+    rpn = expr2Rpn(expr);
+    println(rpn);
+    println("Result: " + i2s(calcRpn(rpn)));
+    quit(0);
+}

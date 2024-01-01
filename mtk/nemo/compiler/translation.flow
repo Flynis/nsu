@@ -1,0 +1,150 @@
+import grammar/nemo;
+import grammar/vm;
+
+
+export {
+
+    translate(program: Program) -> string;
+
+}
+
+
+findMaxLabelOfOp(operation: VmOp) -> int {
+    findMaxOfArray = \a -> fold(a, 0, \acc, e -> max(acc, e));
+    
+    switch (operation) {
+        AssignmentOp(varName, expr, labels): findMaxOfArray(labels);
+        TestOp(cond, thenLabels, elseLabels): max(findMaxOfArray(thenLabels), findMaxOfArray(elseLabels));
+        ReturnOp(): 0;
+    }
+}
+
+
+findMaxLabelOfOperator(operator: Operator) -> int {
+    max(operator.label, findMaxLabelOfOp(operator.op));
+}
+
+
+findMaxLabelOfOperators(operators: Set<Operator>) -> int {
+    foldSet(operators, 0, \acc, op -> max(acc, findMaxLabelOfOperator(op)));
+}
+
+
+increaseLabel(label: int, delta: int) -> int {
+    label + delta;
+}
+
+
+replaceLabel(label: int, newLabel: int, oldLabel: int) -> int {
+    if (label == oldLabel) newLabel else label;
+}
+
+
+increaseLabelsOfOp(operation: VmOp, delta: int) -> VmOp {
+    increaseLabels = \labels -> map(labels, \l -> increaseLabel(l, delta));
+    
+    switch (operation) {
+        AssignmentOp(varName, expr, labels): AssignmentOp(varName, expr, increaseLabels(labels));
+        TestOp(cond, thenLabels, elseLabels): TestOp(cond, increaseLabels(thenLabels), increaseLabels(elseLabels));
+        ReturnOp(): operation;
+    }
+}
+
+
+replaceLabelsOfOp(operation: VmOp, newLabel: int, oldLabel: int) -> VmOp {
+    replaceLabels = \labels -> map(labels, \l -> replaceLabel(l, newLabel, oldLabel));
+    
+    switch (operation) {
+        AssignmentOp(varName, expr, labels): AssignmentOp(varName, expr, replaceLabels(labels));
+        TestOp(cond, thenLabels, elseLabels): TestOp(cond, replaceLabels(thenLabels), replaceLabels(elseLabels));
+        ReturnOp(): operation;
+    }
+}
+
+
+increaseLabelsOfOperators(operators: Set<Operator>, delta: int) -> Set<Operator> {
+    increaseLabelsOfOperator = \operator -> Operator(
+        increaseLabel(operator.label, delta),
+        increaseLabelsOfOp(operator.op, delta)
+    );
+
+    mapSet(operators, increaseLabelsOfOperator)
+}
+
+
+replaceLabelsOfOperators(operators: Set<Operator>, newLabel: int, oldLabel: int) -> Set<Operator> {
+    replaceLabelsOfOperator = \operator -> Operator(
+        replaceLabel(operator.label, newLabel, oldLabel),
+        replaceLabelsOfOp(operator.op, newLabel, oldLabel)
+    );
+
+    mapSet(operators, replaceLabelsOfOperator);
+}
+
+
+bodiesToOperators(bodies: [Body], f: (firstElement: Body, tailElements: [Body]) -> Set<Operator>) -> Set<Operator> {
+    len = length(bodies);
+
+    if (len == 0) {
+        makeSet();
+    } else if (len == 1) {
+        bodyToOperators(bodies[0]);
+    } else {
+        f(bodies[0], tail(bodies));
+    }
+}
+
+
+bodyToOperators(body: Body) ->  Set<Operator> {
+    createBranchingGoto = \l -> Operator(0, TestOp(BoolConst(true), [1, l], []));
+    createStartOperator = \op -> Operator(0, op);
+
+    switch (body) {
+        Assignment(varName, expr): makeSet1(createStartOperator(AssignmentOp(varName, expr, [1])));
+        
+        Test(boolExpr): makeSet1(createStartOperator(TestOp(boolExpr, [1], [])));
+                
+        BodiesSeq(bodies): bodiesToOperators(
+            bodies, \firstElem, tailElems -> {
+                sl = bodyToOperators(firstElem);
+                endl = findMaxLabelOfOperators(sl);
+                sm = increaseLabelsOfOperators(bodyToOperators(BodiesSeq(tailElems)), endl);
+                mergeSets(sl, sm);
+            }
+        );
+                    
+        NonDeterChoice(bodies): bodiesToOperators(
+            bodies, \firstElem, tailElems -> {
+                sl = increaseLabelsOfOperators(bodyToOperators(firstElem), 1);
+                endl = findMaxLabelOfOperators(sl);
+                sm = increaseLabelsOfOperators(bodyToOperators(NonDeterChoice(tailElems)), endl);
+                endm = findMaxLabelOfOperators(sm);
+
+                s = makeSet1(createBranchingGoto(endl));
+                mergeSetsA([s, replaceLabelsOfOperators(sl, endm, endl), sm]);
+            }
+        );
+
+        NonDeterIteration(b1): {
+            sl = increaseLabelsOfOperators(bodyToOperators(b1), 1);
+            endl = findMaxLabelOfOperators(sl);
+
+            s = makeSet1(createBranchingGoto(endl));
+            mergeSets(s, replaceLabelsOfOperators(sl, 0, endl));
+        }
+    }
+}
+
+
+translateBody(body: Body) -> string {
+    s = bodyToOperators(body);
+    max = findMaxLabelOfOperators(s);
+    sret = insertSet(s, Operator(max, ReturnOp()));
+    a = set2array(sret);
+    fold(sortOperators(a), "", \acc, o -> acc + operator2s(o) + "\n");
+}
+
+
+translate(program: Program) -> string {
+    varDeclList2s(program.varDeclList) + "\n" + translateBody(program.body);
+}

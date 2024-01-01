@@ -1,0 +1,40 @@
+import lingo/peg;
+import lingo/pegcode/driver;
+import lingo/pegcode/parsic;
+
+Expr ::= Sum, Mul, Int;
+Sum: (left: Expr, right: Expr);
+Mul: (left: Expr, right: Expr);
+Int: (val: int);
+
+expr2s(e: Expr) -> string {
+    switch (e) {
+        Sum(left, right): "(" + expr2s(left) + " + " + expr2s(right) + ")";
+        Mul(left, right): "(" + expr2s(left) + " * " + expr2s(right) + ")";
+        Int(val): i2s(val);
+    }
+}
+
+expr2i(e: Expr) -> int {
+    switch(e) {
+        Sum(left, right): expr2i(left) + expr2i(right);
+        Mul(left, right): expr2i(left) * expr2i(right);
+        Int(val): val;
+    }
+}
+
+s2expr(str: string) -> Expr {
+    e_gr = "#include simple_arith.lingo";
+    parsic(
+        compilePegGrammar(e_gr), 
+        str, 
+        SemanticActions(setTree(defaultPegActions.t, "CreateInt", \s -> Int(s2i(s[0]))))
+    );
+}
+
+main() {
+    expr = s2expr("((1 * 0) + ((10 + 20) * (1 * 8)))");
+    println("Result: " + i2s(expr2i(expr)));
+    println(expr2s(expr));
+    quit(0);
+}

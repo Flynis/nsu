@@ -1,0 +1,18 @@
+VAR n: INT; VAR x: INT; VAR y: INT; VAR arr: [INT]; {
+    n := 12; x := 0; y := 0; arr := [];
+    {
+        {
+            (y <= n)?;
+            y := (y + (x + (x + 1)));
+            x := (x + 1);
+        }*
+        (NOT (y <= n AND x != 0))?;
+    }
+    x := (x - 1);
+    arr := UPD(arr, 0, x);
+    {
+        y := (y + (x + (x + 1)));
+        U
+        x := (x + 1);
+    }
+}

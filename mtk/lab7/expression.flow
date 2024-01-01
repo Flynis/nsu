@@ -1,0 +1,86 @@
+import string;
+import rational_number;
+import lingo/pegcode/driver;
+
+export {
+    BinaryOp ::= AddOp, SubOp, MulOp, DivOp;
+    AddOp : ();
+    SubOp : ();
+    MulOp : ();
+    DivOp : ();
+
+    Expr ::= Int, Var, Neg, Binary;
+    Int : (i : int);
+    Var : (name: string);
+    Neg : (e: Expr);
+    Binary : (l : Expr, r : Expr, op : BinaryOp);
+
+    expr2s(e: Expr) -> string;
+    calculate(e: Expr, variables: Tree<string, RationalNum>) -> RationalNum;
+    parse(str: string, grammarStr: string) -> Expr;
+}
+
+expr2s(e: Expr) -> string {
+    switch(e) {
+        Int(i): i2s(i);
+        Var(name): name;
+        Neg(expr): "-" + expr2s(expr);
+        Binary(l, r, op): {
+            lstr: string = expr2s(l);
+            rstr: string = expr2s(r);
+            "(" + switch(op) {
+                AddOp(): lstr + " + " + rstr;
+                SubOp(): lstr + " - " + rstr;
+                MulOp(): lstr + " * " + rstr;
+                DivOp(): lstr + " / " + rstr;
+            } + ")";
+        }
+    }
+}
+
+getVarValue(name: string, variables: Tree<string, RationalNum>) -> RationalNum {
+    switch(lookupTree(variables, name)) {
+        None(): {
+            println("Unknown variable " + name);
+            nan();
+        }
+        Some(value): value;
+    }
+}
+
+calculate(e: Expr, variables: Tree<string, RationalNum>) -> RationalNum {
+    switch(e) {
+        Int(i): i2r(i);
+        Var(name): getVarValue(name, variables);
+        Neg(expr): rationalMul(i2r(-1), calculate(expr, variables));
+        Binary(l, r, op): {
+            lValue: RationalNum = calculate(l, variables);
+            rValue: RationalNum = calculate(r, variables);
+            switch(op) {
+                AddOp(): rationalAdd(lValue, rValue);
+                SubOp(): rationalSub(lValue, rValue);
+                MulOp(): rationalMul(lValue, rValue);
+                DivOp(): rationalDiv(lValue, rValue);
+            };
+        }
+    }
+}
+
+buildSub(xs : [flow]) {
+    fold(xs[1], xs[0], \acc, x -> Binary(acc, x, SubOp()))
+}
+
+buildDiv(xs : [flow]) {
+    fold(xs[1], xs[0], \acc, x -> Binary(acc, x, DivOp()))
+}
+
+specialPegActions = {
+    t1 = setTree(defaultPegActions.t, "buildSub", buildSub);
+    t2 = setTree(t1, "buildDiv", buildDiv);
+    SemanticActions(t2);
+}
+
+parse(str: string, grammarPath: string) -> Expr {
+    grammar = compilePegGrammar(grammarPath);
+    parsic(grammar, str, specialPegActions);
+}

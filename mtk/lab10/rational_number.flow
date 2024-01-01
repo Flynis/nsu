@@ -1,0 +1,172 @@
+import string;
+import math/math;
+
+export {
+    RNumber : (m: int, n: int);
+
+    makeRNumber(m: int, n: int) -> RNumber;
+
+    i2r(i: int) -> RNumber;
+
+    nan() -> RNumber;
+
+    plusInf() -> RNumber;
+
+    minusInf() -> RNumber;
+
+    rsign(r: RNumber) -> int;
+
+    isNumber(r: RNumber) -> bool;
+
+    isZero(r: RNumber) -> bool;
+
+    isPlusInf(r: RNumber) -> bool;
+
+    isMinusInf(r: RNumber) -> bool;
+
+    isInf(r: RNumber) -> bool;
+
+    isNan(r: RNumber) -> bool;
+
+    addRNumbers(a: RNumber, b: RNumber) -> RNumber;
+
+    subRNumbers(a: RNumber, b: RNumber) -> RNumber;
+
+    mulRNumbers(a: RNumber, b: RNumber) -> RNumber;
+
+    divRNumbers(a: RNumber, b: RNumber) -> RNumber;
+
+    negRNumber(r: RNumber) -> RNumber;
+
+    r2s(r: RNumber) -> string;
+}
+
+makeRNumber(m: int, n: int) -> RNumber {
+    divisor: int = gcd(iabs(m), iabs(n));
+    RNumber(isign(m) * isign(n) * iabs(m) / divisor, iabs(n) / divisor);
+}
+
+i2r(i: int) -> RNumber {
+    RNumber(i, 1);
+}
+
+rsign(r: RNumber) -> int {
+    isign(r.m);
+}
+
+plusInf() -> RNumber {
+    RNumber(1, 0);
+}
+    
+minusInf() -> RNumber {
+    RNumber(-1, 0);
+}
+    
+nan() -> RNumber {
+    RNumber(0, 0);
+}
+
+isNumber(r: RNumber) -> bool {
+    r.n != 0;    
+}
+
+isZero(r: RNumber) -> bool {
+    r.m == 0 && r.n != 0;
+}
+
+isPlusInf(r: RNumber) -> bool {
+    r.m > 0 && r.n == 0;
+}
+
+isMinusInf(r: RNumber) -> bool {
+    r.m < 0 && r.n == 0;
+}
+
+isInf(r: RNumber) -> bool {
+    r.m != 0 && r.n == 0;
+}
+
+isNan(r: RNumber) -> bool {
+    r == nan();
+}
+
+r2s(r: RNumber) -> string {
+    if (isPlusInf(r)) {
+        "+inf";
+    } else if (isMinusInf(r)) {
+        "-inf";
+    } else if (isNan(r)) {
+        "nan";
+    } else if (r.n == 1) {
+        i2s(r.m);
+    } else {
+        if(r.m > 0) {
+            "(" + i2s(r.m) + "/" + i2s(r.n) + ")";
+        } else {
+            "-(" + i2s(iabs(r.m)) + "/" + i2s(r.n) + ")";
+        }
+    }
+}
+
+addRNumbers(a: RNumber, b: RNumber) -> RNumber {
+    if (isNan(a) || isNan(b)) {
+        nan();
+    } else if ((isPlusInf(a) && isMinusInf(b)) || (isMinusInf(a) && isPlusInf(b))) {
+        nan();
+    } else if (isPlusInf(a) || isPlusInf(b)) {
+        plusInf();
+    } else if (isMinusInf(a) || isMinusInf(b)) {
+        minusInf();
+    } else {
+        divisor = lcm(a.n, b.n);
+        ka = divisor / a.n;
+        kb = divisor / b.n;
+        makeRNumber(a.m * ka + b.m * kb, divisor);
+    }
+}
+
+subRNumbers(a: RNumber, b: RNumber) -> RNumber {
+    addRNumbers(a, RNumber(-b.m, b.n));
+}
+
+mulRNumbers(a: RNumber, b: RNumber) -> RNumber {
+    if (isNan(a) || isNan(b)) {
+        nan();
+    } else if ((isPlusInf(a) && rsign(b) > 0) || (isPlusInf(b) && rsign(a) > 0)) {
+        plusInf();
+    } else if ((isMinusInf(a) && rsign(b) < 0) || (isMinusInf(b) && rsign(a) < 0)) {
+        plusInf();
+    } else if ((isPlusInf(a) && rsign(b) < 0) || (isPlusInf(b) && rsign(a) < 0)) {
+        minusInf();
+    } else if ((isMinusInf(a) && rsign(b) > 0) || (isMinusInf(b) && rsign(a) > 0)) {
+        minusInf();
+    } else if ((isInf(a) && isZero(b)) || (isZero(a) && isInf(b))) {
+        nan();
+    } else {
+        c = makeRNumber(a.m, b.n);
+        d = makeRNumber(b.m, a.n);
+        makeRNumber(c.m * d.m, c.n * d.n);
+    }
+}
+
+divRNumbers(a: RNumber, b: RNumber) -> RNumber {
+    if (isNumber(a) && isZero(b)) {
+        if (rsign(a) > 0) {
+            plusInf();
+        } else if (isZero(a)) {
+            nan();
+        } else {
+            minusInf();
+        }
+    } else if (isZero(a) && isNumber(b)) {
+        i2r(0);
+    } else if (isNan(a) || isNan(b)) {
+        nan();
+    } else {
+        mulRNumbers(a, RNumber(b.n, b.m));
+    }
+}
+
+negRNumber(r: RNumber) -> RNumber {
+    RNumber(-r.m, r.n);
+}

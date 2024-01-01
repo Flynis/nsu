@@ -1,0 +1,58 @@
+import mytree_util;
+import string;
+
+export {
+    Monom : (vars: Tree<string, int>);
+
+    makeMonom() -> Monom;
+
+    var2monom(name: string) -> Monom;
+
+    isEmptyMonom(m: Monom) -> bool;
+
+    mulMonoms(a: Monom, b: Monom) -> Monom;
+
+    cmpMonoms(a: Monom, b: Monom) -> int;
+
+    monom2s(m: Monom) -> string;
+}
+
+makeMonom() -> Monom {
+    Monom(makeTree());
+}
+
+isEmptyMonom(m: Monom) -> bool {
+    foldTree(m.vars, true, \name, power, result -> result && power == 0);
+}
+
+var2monom(name: string) -> Monom {
+    Monom(makeTree1(name, 1));
+}
+
+mulMonoms(a: Monom, b: Monom) -> Monom {
+    Monom(mergeTreeCustom(a.vars, b.vars, \name, apower, bpower -> apower + bpower));
+}
+
+cmpMonoms(a: Monom, b: Monom) -> int {
+    if(equalTrees(a.vars, b.vars)) {
+        0;
+    } else {
+        if(a.vars > b.vars) 1 else -1;
+    }
+}
+
+monom2s(m: Monom) -> string {
+    result: string = foldTree(m.vars, "", \name, power, str -> {
+        if(power == 0) {
+            str;
+        } else {
+            tmp: string = if (str == "") str else str + "*";
+            if(power == 1) {
+                tmp + name;
+            } else {
+                tmp + name + "^" + i2s(power);
+            }
+        }
+    });
+    if(result == "") "1" else result;
+}

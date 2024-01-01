@@ -1,0 +1,17 @@
+import compiler/parsing;
+import compiler/analysis;
+import compiler/translation;
+
+main() {
+    program = parse("#include program.nemo");
+    result = analyse(program);
+    if (result == Success()) {
+        ret = setFileContent("./program.out", translate(program));
+        if (!ret) {
+            println("Cannot create output file");
+        }
+    } else {
+        println(analysisResult2s(result));
+    }
+    quit(0);
+}

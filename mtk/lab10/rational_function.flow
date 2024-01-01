@@ -1,0 +1,71 @@
+import expression;
+import polynom;
+
+export {
+    RFunc : (p: Polynom, q: Polynom);
+
+    expr2rfunc(e: Expr) -> RFunc;
+
+    rfunc2s(f: RFunc) -> string;
+}
+
+r2rfunc(r: RNumber) -> RFunc {
+    RFunc(r2polynom(r), r2polynom(i2r(1)));
+}
+
+var2rfunc(name: string) -> RFunc {
+    RFunc(var2polynom(name), r2polynom(i2r(1)));
+}
+
+shortenRFunc(f: RFunc) -> RFunc {
+    p: Maybe<RNumber> = polynom2r(f.p);
+    q: Maybe<RNumber> = polynom2r(f.q);
+    eitherFn2(p, q, \a, b -> r2rfunc(divRNumbers(a, b)), \const -> {
+        if(isSome(p)) {
+            RFunc(r2polynom(i2r(const.m)), mulPolynomByRnumber(f.q, i2r(const.n)));
+        } else {
+            RFunc(mulPolynomByRnumber(f.p, i2r(isign(const.m) * const.n)), r2polynom(i2r(iabs(const.m))));
+        }
+    }, \ -> f);
+}
+ 
+expr2rfunc(e: Expr) -> RFunc {
+    result: RFunc = switch(e) {
+        Const(r): r2rfunc(r);
+        Int(i): r2rfunc(i2r(i));
+        Var(name): var2rfunc(name);
+        Neg(expr): {
+            f: RFunc = expr2rfunc(expr);
+            RFunc(negPolynom(f.p), f.q);
+        }
+        Binary(l, r, op): {
+            lf: RFunc = expr2rfunc(l);
+            rf: RFunc = expr2rfunc(r);
+            switch(op) {
+                AddOp(): RFunc(
+                    addPolynoms(mulPolynoms(lf.p, rf.q), mulPolynoms(rf.p, lf.q)), 
+                    mulPolynoms(lf.q, rf.q)
+                );
+                SubOp(): RFunc(
+                    addPolynoms(mulPolynoms(lf.p, rf.q), negPolynom(mulPolynoms(rf.p, lf.q))), 
+                    mulPolynoms(lf.q, rf.q)
+                );
+                MulOp(): RFunc(
+                    mulPolynoms(lf.p, rf.p), mulPolynoms(lf.q, rf.q)
+                );
+                DivOp(): RFunc(
+                    mulPolynoms(lf.p, rf.q), mulPolynoms(lf.q, rf.p)
+                );
+            };
+        }
+    }
+    shortenRFunc(result);
+}
+
+rfunc2s(f: RFunc) -> string {
+    q: Maybe<RNumber> = polynom2r(f.q);
+    switch(q) {
+        Some(const): if(const == RNumber(1, 1)) polynom2s(f.p) else polynom2s(f.p) + " / " + polynom2s(f.q);
+        None(): polynom2s(f.p) + " / " + polynom2s(f.q);
+    }
+}

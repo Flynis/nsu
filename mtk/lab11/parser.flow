@@ -1,0 +1,11 @@
+import parsing;
+import analysis;
+
+main() {
+    program = parse("#include program.nemo");
+    println("Parse complete");
+    println(program2s(program));
+    result = analyse(program);
+    println(analysisResult2s(result));
+    quit(0);
+}

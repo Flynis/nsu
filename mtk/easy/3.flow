@@ -1,0 +1,42 @@
+import string;
+
+fib_rec(n : int) -> [int] {
+    if (n <= 1) {
+        [n];
+    } else {
+        n1 = fib_rec(n - 1);
+        n2 = fib_rec(n - 2);
+        arrayPush(n1, lastElement(n1, -1) + lastElement(n2, -1));
+    }
+}
+
+fib_tail_rec(n : int, curr : [int], prev: int) -> [int] {
+    if (n <= 1) {
+        curr;
+    } else {
+        tmp = arrayPush(curr, lastElement(curr, -1) + prev);       
+        fib_tail_rec(n - 1, tmp, lastElement(curr, -1));
+    }
+}
+
+fib_tail_rec_ref(n : int, curr : ref [int]) -> [int] {
+    if (n <= 2) {
+        ^curr;
+    } else {
+        len = length(^curr);
+        refArrayPush(curr, elementAt(^curr, len - 1, -1) + elementAt(^curr, len - 2, -1));       
+        fib_tail_rec_ref(n - 1, curr);
+    }
+}
+
+arr2s(arr : [int]) -> string {
+    strGlue(map(arr, i2s), ",");
+}
+
+main() {
+    n = 7;
+    println("fib rec: " + arr2s(fib_rec(n)));
+    println("fib tail rec: " + arr2s(fib_tail_rec(n, [1], 0)));
+    println("fib tail rec ref: " + arr2s(fib_tail_rec_ref(n, ref [1 , 1])));
+    quit(0);
+}

@@ -1,0 +1,22 @@
+import rational_number;
+import expression;
+
+main() {
+    variables: Tree<string, RationalNum> = setTreeValues(makeTree(), [
+        Pair("x", makeRationalNumber(4, 8)),
+        Pair("y", makeRationalNumber(2, 1)),
+    ]);
+       
+    input: string = "(1/(x-(2/4)))";
+
+    expression = parse(input, "#include rational_arith.lingo");
+    if (expression != flow("PARSING FAILED")) {
+        println("expression: " + expr2s(expression));
+        value: RationalNum = calculate(expression, variables);
+        println("result = " + r2s(value));
+    } else {
+        println("Parsing failed");
+    }
+
+    quit(0);
+}

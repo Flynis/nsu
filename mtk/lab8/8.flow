@@ -1,0 +1,20 @@
+import expression;
+import differentiation;
+
+main() {
+
+    input: string = "1/x";
+
+    expression = parse(input, "#include rational_arith.lingo");
+    if (expression != flow("PARSING FAILED")) {
+        println("expression: " + expr2s(expression));
+    
+        d: Expr = differentiate(expression, "x");
+        
+        println("result = " + expr2s(d));
+    } else {
+        println("Parsing failed");
+    }
+
+    quit(0);
+}

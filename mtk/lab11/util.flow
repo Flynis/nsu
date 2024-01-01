@@ -1,0 +1,38 @@
+import ds/array;
+
+export {
+
+    range(len: int) -> [int];
+
+    findAll(a: [?], fn: (?) -> bool) -> [?];
+    
+}
+
+
+doRange(len : int, acc : [int], index : int) -> [int] {
+    if (index == len) {
+        acc;
+    } else {
+        doRange(len, arrayPush(acc, index), index + 1);
+    }
+}
+
+
+range(len: int) -> [int] {
+    doRange(len, [], 0);
+}
+
+
+findAllAcc(a: [?], fn: (?) -> bool, acc: [?]) -> [?] {
+    index = findi(a, fn);
+    eitherMap(
+        index,
+        \i -> concat3([a[i]], acc, findAllAcc(tailFrom(a, i + 1), fn, acc)),
+        acc
+    );
+}
+
+
+findAll(a: [?], fn: (?) -> bool) -> [?] {    
+    findAllAcc(a, fn, []);
+}
