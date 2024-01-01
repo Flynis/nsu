@@ -1,0 +1,10 @@
+#ifndef _INET_LIMITS_H_INCLUDED_
+#define _INET_LIMITS_H_INCLUDED_
+
+
+#define PORT_MAX 65535
+#define PORT_STR_LEN 6
+#define DOMAIN_NAME_STR_LEN 256 // rfc 1035 section 2.3.4.
+
+
+#endif // _INET_LIMITS_H_INCLUDED_
