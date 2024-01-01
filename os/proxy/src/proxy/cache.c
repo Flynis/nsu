@@ -384,7 +384,7 @@ static HttpState transfer_cache_elem(CacheElem *elem, HttpRequest *req) {
         if(elem->status != LOADING_RESPONSE_BODY && elem->status != SUCC_LOADED_RESPONSE) {
             return HTTP_CLOSE_REQUEST;
         }
-        int n = elem->last - pos;
+        uint32_t n = elem->last - pos;
         ssize_t sent = buffer_send_range(req->sock, buf, pos, n);
         if(sent < 0) {
             return HTTP_CLOSE_REQUEST;
