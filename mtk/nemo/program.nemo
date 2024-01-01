@@ -1,5 +1,5 @@
-VAR n: INT; VAR x: INT; VAR y: INT; {
-    n := 12; x := 0; y := 0;
+VAR n: INT; VAR x: INT; VAR y: INT;{
+    n := 12; {x := 0; U y := 0;}
     {
         {
             (y <= n)?;

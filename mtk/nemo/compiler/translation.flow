@@ -15,6 +15,7 @@ findMaxLabelOfOp(operation: VmOp) -> int {
     switch (operation) {
         AssignmentOp(varName, expr, labels): findMaxOfArray(labels);
         TestOp(cond, thenLabels, elseLabels): max(findMaxOfArray(thenLabels), findMaxOfArray(elseLabels));
+        ReturnOp(): 0;
     }
 }
 
@@ -45,6 +46,7 @@ increaseLabelsOfOp(operation: VmOp, delta: int) -> VmOp {
     switch (operation) {
         AssignmentOp(varName, expr, labels): AssignmentOp(varName, expr, increaseLabels(labels));
         TestOp(cond, thenLabels, elseLabels): TestOp(cond, increaseLabels(thenLabels), increaseLabels(elseLabels));
+        ReturnOp(): operation;
     }
 }
 
@@ -55,6 +57,7 @@ replaceLabelsOfOp(operation: VmOp, newLabel: int, oldLabel: int) -> VmOp {
     switch (operation) {
         AssignmentOp(varName, expr, labels): AssignmentOp(varName, expr, replaceLabels(labels));
         TestOp(cond, thenLabels, elseLabels): TestOp(cond, replaceLabels(thenLabels), replaceLabels(elseLabels));
+        ReturnOp(): operation;
     }
 }
 
@@ -135,7 +138,9 @@ bodyToOperators(body: Body) ->  Set<Operator> {
 
 translateBody(body: Body) -> string {
     s = bodyToOperators(body);
-    a = set2array(s);
+    max = findMaxLabelOfOperators(s);
+    sret = insertSet(s, Operator(max, ReturnOp()));
+    a = set2array(sret);
     fold(sortOperators(a), "", \acc, o -> acc + operator2s(o) + "\n");
 }
 

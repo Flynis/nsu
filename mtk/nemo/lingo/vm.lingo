@@ -1,7 +1,7 @@
 program = ws varDeclList:vdl operator*:ops { buildVmProgram(:vdl, :ops) };
 
 
-operator = ws intNumber$d ws ':' ws operation:op ws { Operator(s2i($d), :op) };
+operator = ws intNumber$d ws ':' ws operation:op ws { Operator(s2i($d), :op) } | ws intNumber$d ws ':' ws { Operator(s2i($d), ReturnOp()) };
 operation = assignmentVmOp | conditionVmOp;
 assignmentVmOp = varName:v ws ":=" ws expr:e ws "goto" ws labels:ls { AssignmentOp(:v, :e, :ls) };
 conditionVmOp = "if" ws '(' ws boolExpr:cond ws ')' ws "then" ws labels:thenLabels ws "else" ws labels:elseLabels { TestOp(:cond, :thenLabels, :elseLabels) };

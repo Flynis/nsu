@@ -6,7 +6,8 @@ export {
 
     AssignmentOp : (varName: string, expr: Expr, labels: [int]);
     TestOp : (cond: BoolExpr, thenLabels: [int], elseLabels : [int]);
-    VmOp ::= AssignmentOp, TestOp;
+    ReturnOp : ();
+    VmOp ::= AssignmentOp, TestOp, ReturnOp;
     
 
     Operator : (label: int, op: VmOp);    
@@ -45,6 +46,7 @@ operation2s(operation: VmOp) -> string {
     switch (operation) {
         AssignmentOp(varName, expr, labels): varName + " := " + expr2s(expr) + " goto " + labels2s(labels);
         TestOp(cond, thenLabels, elseLabels): "if (" + expr2s(cond) + ") then " + labels2s(thenLabels) + " else " + labels2s(elseLabels);
+        ReturnOp(): "";
     }
 }
 

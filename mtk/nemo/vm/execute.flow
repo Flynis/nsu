@@ -312,7 +312,8 @@ executeTest(state: State, operation: TestOp) -> Set<State> {
 executeVmOp(state: State, operation: VmOp) -> Set<State> {    
     switch (operation) {
         AssignmentOp(varName, expr, labels): executeAssignment(state, operation);
-        TestOp(cond, thenLabels, elseLabels): executeTest(state, operation);        
+        TestOp(cond, thenLabels, elseLabels): executeTest(state, operation);
+        ReturnOp(): makeSet();    
     }   
 }
 
