@@ -2,34 +2,31 @@ package ru.dyakun.dif.transport;
 
 public class ImplicitScheme extends Scheme {
 
-    private final double[] f;
-    private final Matrix matrix;
-
-    public ImplicitScheme(double h, double r, double a, double b) {
-        super(h, r, a, b);
-        f = new double[n];
-        matrix = new Matrix(n);
-        matrix.set(0, 0, 1.0);
-        matrix.set(n - 1, n - 1, 1.0);
-        for(int j = 1; j < n - 1; j++) {
-            matrix.set(j, j - 1, -r / 2);
-            matrix.set(j, j, 1.0);
-            matrix.set(j, j + 1, r / 2);
-        }
+    public ImplicitScheme(double h, double r, double offset, double b) {
+        super(h, r, offset, b);
     }
 
-    @Override
-    public double[] next() {
-        if(t == 0.0) {
-            t += tau;
-            return values;
+    public void calcU() {
+        u[0] = Vd.apply(0, 0);
+        u[n - 1] = Vd.apply(0, n - 1);
+        double a = -r / 2;
+        double b = r / 2;
+        double c = 1.0;
+        f[1] += b * u[0];
+        f[n - 2] += a * u[n - 1];
+        double[] alpha = new double[n - 1];
+        double[] beta = new double[n - 1];
+        alpha[0] = -b / c;
+        beta[1] = f[1] / c;
+        for(int j = 2; j <= n - 2; j++) {
+            double divisor = a * alpha[j - 1] + c;
+            alpha[j] = -b / divisor;
+            beta[j] = (f[j] - a * beta[j - 1]) / divisor;
         }
-        System.arraycopy(values, 0, f, 0, n);
-        f[0] = V.apply(t, a);
-        f[n - 1] = V.apply(t, a + (n - 1) * h);
-        Slae.solve(matrix, f, values);
-        t += tau;
-        return values;
+        u[n - 2] = beta[n - 2];
+        for(int j = n - 3; j > 0; j--) {
+            u[j] = alpha[j] * u[j + 1] + beta[j];
+        }
     }
 
 }

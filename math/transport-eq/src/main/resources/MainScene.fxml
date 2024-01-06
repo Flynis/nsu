@@ -27,10 +27,10 @@
             <Label alignment="CENTER" prefWidth="Infinity" text="r" GridPane.rowIndex="1" />
             <Label alignment="CENTER" prefWidth="Infinity" text="t" GridPane.rowIndex="2" />
             <Label alignment="CENTER" prefWidth="Infinity" text="delay" GridPane.rowIndex="3" />
-            <TextField fx:id="hTextField" text="1.0" GridPane.columnIndex="1" />
+            <TextField fx:id="hTextField" text="0.1" GridPane.columnIndex="1" />
             <TextField fx:id="rTextField" text="0.5" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-            <TextField fx:id="tTextField" text="5.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-            <TextField fx:id="delayTextField" text="1000.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+            <TextField fx:id="tTextField" text="8.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+            <TextField fx:id="delayTextField" text="300.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
         </GridPane>
         <GridPane alignment="CENTER" vgap="5.0">
             <columnConstraints>
