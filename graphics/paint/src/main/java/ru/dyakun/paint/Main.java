@@ -8,36 +8,41 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Objects;
 
-public class Main extends JFrame {
+import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
+
+public class Main {
+
+    private static final Canvas canvas = new Canvas();
+    private static final PainterProxy painterProxy = new PainterProxy(canvas);
 
     public static void main(String[] args) {
-        new Main();
+        JFrame frame = new JFrame("Paint");
+        frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        createUI(frame);
+        frame.setPreferredSize(new Dimension(1600, 900));
+        frame.setMinimumSize(new Dimension(640, 480));
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
     }
 
-    public Main() {
-        super("Paint");
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-
-        Canvas canvas = new Canvas();
-        PainterProxy painterProxy = new PainterProxy(canvas);
-
+    private static void createUI(JFrame frame) {
         JFileChooser fileChooser = new JFileChooser();
-        JColorChooser colorChooser = new JColorChooser();
 
         CanvasPane canvasPane = new CanvasPane(painterProxy, canvas);
-        add(canvasPane);
+        frame.add(canvasPane);
 
         Action openAction = new AbstractAction("Open", getIcon("/icons/open.png")) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 fileChooser.setDialogTitle("Choose file");
-                int result = fileChooser.showOpenDialog(Main.this);
+                int result = fileChooser.showOpenDialog(frame);
                 if (result == JFileChooser.APPROVE_OPTION) {
                     try {
                         BufferedImage image = ImageIO.read(fileChooser.getSelectedFile());
                         canvas.setImage(image);
                     } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(Main.this, "Failed to open file", "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(frame, "Failed to open file", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
@@ -46,44 +51,33 @@ public class Main extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 fileChooser.setDialogTitle("Save file");
-                int result = fileChooser.showSaveDialog(Main.this);
+                int result = fileChooser.showSaveDialog(frame);
                 if (result == JFileChooser.APPROVE_OPTION) {
                     try {
                         BufferedImage image = canvas.getImage();
                         ImageIO.write(image, "png", fileChooser.getSelectedFile());
                     } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(Main.this, "Failed to open file", "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(frame, "Failed to open file", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
         };
-        Action chooseColor = new AbstractAction("Choose color", getIcon("/icons/color_picker.png")) {
-            @Override
-            public void actionPerformed(ActionEvent e) {
 
-            }
-        };
-
-
+        ColorPane colorPane = new ColorPane();
+        colorPane.addColorChangedListener(canvas::setColor);
 
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(createFileMenu());
-        setJMenuBar(menuBar);
+        frame.setJMenuBar(menuBar);
 
         JToolBar toolBar = new JToolBar();
         toolBar.add(new Button("A"));
         toolBar.add(new Button("B"));
         toolBar.setFloatable(false);
-        add(toolBar, BorderLayout.NORTH);
-
-        setPreferredSize(new Dimension(1600, 900));
-        setMinimumSize(new Dimension(640, 480));
-        pack();
-        setLocationRelativeTo(null);
-        setVisible(true);
+        frame.add(toolBar, BorderLayout.NORTH);
     }
 
-    private ImageIcon getIcon(String resource) {
+    private static ImageIcon getIcon(String resource) {
         return new ImageIcon(Objects.requireNonNull(Main.class.getResource(resource)));
     }
 
