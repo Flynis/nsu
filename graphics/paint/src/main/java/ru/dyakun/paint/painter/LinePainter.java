@@ -1,4 +1,8 @@
-package ru.dyakun.paint;
+package ru.dyakun.paint.painter;
+
+import ru.dyakun.paint.Canvas;
+
+import javax.swing.*;
 
 public class LinePainter extends Painter {
 
@@ -18,8 +22,8 @@ public class LinePainter extends Painter {
         this.strokeWidth = strokeWidth;
     }
 
-    public LinePainter(Canvas canvas) {
-        super(canvas);
+    public LinePainter(Canvas canvas, JFrame frame) {
+        super(canvas, frame);
     }
 
 }

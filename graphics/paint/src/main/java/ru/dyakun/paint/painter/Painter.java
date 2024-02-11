@@ -1,18 +1,26 @@
-package ru.dyakun.paint;
+package ru.dyakun.paint.painter;
+
+import ru.dyakun.paint.Canvas;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 
 public abstract class Painter implements MouseListener, MouseMotionListener {
-    protected final Canvas canvas;
 
-    public Painter(Canvas canvas) {
+    protected final Canvas canvas;
+    protected final JDialog dialog;
+
+    public Painter(Canvas canvas, JFrame frame) {
         this.canvas = canvas;
+        this.dialog = new JDialog(frame, "Settings", Dialog.ModalityType.DOCUMENT_MODAL);
     }
 
-    public abstract JDialog getSettingsDialog();
+    public void showSettingsDialog() {
+        dialog.setVisible(true);
+    }
 
     @Override
     public void mouseClicked(MouseEvent mouseEvent) {}
@@ -34,4 +42,5 @@ public abstract class Painter implements MouseListener, MouseMotionListener {
 
     @Override
     public void mouseMoved(MouseEvent mouseEvent) {}
+
 }

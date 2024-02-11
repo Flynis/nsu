@@ -1,38 +1,48 @@
 package ru.dyakun.paint;
 
+import ru.dyakun.paint.painter.PainterProxy;
+import ru.dyakun.paint.painter.PainterType;
+import ru.dyakun.paint.painter.StampPainter;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 
-import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
+import static ru.dyakun.paint.IconUtil.loadIcon;
+import static ru.dyakun.paint.painter.PainterType.*;
 
-public class Main {
+public class Main extends JFrame {
 
-    private static final Canvas canvas = new Canvas();
-    private static final PainterProxy painterProxy = new PainterProxy(canvas);
+    private final Canvas canvas = new Canvas();
+    private final PainterProxy painterProxy = new PainterProxy(canvas, this);
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("Paint");
-        frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
-        createUI(frame);
-        frame.setPreferredSize(new Dimension(1600, 900));
-        frame.setMinimumSize(new Dimension(640, 480));
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
+        new Main();
     }
 
-    private static void createUI(JFrame frame) {
+    public Main() {
+        super("Paint");
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        createUI(this);
+        setPreferredSize(new Dimension(1600, 900));
+        setMinimumSize(new Dimension(640, 480));
+        pack();
+        setLocationRelativeTo(null);
+        setVisible(true);
+    }
+
+    private void createUI(JFrame frame) {
         JFileChooser fileChooser = new JFileChooser();
 
         CanvasPane canvasPane = new CanvasPane(painterProxy, canvas);
         frame.add(canvasPane);
 
-        Action openAction = new AbstractAction("Open", getIcon("/icons/open.png")) {
+        Action openAction = new AbstractAction("Open", loadIcon("/icons/open.png")) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 fileChooser.setDialogTitle("Choose file");
@@ -47,7 +57,7 @@ public class Main {
                 }
             }
         };
-        Action saveAction = new AbstractAction("Save", getIcon("/icons/save.png")) {
+        Action saveAction = new AbstractAction("Save", loadIcon("/icons/save.png")) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 fileChooser.setDialogTitle("Save file");
@@ -62,37 +72,100 @@ public class Main {
                 }
             }
         };
+        Action exitAction = new AbstractAction("Exit") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+            }
+        };
+        Action settingsAction = new AbstractAction("Settings", loadIcon("/icons/settings.png")) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                painterProxy.getCurrent().showSettingsDialog();
+            }
+        };
 
         ColorPane colorPane = new ColorPane();
         colorPane.addColorChangedListener(canvas::setColor);
 
+        List<Action> toolActions = createToolActions();
+        List<Action> stampActions = createStampActions();
+
         JMenuBar menuBar = new JMenuBar();
-        menuBar.add(createFileMenu());
+        JMenu fileMenu = new JMenu("File");
+        JMenu toolsMenu = new JMenu("Tools");
+        menuBar.add(fileMenu);
+        menuBar.add(toolsMenu);
         frame.setJMenuBar(menuBar);
 
         JToolBar toolBar = new JToolBar();
-        toolBar.add(new Button("A"));
-        toolBar.add(new Button("B"));
         toolBar.setFloatable(false);
         frame.add(toolBar, BorderLayout.NORTH);
+
+        fileMenu.add(openAction);
+        fileMenu.add(saveAction);
+        fileMenu.add(new JSeparator());
+        fileMenu.add(exitAction);
+
+        toolBar.add(openAction);
+        toolBar.add(saveAction);
+        toolBar.add(new JToolBar.Separator());
+
+        toolBar.add(settingsAction);
+        for(var action: toolActions) {
+            toolsMenu.add(action);
+            toolBar.add(action);
+        }
+        for(var action: stampActions) {
+            toolsMenu.add(action);
+            toolBar.add(action);
+        }
+        toolsMenu.add(settingsAction);
+
+        toolBar.add(new JToolBar.Separator());
+        toolBar.add(colorPane);
     }
 
-    private static ImageIcon getIcon(String resource) {
-        return new ImageIcon(Objects.requireNonNull(Main.class.getResource(resource)));
+    private record ToolAction(String name, String path, PainterType type) {}
+    private List<Action> createToolActions() {
+        ToolAction[] actions = {
+            new ToolAction("Pencil", "/icons/pencil.png", PENCIL),
+            new ToolAction("Line", "/icons/line.png", LINE),
+            new ToolAction("Filling", "/icons/paint_bucket.png", FILLING),
+        };
+        List<Action> res = new ArrayList<>();
+        for(var action: actions) {
+            res.add(new AbstractAction(action.name, loadIcon(action.path)) {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    painterProxy.setCurrent(action.type);
+                }
+            });
+        }
+        return res;
     }
 
-    private JMenu createFileMenu() {
-        JMenu file = new JMenu("File");
-
-        JMenuItem open = new JMenuItem("Open");
-        open.addActionListener(e -> System.out.println("ActionListener.actionPerformed : open"));
-        file.add(open);
-
-        JMenuItem exit = new JMenuItem("Exit");
-        exit.addActionListener(e -> dispose());
-        file.add(exit);
-
-        return file;
+    private record StampAction(String name, String path, PainterType type, int n) {}
+    private List<Action> createStampActions() {
+        StampAction[] actions = {
+            new StampAction("Square", "/icons/square.png", POLYGON_STAMP, 4),
+            new StampAction("Pentagon", "/icons/pentagon.png", POLYGON_STAMP, 5),
+            new StampAction("Hexagon", "/icons/hexagon.png", POLYGON_STAMP, 6),
+            new StampAction("Star", "/icons/star.png", STAR_STAMP, 5),
+            new StampAction("Hexagram", "/icons/hexagram.png", STAR_STAMP, 6),
+        };
+        List<Action> res = new ArrayList<>();
+        for(var action: actions) {
+            res.add(new AbstractAction(action.name, loadIcon(action.path)) {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    painterProxy.setCurrent(action.type);
+                    StampPainter painter = (StampPainter) painterProxy.getCurrent();
+                    painter.setN(action.n);
+                }
+            });
+        }
+        return res;
     }
 
 }

@@ -1,4 +1,8 @@
-package ru.dyakun.paint;
+package ru.dyakun.paint.painter;
+
+import ru.dyakun.paint.Canvas;
+
+import javax.swing.*;
 
 public class StampPainter extends Painter {
 
@@ -18,8 +22,8 @@ public class StampPainter extends Painter {
         this.angle = angle;
     }
 
-    public StampPainter(Canvas canvas) {
-        super(canvas);
+    public StampPainter(Canvas canvas, JFrame frame) {
+        super(canvas, frame);
     }
 
 }
