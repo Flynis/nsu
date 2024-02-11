@@ -11,16 +11,32 @@ public class SettingsDialog {
 
     private final JDialog dialog;
 
-    public SettingsDialog(IntegerProperty property, JFrame frame) {
-        this(List.of(property), frame);
+    public SettingsDialog(JFrame frame) {
+        dialog = new JDialog(frame, "Settings", Dialog.ModalityType.DOCUMENT_MODAL);
     }
 
-    public SettingsDialog(List<IntegerProperty> properties, JFrame frame) {
-        dialog = new JDialog(frame, "Settings", Dialog.ModalityType.DOCUMENT_MODAL);
+    public void initByProperty(IntegerProperty property) {
+        initByProperty(List.of(property));
+    }
+
+    public void show() {
+        dialog.setVisible(true);
+    }
+
+    public void initByProperty(List<IntegerProperty> properties) {
         dialog.setMinimumSize(new Dimension(400, 60 * properties.size()));
         dialog.setLocationRelativeTo(null);
 
         List<JSlider> sliders = new ArrayList<>();
+        if(properties.isEmpty()) {
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            panel.add(new JLabel("No settings"));
+            dialog.add(panel);
+            dialog.add(getButtonsPane(properties, sliders), BorderLayout.SOUTH);
+            dialog.pack();
+            return;
+        }
+
         JPanel grid = new JPanel(new GridLayout(properties.size(), 3, 10, 5));
         for(var prop: properties) {
             grid.add(new JLabel(prop.getName()));
@@ -38,8 +54,8 @@ public class SettingsDialog {
 
             JSlider slider = new JSlider();
             slider.setMaximum(prop.getMax());
-            slider.setMinimum(prop.getMin());;
-            slider.setMajorTickSpacing(prop.getMax());
+            slider.setMinimum(prop.getMin());
+            slider.setMajorTickSpacing(prop.getMax() - 1);
             slider.setValue(prop.getVal());
             slider.setPaintLabels(true);
             grid.add(slider);

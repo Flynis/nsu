@@ -17,11 +17,13 @@ public class ManipulatorProxy {
         painters.put(ManipulatorType.STAR_STAMP, new StarStampManipulator(canvas, frame));
         painters.put(ManipulatorType.FILLING, new FillingManipulator(canvas, frame));
         painters.put(ManipulatorType.PENCIL, new PencilManipulator(canvas, frame));
+        painters.put(ManipulatorType.ERASER, new EraserManipulator(canvas, frame));
         setCurrent(ManipulatorType.PENCIL);
     }
 
     public void setCurrent(ManipulatorType manipulatorType) {
         this.current = painters.get(manipulatorType);
+        current.reset();
         System.out.println("Painter changed to " + manipulatorType.name());
     }
 

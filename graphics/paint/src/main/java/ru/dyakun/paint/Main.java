@@ -84,13 +84,6 @@ public class Main extends JFrame {
                 manipulatorProxy.getCurrent().showSettingsDialog();
             }
         };
-        Action eraserAction = new AbstractAction("Eraser", loadIcon("/icons/eraser.png")) {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                canvas.clear();
-                canvas.repaint();
-            }
-        };
 
         ColorPane colorPane = new ColorPane();
         colorPane.addColorChangedListener(canvas::setColor);
@@ -119,7 +112,7 @@ public class Main extends JFrame {
         toolBar.add(new JToolBar.Separator());
 
         toolBar.add(settingsAction);
-        toolBar.add(eraserAction);
+        toolBar.add(new JToolBar.Separator());
         for(var action: toolActions) {
             toolsMenu.add(action);
             toolBar.add(action);
@@ -129,7 +122,6 @@ public class Main extends JFrame {
             toolsMenu.add(action);
             toolBar.add(action);
         }
-        toolsMenu.add(eraserAction);
         toolsMenu.add(settingsAction);
 
         toolBar.add(new JToolBar.Separator());
@@ -147,6 +139,7 @@ public class Main extends JFrame {
             new ToolAction("Pencil", "/icons/pencil.png", PENCIL),
             new ToolAction("Line", "/icons/line.png", LINE),
             new ToolAction("Filling", "/icons/paint_bucket.png", FILLING),
+            new ToolAction("Eraser", "/icons/eraser.png", ERASER),
         };
         List<Action> res = new ArrayList<>();
         for(var action: actions) {

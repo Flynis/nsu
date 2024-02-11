@@ -5,6 +5,7 @@ public enum ManipulatorType {
     STAR_STAMP,
     POLYGON_STAMP,
     FILLING,
-    PENCIL
+    PENCIL,
+    ERASER
 
 }
