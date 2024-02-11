@@ -9,13 +9,13 @@ import java.util.List;
 public class Canvas {
     private static final Color BACKGROUND_COLOR = Color.WHITE;
 
-    private BufferedImage image = new BufferedImage(500, 500, Image.SCALE_DEFAULT);
+    private BufferedImage image = new BufferedImage(1000, 600, Image.SCALE_DEFAULT);
     private Color color = Color.BLACK;
     private final List<ChangeListener> listeners = new ArrayList<>();
 
     public Canvas() {
         Graphics2D g = image.createGraphics();
-        g.setColor(Color.WHITE);
+        g.setColor(BACKGROUND_COLOR);
         g.fillRect(0, 0, image.getWidth() - 1, image.getHeight() - 1);
     }
 

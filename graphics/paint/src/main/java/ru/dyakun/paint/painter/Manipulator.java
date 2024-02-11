@@ -8,12 +8,12 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 
-public abstract class Painter implements MouseListener, MouseMotionListener {
+public abstract class Manipulator implements MouseListener, MouseMotionListener {
 
     protected final Canvas canvas;
     protected final JDialog dialog;
 
-    public Painter(Canvas canvas, JFrame frame) {
+    public Manipulator(Canvas canvas, JFrame frame) {
         this.canvas = canvas;
         this.dialog = new JDialog(frame, "Settings", Dialog.ModalityType.DOCUMENT_MODAL);
     }

@@ -4,7 +4,7 @@ import ru.dyakun.paint.Canvas;
 
 import javax.swing.*;
 
-public class StampPainter extends Painter {
+public class StampManipulator extends Manipulator {
 
     private int n = 4;
     private int radius = 1;
@@ -22,7 +22,7 @@ public class StampPainter extends Painter {
         this.angle = angle;
     }
 
-    public StampPainter(Canvas canvas, JFrame frame) {
+    public StampManipulator(Canvas canvas, JFrame frame) {
         super(canvas, frame);
     }
 

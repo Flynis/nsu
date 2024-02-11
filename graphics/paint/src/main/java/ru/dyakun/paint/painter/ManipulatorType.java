@@ -1,6 +1,6 @@
 package ru.dyakun.paint.painter;
 
-public enum PainterType {
+public enum ManipulatorType {
     LINE,
     STAR_STAMP,
     POLYGON_STAMP,

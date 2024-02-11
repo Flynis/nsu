@@ -4,7 +4,7 @@ import ru.dyakun.paint.Canvas;
 
 import javax.swing.*;
 
-public class LinePainter extends Painter {
+public class LineManipulator extends Manipulator {
 
     private int x0;
     private int y0;
@@ -22,7 +22,7 @@ public class LinePainter extends Painter {
         this.strokeWidth = strokeWidth;
     }
 
-    public LinePainter(Canvas canvas, JFrame frame) {
+    public LineManipulator(Canvas canvas, JFrame frame) {
         super(canvas, frame);
     }
 

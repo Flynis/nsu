@@ -4,8 +4,8 @@ import ru.dyakun.paint.Canvas;
 
 import javax.swing.*;
 
-public class PolygonStampPainter extends StampPainter {
-    public PolygonStampPainter(Canvas canvas, JFrame frame) {
+public class StarStampManipulator extends StampManipulator {
+    public StarStampManipulator(Canvas canvas, JFrame frame) {
         super(canvas, frame);
     }
 }

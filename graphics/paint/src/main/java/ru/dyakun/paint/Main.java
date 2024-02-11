@@ -1,8 +1,8 @@
 package ru.dyakun.paint;
 
-import ru.dyakun.paint.painter.PainterProxy;
-import ru.dyakun.paint.painter.PainterType;
-import ru.dyakun.paint.painter.StampPainter;
+import ru.dyakun.paint.painter.ManipulatorProxy;
+import ru.dyakun.paint.painter.ManipulatorType;
+import ru.dyakun.paint.painter.StampManipulator;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -14,12 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static ru.dyakun.paint.IconUtil.loadIcon;
-import static ru.dyakun.paint.painter.PainterType.*;
+import static ru.dyakun.paint.painter.ManipulatorType.*;
 
 public class Main extends JFrame {
 
     private final Canvas canvas = new Canvas();
-    private final PainterProxy painterProxy = new PainterProxy(canvas, this);
+    private final ManipulatorProxy manipulatorProxy = new ManipulatorProxy(canvas, this);
 
     public static void main(String[] args) {
         new Main();
@@ -39,7 +39,7 @@ public class Main extends JFrame {
     private void createUI(JFrame frame) {
         JFileChooser fileChooser = new JFileChooser();
 
-        CanvasPane canvasPane = new CanvasPane(painterProxy, canvas);
+        CanvasPane canvasPane = new CanvasPane(manipulatorProxy, canvas);
         frame.add(canvasPane);
 
         Action openAction = new AbstractAction("Open", loadIcon("/icons/open.png")) {
@@ -81,7 +81,14 @@ public class Main extends JFrame {
         Action settingsAction = new AbstractAction("Settings", loadIcon("/icons/settings.png")) {
             @Override
             public void actionPerformed(ActionEvent e) {
-                painterProxy.getCurrent().showSettingsDialog();
+                manipulatorProxy.getCurrent().showSettingsDialog();
+            }
+        };
+        Action eraserAction = new AbstractAction("Eraser", loadIcon("/icons/eraser.png")) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                canvas.clear();
+                canvas.repaint();
             }
         };
 
@@ -112,21 +119,29 @@ public class Main extends JFrame {
         toolBar.add(new JToolBar.Separator());
 
         toolBar.add(settingsAction);
+        toolBar.add(eraserAction);
         for(var action: toolActions) {
             toolsMenu.add(action);
             toolBar.add(action);
         }
+        toolBar.add(new JToolBar.Separator());
         for(var action: stampActions) {
             toolsMenu.add(action);
             toolBar.add(action);
         }
+        toolsMenu.add(eraserAction);
         toolsMenu.add(settingsAction);
 
         toolBar.add(new JToolBar.Separator());
         toolBar.add(colorPane);
+        toolBar.add(new JToolBar.Separator());
+        List<Action> colorActions = colorPane.createColorActions(frame);
+        for(var action: colorActions) {
+            toolBar.add(action);
+        }
     }
 
-    private record ToolAction(String name, String path, PainterType type) {}
+    private record ToolAction(String name, String path, ManipulatorType type) {}
     private List<Action> createToolActions() {
         ToolAction[] actions = {
             new ToolAction("Pencil", "/icons/pencil.png", PENCIL),
@@ -138,14 +153,14 @@ public class Main extends JFrame {
             res.add(new AbstractAction(action.name, loadIcon(action.path)) {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    painterProxy.setCurrent(action.type);
+                    manipulatorProxy.setCurrent(action.type);
                 }
             });
         }
         return res;
     }
 
-    private record StampAction(String name, String path, PainterType type, int n) {}
+    private record StampAction(String name, String path, ManipulatorType type, int n) {}
     private List<Action> createStampActions() {
         StampAction[] actions = {
             new StampAction("Square", "/icons/square.png", POLYGON_STAMP, 4),
@@ -159,8 +174,8 @@ public class Main extends JFrame {
             res.add(new AbstractAction(action.name, loadIcon(action.path)) {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    painterProxy.setCurrent(action.type);
-                    StampPainter painter = (StampPainter) painterProxy.getCurrent();
+                    manipulatorProxy.setCurrent(action.type);
+                    StampManipulator painter = (StampManipulator) manipulatorProxy.getCurrent();
                     painter.setN(action.n);
                 }
             });
