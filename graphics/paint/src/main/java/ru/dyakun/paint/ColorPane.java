@@ -3,7 +3,6 @@ package ru.dyakun.paint;
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +22,7 @@ public class ColorPane extends JPanel {
     }
 
     private record ColorAction(String name, Color color) {}
-    public List<Action> createColorActions(JFrame frame) {
+    public List<JRadioButton> createColorActions(JFrame frame) {
         ColorAction[] commonColors = {
             new ColorAction("Black", Color.BLACK),
             new ColorAction("Red", Color.RED),
@@ -34,26 +33,21 @@ public class ColorPane extends JPanel {
             new ColorAction("Pink", new Color(255, 0, 255)),
             new ColorAction("White", Color.WHITE),
         };
-
-        List<Action> res = new ArrayList<>();
+        List<JRadioButton> res = new ArrayList<>();
         for(var colorAction: commonColors) {
-            Action action = new AbstractAction(colorAction.name, createIcon(colorAction.color)) {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    setColor(colorAction.color);
-                }
-            };
-            res.add(action);
+            JRadioButton button = new JRadioButton(createIcon(colorAction.color));
+            button.setToolTipText(colorAction.name);
+            button.addActionListener(e -> setColor(colorAction.color));
+            res.add(button);
         }
-        Action colorChooseButton = new AbstractAction("Choose color", loadIcon("/icons/color_picker.png")) {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Color color = JColorChooser.showDialog(frame, "Choose color", current);
-                if(color != null) {
-                    setColor(color);
-                }
+        JRadioButton colorChooseButton = new JRadioButton(loadIcon("/icons/color_picker.png"));
+        colorChooseButton.setToolTipText("Choose color");
+        colorChooseButton.addActionListener(e -> {
+            Color color = JColorChooser.showDialog(frame, "Choose color", current);
+            if(color != null) {
+                setColor(color);
             }
-        };
+        });
         res.add(colorChooseButton);
         return res;
     }

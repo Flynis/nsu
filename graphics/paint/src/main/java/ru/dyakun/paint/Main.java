@@ -88,8 +88,11 @@ public class Main extends JFrame {
         ColorPane colorPane = new ColorPane();
         colorPane.addColorChangedListener(canvas::setColor);
 
-        List<Action> toolActions = createToolActions();
-        List<Action> stampActions = createStampActions();
+        ButtonGroup toolsGroup = new ButtonGroup();
+        ButtonGroup colorsGroup = new ButtonGroup();
+
+        List<JRadioButton> toolActions = createToolActions();
+        List<JRadioButton> stampActions = createStampActions();
 
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");
@@ -116,45 +119,46 @@ public class Main extends JFrame {
         for(var action: toolActions) {
             toolsMenu.add(action);
             toolBar.add(action);
+            toolsGroup.add(action);
         }
         toolBar.add(new JToolBar.Separator());
         for(var action: stampActions) {
             toolsMenu.add(action);
             toolBar.add(action);
+            toolsGroup.add(action);
         }
         toolsMenu.add(settingsAction);
 
         toolBar.add(new JToolBar.Separator());
         toolBar.add(colorPane);
         toolBar.add(new JToolBar.Separator());
-        List<Action> colorActions = colorPane.createColorActions(frame);
+        List<JRadioButton> colorActions = colorPane.createColorActions(frame);
         for(var action: colorActions) {
             toolBar.add(action);
+            colorsGroup.add(action);
         }
     }
 
     private record ToolAction(String name, String path, ManipulatorType type) {}
-    private List<Action> createToolActions() {
+    private List<JRadioButton> createToolActions() {
         ToolAction[] actions = {
             new ToolAction("Pencil", "/icons/pencil.png", PENCIL),
             new ToolAction("Line", "/icons/line.png", LINE),
             new ToolAction("Filling", "/icons/paint_bucket.png", FILLING),
             new ToolAction("Eraser", "/icons/eraser.png", ERASER),
         };
-        List<Action> res = new ArrayList<>();
+        List<JRadioButton> res = new ArrayList<>();
         for(var action: actions) {
-            res.add(new AbstractAction(action.name, loadIcon(action.path)) {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    manipulatorProxy.setCurrent(action.type);
-                }
-            });
+            JRadioButton button = new JRadioButton(loadIcon(action.path));
+            button.setToolTipText(action.name);
+            button.addActionListener(e -> manipulatorProxy.setCurrent(action.type));
+            res.add(button);
         }
         return res;
     }
 
     private record StampAction(String name, String path, ManipulatorType type, int n) {}
-    private List<Action> createStampActions() {
+    private List<JRadioButton> createStampActions() {
         StampAction[] actions = {
             new StampAction("Square", "/icons/square.png", POLYGON_STAMP, 4),
             new StampAction("Pentagon", "/icons/pentagon.png", POLYGON_STAMP, 5),
@@ -162,16 +166,16 @@ public class Main extends JFrame {
             new StampAction("Star", "/icons/star.png", STAR_STAMP, 5),
             new StampAction("Hexagram", "/icons/hexagram.png", STAR_STAMP, 6),
         };
-        List<Action> res = new ArrayList<>();
+        List<JRadioButton> res = new ArrayList<>();
         for(var action: actions) {
-            res.add(new AbstractAction(action.name, loadIcon(action.path)) {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    manipulatorProxy.setCurrent(action.type);
-                    StampManipulator painter = (StampManipulator) manipulatorProxy.getCurrent();
-                    painter.setN(action.n);
-                }
+            JRadioButton button = new JRadioButton(loadIcon(action.path));
+            button.setToolTipText(action.name);
+            button.addActionListener(e -> {
+                manipulatorProxy.setCurrent(action.type);
+                StampManipulator painter = (StampManipulator) manipulatorProxy.getCurrent();
+                painter.setN(action.n);
             });
+            res.add(button);
         }
         return res;
     }
