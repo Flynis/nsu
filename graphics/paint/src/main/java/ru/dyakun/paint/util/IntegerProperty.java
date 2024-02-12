@@ -1,4 +1,4 @@
-package ru.dyakun.paint;
+package ru.dyakun.paint.util;
 
 public class IntegerProperty {
 

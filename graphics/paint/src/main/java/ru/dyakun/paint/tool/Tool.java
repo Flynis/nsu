@@ -1,28 +1,24 @@
-package ru.dyakun.paint.painter;
+package ru.dyakun.paint.tool;
 
-import ru.dyakun.paint.Canvas;
-import ru.dyakun.paint.SettingsDialog;
+import ru.dyakun.paint.util.IntegerProperty;
+import ru.dyakun.paint.model.Canvas;
 
-import javax.swing.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.util.List;
 
-public abstract class Manipulator implements MouseListener, MouseMotionListener {
+public abstract class Tool implements MouseListener, MouseMotionListener {
 
     protected final Canvas canvas;
-    protected final SettingsDialog dialog;
 
-    public Manipulator(Canvas canvas, JFrame frame) {
+    public Tool(Canvas canvas) {
         this.canvas = canvas;
-        this.dialog = new SettingsDialog(frame);
     }
 
     public void reset() {}
 
-    public void showSettingsDialog() {
-        dialog.show();
-    }
+    public abstract List<IntegerProperty> getProperties();
 
     @Override
     public void mouseClicked(MouseEvent mouseEvent) {}
