@@ -7,6 +7,7 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
 
 public class CanvasPane extends JPanel implements MouseListener, MouseMotionListener {
 
@@ -29,39 +30,58 @@ public class CanvasPane extends JPanel implements MouseListener, MouseMotionList
         g.drawImage(canvas.getImage(), 0, 0, null);
     }
 
+    private boolean isInImage(int x, int y) {
+        BufferedImage image = canvas.getImage();
+        return x < image.getWidth() && y < image.getHeight();
+    }
+
     @Override
     public void mouseClicked(MouseEvent e) {
-        manipulatorProxy.getCurrent().mouseClicked(e);
+        if (isInImage(e.getX(), e.getY())) {
+            manipulatorProxy.getCurrent().mouseClicked(e);
+        }
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
-        manipulatorProxy.getCurrent().mousePressed(e);
+        if (isInImage(e.getX(), e.getY())) {
+            manipulatorProxy.getCurrent().mousePressed(e);
+        }
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        manipulatorProxy.getCurrent().mouseReleased(e);
+        if (isInImage(e.getX(), e.getY())) {
+            manipulatorProxy.getCurrent().mouseReleased(e);
+        }
     }
 
     @Override
     public void mouseEntered(MouseEvent e) {
-        manipulatorProxy.getCurrent().mouseEntered(e);
+        if (isInImage(e.getX(), e.getY())) {
+            manipulatorProxy.getCurrent().mouseEntered(e);
+        }
     }
 
     @Override
     public void mouseExited(MouseEvent e) {
-        manipulatorProxy.getCurrent().mouseExited(e);
+        if (isInImage(e.getX(), e.getY())) {
+            manipulatorProxy.getCurrent().mouseExited(e);
+        }
     }
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        manipulatorProxy.getCurrent().mouseDragged(e);
+        if (isInImage(e.getX(), e.getY())) {
+            manipulatorProxy.getCurrent().mouseDragged(e);
+        }
     }
 
     @Override
     public void mouseMoved(MouseEvent e) {
-        manipulatorProxy.getCurrent().mouseMoved(e);
+        if (isInImage(e.getX(), e.getY())) {
+            manipulatorProxy.getCurrent().mouseMoved(e);
+        }
     }
 
 }
