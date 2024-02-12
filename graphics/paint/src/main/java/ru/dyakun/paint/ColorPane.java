@@ -3,6 +3,7 @@ package ru.dyakun.paint;
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
+import java.awt.event.ItemEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,14 @@ public class ColorPane extends JPanel {
             JRadioButton button = new JRadioButton(createIcon(colorAction.color));
             button.setToolTipText(colorAction.name);
             button.addActionListener(e -> setColor(colorAction.color));
+            button.addItemListener(e -> {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    button.setBackground(Colors.DARK_BACK_COLOR);
+                }
+                else if (e.getStateChange() == ItemEvent.DESELECTED) {
+                    button.setBackground(Colors.LIGHT_BACK_COLOR);
+                }
+            });
             res.add(button);
         }
         JRadioButton colorChooseButton = new JRadioButton(loadIcon("/icons/color_picker.png"));

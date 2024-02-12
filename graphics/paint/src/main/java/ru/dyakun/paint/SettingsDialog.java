@@ -37,9 +37,10 @@ public class SettingsDialog {
             return;
         }
 
-        JPanel grid = new JPanel(new GridLayout(properties.size(), 3, 10, 5));
+        JPanel grid = new JPanel(new GridLayout(properties.size(), 1, 10, 5));
         for(var prop: properties) {
-            grid.add(new JLabel(prop.getName()));
+            JPanel line = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            line.add(new JLabel(prop.getName()));
 
             NumberFormatter formatter = new NumberFormatter(NumberFormat.getInstance());
             formatter.setValueClass(Integer.class);
@@ -50,7 +51,10 @@ public class SettingsDialog {
 
             JFormattedTextField field = new JFormattedTextField(formatter);
             field.setValue(prop.getVal());
-            grid.add(field);
+            Dimension fieldSize = new Dimension(40, 30);
+            field.setMinimumSize(fieldSize);
+            field.setPreferredSize(fieldSize);
+            line.add(field);
 
             JSlider slider = new JSlider();
             slider.setMaximum(prop.getMax());
@@ -58,11 +62,12 @@ public class SettingsDialog {
             slider.setMajorTickSpacing(prop.getMax() - 1);
             slider.setValue(prop.getVal());
             slider.setPaintLabels(true);
-            grid.add(slider);
+            line.add(slider);
             sliders.add(slider);
 
             field.addActionListener(e -> slider.setValue((Integer) field.getValue()));
             slider.addChangeListener(e -> field.setValue(slider.getValue()));
+            grid.add(line);
         }
 
         JPanel buttons = getButtonsPane(properties, sliders);

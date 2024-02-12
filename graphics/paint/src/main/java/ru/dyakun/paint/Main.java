@@ -6,8 +6,10 @@ import ru.dyakun.paint.painter.StampManipulator;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ItemEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -84,6 +86,12 @@ public class Main extends JFrame {
                 manipulatorProxy.getCurrent().showSettingsDialog();
             }
         };
+        Action infoAction = new AbstractAction("Info", loadIcon("/icons/info.png")) {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+
+            }
+        };
 
         ColorPane colorPane = new ColorPane();
         colorPane.addColorChangedListener(canvas::setColor);
@@ -92,13 +100,16 @@ public class Main extends JFrame {
         ButtonGroup colorsGroup = new ButtonGroup();
 
         List<JRadioButton> toolActions = createToolActions();
+        toolActions.get(0).setSelected(true);
         List<JRadioButton> stampActions = createStampActions();
 
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");
         JMenu toolsMenu = new JMenu("Tools");
+        JMenu helpMenu = new JMenu("Help");
         menuBar.add(fileMenu);
         menuBar.add(toolsMenu);
+        menuBar.add(helpMenu);
         frame.setJMenuBar(menuBar);
 
         JToolBar toolBar = new JToolBar();
@@ -137,6 +148,9 @@ public class Main extends JFrame {
             toolBar.add(action);
             colorsGroup.add(action);
         }
+        toolBar.add(new JToolBar.Separator());
+        toolBar.add(infoAction);
+        helpMenu.add(infoAction);
     }
 
     private record ToolAction(String name, String path, ManipulatorType type) {}
@@ -152,6 +166,14 @@ public class Main extends JFrame {
             JRadioButton button = new JRadioButton(loadIcon(action.path));
             button.setToolTipText(action.name);
             button.addActionListener(e -> manipulatorProxy.setCurrent(action.type));
+            button.addItemListener(e -> {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    button.setBackground(Colors.DARK_BACK_COLOR);
+                }
+                else if (e.getStateChange() == ItemEvent.DESELECTED) {
+                    button.setBackground(Colors.LIGHT_BACK_COLOR);
+                }
+            });
             res.add(button);
         }
         return res;
@@ -174,6 +196,14 @@ public class Main extends JFrame {
                 manipulatorProxy.setCurrent(action.type);
                 StampManipulator painter = (StampManipulator) manipulatorProxy.getCurrent();
                 painter.setN(action.n);
+            });
+            button.addItemListener(e -> {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    button.setBackground(Colors.DARK_BACK_COLOR);
+                }
+                else if (e.getStateChange() == ItemEvent.DESELECTED) {
+                    button.setBackground(Colors.LIGHT_BACK_COLOR);
+                }
             });
             res.add(button);
         }
