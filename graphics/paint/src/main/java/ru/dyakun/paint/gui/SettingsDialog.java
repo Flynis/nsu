@@ -1,4 +1,6 @@
-package ru.dyakun.paint;
+package ru.dyakun.paint.gui;
+
+import ru.dyakun.paint.tool.IntegerProperty;
 
 import javax.swing.*;
 import javax.swing.text.NumberFormatter;
@@ -11,19 +13,16 @@ public class SettingsDialog {
 
     private final JDialog dialog;
 
-    public SettingsDialog(JFrame frame) {
+    public SettingsDialog(JFrame frame, List<IntegerProperty> properties) {
         dialog = new JDialog(frame, "Settings", Dialog.ModalityType.DOCUMENT_MODAL);
-    }
-
-    public void initByProperty(IntegerProperty property) {
-        initByProperty(List.of(property));
+        initByProperties(properties);
     }
 
     public void show() {
         dialog.setVisible(true);
     }
 
-    public void initByProperty(List<IntegerProperty> properties) {
+    private void initByProperties(List<IntegerProperty> properties) {
         dialog.setMinimumSize(new Dimension(400, 60 * properties.size()));
         dialog.setLocationRelativeTo(null);
 

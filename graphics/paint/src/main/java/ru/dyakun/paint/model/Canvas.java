@@ -1,7 +1,5 @@
 package ru.dyakun.paint.model;
 
-import ru.dyakun.paint.util.GraphicsUtil;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;

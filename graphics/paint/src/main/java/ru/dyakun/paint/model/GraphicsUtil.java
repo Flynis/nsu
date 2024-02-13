@@ -1,4 +1,4 @@
-package ru.dyakun.paint.util;
+package ru.dyakun.paint.model;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

@@ -1,8 +1,9 @@
-package ru.dyakun.paint.util;
+package ru.dyakun.paint.gui;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -21,6 +22,18 @@ public class Icons {
         } catch (IOException e) {
             throw new AssertionError();
         }
+    }
+
+    public static ImageIcon createIcon(Color main) {
+        int size = ICON_SIZE;
+        BufferedImage image = new BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = image.createGraphics();
+        graphics.setColor(main);
+        graphics.fillRect(0, 0, size, size);
+        graphics.setXORMode(Color.DARK_GRAY);
+        graphics.drawRect(0, 0, size - 1, size - 1);
+        image.flush();
+        return new ImageIcon(image);
     }
 
 }

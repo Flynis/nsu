@@ -1,6 +1,5 @@
 package ru.dyakun.paint.tool;
 
-import ru.dyakun.paint.util.IntegerProperty;
 import ru.dyakun.paint.model.Canvas;
 
 import java.awt.event.MouseEvent;

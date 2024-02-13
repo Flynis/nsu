@@ -1,14 +1,15 @@
 package ru.dyakun.paint.tool;
 
 import ru.dyakun.paint.model.Canvas;
+import ru.dyakun.paint.model.ColorChangeListener;
 
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.*;
 
 public class ToolManager {
 
     private Tool current;
     private final Map<ToolType, Tool> tools = new EnumMap<>(ToolType.class);
+    private final List<ToolChangeListener> listeners = new ArrayList<>();
 
     public ToolManager(Canvas canvas) {
         tools.put(ToolType.LINE, new LineTool(canvas));
@@ -24,10 +25,21 @@ public class ToolManager {
         this.current = tools.get(toolType);
         current.reset();
         System.out.println("Tool changed to " + toolType.name());
+        for(var listener: listeners) {
+            listener.toolChanged(toolType, current);
+        }
     }
 
     public Tool getCurrent() {
         return current;
+    }
+
+    public Map<ToolType, Tool> getTools() {
+        return tools;
+    }
+
+    public void addToolChangedListener(ToolChangeListener listener) {
+        listeners.add(listener);
     }
 
 }
