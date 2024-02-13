@@ -1,4 +1,4 @@
-package ru.dyakun.paint;
+package ru.dyakun.paint.gui;
 
 import java.awt.*;
 

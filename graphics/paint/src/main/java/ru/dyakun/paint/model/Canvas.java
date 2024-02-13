@@ -12,6 +12,8 @@ public class Canvas {
     private BufferedImage image = null;
     private final List<CanvasListener> listeners = new ArrayList<>();
 
+    Canvas() {}
+
     void setImage(BufferedImage image) {
         this.image = image;
         image.createGraphics();
@@ -20,11 +22,11 @@ public class Canvas {
         }
     }
 
-    BufferedImage getImage() {
+    public BufferedImage getImage() {
         return image;
     }
 
-    public void addUpdateListener(CanvasListener listener) {
+    public void addCanvasListener(CanvasListener listener) {
         listeners.add(listener);
     }
 

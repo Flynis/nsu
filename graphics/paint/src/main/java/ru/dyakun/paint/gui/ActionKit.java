@@ -6,12 +6,10 @@ import ru.dyakun.paint.tool.StampTool;
 import ru.dyakun.paint.tool.ToolManager;
 import ru.dyakun.paint.tool.ToolType;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -153,7 +151,7 @@ public class ActionKit {
         return a;
     }
 
-    public List<Action> createDocumentActions(JFrame frame, CanvasManager manager) {
+    public List<Action> createFileActions(JFrame frame, CanvasManager manager) {
         JFileChooser fileChooser = new JFileChooser();
         Action openAction = createOpenAction(frame, manager, fileChooser);
         Action saveAction = createSaveAction(frame, manager, fileChooser);

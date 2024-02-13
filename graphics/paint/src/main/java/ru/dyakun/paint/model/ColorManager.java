@@ -6,12 +6,12 @@ import java.util.List;
 
 public class ColorManager {
 
-    private final static ColorManager instance = new ColorManager(Color.BLACK);
+    private final static ColorManager instance = new ColorManager();
     private Color color;
     private final List<ColorChangeListener> listeners = new ArrayList<>();
 
-    private ColorManager(Color initialColor) {
-        this.color = initialColor;
+    private ColorManager() {
+        this.color = Color.BLACK;
     }
 
     public static ColorManager getInstance() {

@@ -1,6 +1,5 @@
 package ru.dyakun.paint.gui;
 
-import ru.dyakun.paint.tool.Tool;
 import ru.dyakun.paint.tool.ToolChangeListener;
 import ru.dyakun.paint.tool.ToolManager;
 import ru.dyakun.paint.tool.ToolType;
@@ -15,6 +14,7 @@ public class SettingsManager implements ToolChangeListener {
     private final Map<ToolType, SettingsDialog> settings = new EnumMap<>(ToolType.class);
 
     public SettingsManager(JFrame frame, ToolManager toolManager) {
+        toolManager.addToolChangedListener(this);
         for(var entry: toolManager.getTools().entrySet()) {
             SettingsDialog dialog = new SettingsDialog(frame, entry.getValue().getProperties());
             settings.put(entry.getKey(), dialog);
@@ -22,7 +22,7 @@ public class SettingsManager implements ToolChangeListener {
     }
 
     @Override
-    public void toolChanged(ToolType type, Tool ignored) {
+    public void toolChanged(ToolType type) {
         current = settings.get(type);
     }
 

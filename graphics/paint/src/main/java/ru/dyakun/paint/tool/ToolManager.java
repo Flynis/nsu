@@ -1,7 +1,6 @@
 package ru.dyakun.paint.tool;
 
 import ru.dyakun.paint.model.Canvas;
-import ru.dyakun.paint.model.ColorChangeListener;
 
 import java.util.*;
 
@@ -26,7 +25,7 @@ public class ToolManager {
         current.reset();
         System.out.println("Tool changed to " + toolType.name());
         for(var listener: listeners) {
-            listener.toolChanged(toolType, current);
+            listener.toolChanged(toolType);
         }
     }
 
