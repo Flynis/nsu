@@ -56,6 +56,9 @@ public class GraphicsUtil {
         while (!stack.isEmpty()) {
             var span = stack.pollFirst();
             // recolor span
+            if(image.getRGB(span.left, span.y) == newColor.getRGB()) {
+                continue;
+            }
             for (int i = span.left; i <= span.right; i++) {
                 image.setRGB(i, span.y, newColor.getRGB());
             }
@@ -65,6 +68,12 @@ public class GraphicsUtil {
             if(span.y + 1 < image.getHeight()) { // search lower spans
                 findSpanNeighbors(span, span.y + 1, stack, oldColor, image);
             }
+        }
+    }
+
+    private static void setPixel(int x, int y, BufferedImage image, Color c) {
+        if(x >= 0 && x < image.getWidth() && y >= 0 && y < image.getHeight()) {
+            image.setRGB(x, y, c.getRGB());
         }
     }
 
@@ -97,7 +106,7 @@ public class GraphicsUtil {
         int y = y0;
         int err = el / 2;
         // first point
-        image.setRGB(x, y, c.getRGB());
+        setPixel(x, y, image, c);
         for (int i = 0; i < el; i++) {
             err -= es;
             if (err < 0) {
@@ -109,7 +118,7 @@ public class GraphicsUtil {
                 x += pdx;
                 y += pdy;
             }
-            image.setRGB(x, y, c.getRGB());
+            setPixel(x, y, image, c);
         }
     }
 

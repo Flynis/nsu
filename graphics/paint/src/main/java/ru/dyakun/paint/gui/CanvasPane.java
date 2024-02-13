@@ -15,6 +15,7 @@ public class CanvasPane extends JPanel implements MouseListener, MouseMotionList
 
     private final ToolManager toolManager;
     private final Canvas canvas;
+    private final Dimension size;
 
 
     public CanvasPane(ToolManager toolManager, Canvas canvas) {
@@ -24,7 +25,17 @@ public class CanvasPane extends JPanel implements MouseListener, MouseMotionList
         addMouseMotionListener(this);
         canvas.addCanvasListener(this);
         var image = canvas.getImage();
-        setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
+        size = new Dimension(image.getWidth(), image.getHeight());
+    }
+
+    public boolean isCorrectCoordinates(int x, int y) {
+        BufferedImage image = canvas.getImage();
+        return x >= 0 && x < image.getWidth() && y >= 0 && y < image.getHeight();
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return size;
     }
 
     @Override
@@ -34,37 +45,51 @@ public class CanvasPane extends JPanel implements MouseListener, MouseMotionList
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        toolManager.getCurrent().mouseClicked(e);
+        if (isCorrectCoordinates(e.getX(), e.getY())) {
+            toolManager.getCurrent().mouseClicked(e);
+        }
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
-        toolManager.getCurrent().mousePressed(e);
+        if (isCorrectCoordinates(e.getX(), e.getY())) {
+            toolManager.getCurrent().mousePressed(e);
+        }
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        toolManager.getCurrent().mouseReleased(e);
+        if (isCorrectCoordinates(e.getX(), e.getY())) {
+            toolManager.getCurrent().mouseReleased(e);
+        }
     }
 
     @Override
     public void mouseEntered(MouseEvent e) {
-        toolManager.getCurrent().mouseEntered(e);
+        if (isCorrectCoordinates(e.getX(), e.getY())) {
+            toolManager.getCurrent().mouseEntered(e);
+        }
     }
 
     @Override
     public void mouseExited(MouseEvent e) {
-        toolManager.getCurrent().mouseExited(e);
+        if (isCorrectCoordinates(e.getX(), e.getY())) {
+            toolManager.getCurrent().mouseExited(e);
+        }
     }
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        toolManager.getCurrent().mouseDragged(e);
+        if (isCorrectCoordinates(e.getX(), e.getY())) {
+            toolManager.getCurrent().mouseDragged(e);
+        }
     }
 
     @Override
     public void mouseMoved(MouseEvent e) {
-        toolManager.getCurrent().mouseMoved(e);
+        if (isCorrectCoordinates(e.getX(), e.getY())) {
+            toolManager.getCurrent().mouseMoved(e);
+        }
     }
 
     @Override
@@ -75,7 +100,7 @@ public class CanvasPane extends JPanel implements MouseListener, MouseMotionList
 
     @Override
     public void onSourceChange(BufferedImage image) {
-        setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
+        size.setSize(image.getWidth(), image.getHeight());
         revalidate();
     }
 

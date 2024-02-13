@@ -5,6 +5,7 @@ import ru.dyakun.paint.tool.ToolManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ItemEvent;
 import java.util.List;
 
 public class MainFrame extends JFrame {
@@ -20,8 +21,8 @@ public class MainFrame extends JFrame {
         createUI(this);
         setPreferredSize(new Dimension(1600, 900));
         setMinimumSize(new Dimension(640, 480));
-        setLocationRelativeTo(null);
         pack();
+        setLocationRelativeTo(null);
         setVisible(true);
     }
 
@@ -64,7 +65,7 @@ public class MainFrame extends JFrame {
         List<Action> toolActions = actionKit.createToolActions(toolManager);
         for(var action: toolActions) {
             toolsMenu.add(action);
-            JRadioButton button = new JRadioButton(action);
+            JRadioButton button = jRadioButtonFromAction(action);
             toolBar.add(button);
             toolsGroup.add(button);
         }
@@ -72,7 +73,7 @@ public class MainFrame extends JFrame {
         List<Action> stampActions = actionKit.createStampActions(toolManager);
         for(var action: stampActions) {
             toolsMenu.add(action);
-            JRadioButton button = new JRadioButton(action);
+            JRadioButton button = jRadioButtonFromAction(action);
             toolBar.add(button);
             toolsGroup.add(button);
         }
@@ -85,20 +86,39 @@ public class MainFrame extends JFrame {
         ButtonGroup colorsGroup = new ButtonGroup();
         List<Action> colorActions = actionKit.createPaletteActions();
         for(var action: colorActions) {
-            JRadioButton button = new JRadioButton(action);
+            JRadioButton button = jRadioButtonFromAction(action);
             toolBar.add(button);
             colorsGroup.add(button);
         }
         Action chooseAction = actionKit.createColorChooseAction(frame);
-        JRadioButton chooseButton = new JRadioButton(chooseAction);
+        toolsMenu.add(chooseAction);
+        JRadioButton chooseButton = jRadioButtonFromAction(chooseAction);
         toolBar.add(chooseButton);
         colorsGroup.add(chooseButton);
-        toolsMenu.add(chooseButton);
         toolBar.add(new JToolBar.Separator());
 
         Action aboutAction = actionKit.createAboutAction(frame);
         toolBar.add(aboutAction);
         helpMenu.add(aboutAction);
+    }
+
+    private static JRadioButton jRadioButtonFromAction(Action action) {
+        JRadioButton button = new JRadioButton();
+        button.setIcon((Icon) action.getValue(Action.SMALL_ICON));
+        button.setToolTipText((String) action.getValue(Action.SHORT_DESCRIPTION));
+        button.addActionListener(action);
+        button.addItemListener(e -> {
+            if(e.getStateChange() == ItemEvent.SELECTED) {
+                button.setBackground(Colors.DARK_BACK_COLOR);
+            } else if (e.getStateChange() == ItemEvent.DESELECTED) {
+                button.setBackground(Colors.LIGHT_BACK_COLOR);
+            }
+        });
+        Object selectedKey = action.getValue(Action.SELECTED_KEY);
+        if(selectedKey != null) {
+            button.setSelected((Boolean) selectedKey);
+        }
+        return button;
     }
 
 }

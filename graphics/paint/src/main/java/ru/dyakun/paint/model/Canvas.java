@@ -64,6 +64,7 @@ public class Canvas {
 
     public void fill(int x0, int y0, Color c) {
         GraphicsUtil.spanFilling(x0, y0, image, c);
+        notifyListeners();
     }
 
     public void drawRegularStar(int cx, int cy, int n, int r, int theta, Color c) {
@@ -88,6 +89,7 @@ public class Canvas {
             prevY = y1;
         }
         drawLine(prevX, prevY, x0, y0, 1, c);
+        notifyListeners();
     }
 
     public void drawRegularPolygon(int cx, int cy, int n, int r, int theta, Color c) {
@@ -105,6 +107,7 @@ public class Canvas {
             prevY = y;
         }
         drawLine(prevX, prevY, x0, y0, 1, c);
+        notifyListeners();
     }
 
 }

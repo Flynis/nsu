@@ -8,8 +8,8 @@ public class Colors {
         throw new AssertionError();
     }
 
-    public static final Color DARK_BACK_COLOR = new Color(0xE5E4E2);
-    public static final Color LIGHT_BACK_COLOR = new Color(0xF2F3F4);
+    public static final Color DARK_BACK_COLOR = new Color(0xBCBCBB);
+    public static final Color LIGHT_BACK_COLOR = new Color(0xF1F1F1);
 
 
 }

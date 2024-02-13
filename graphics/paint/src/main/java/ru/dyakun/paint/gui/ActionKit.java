@@ -24,6 +24,7 @@ public class ActionKit {
         a.putValue(SHORT_DESCRIPTION, name);
         a.putValue(NAME, name);
         a.putValue(SMALL_ICON, icon);
+        a.putValue(LARGE_ICON_KEY, icon);
     }
 
     private record PaletteAction(String name, Color color) {}
@@ -49,6 +50,7 @@ public class ActionKit {
             initAction(a, action.name, createIcon(action.color));
             res.add(a);
         }
+        res.get(0).putValue(SELECTED_KEY, Boolean.TRUE);
         return res;
     }
 
@@ -87,6 +89,7 @@ public class ActionKit {
             initAction(a, action.name, loadIcon(action.path));
             res.add(a);
         }
+        res.get(0).putValue(SELECTED_KEY, Boolean.TRUE);
         return res;
     }
 
