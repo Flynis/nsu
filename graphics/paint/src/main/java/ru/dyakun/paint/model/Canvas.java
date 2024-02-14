@@ -70,21 +70,22 @@ public class Canvas {
     public void drawRegularStar(int cx, int cy, int n, int r, int theta, Color c) {
         double offset = theta * Math.PI / 180;
         double a = Math.PI / n;
-        int x0 = (int) (cx + r * Math.cos(offset));
-        int y0 = (int) (cy - r * Math.sin(offset));
+        double vx = - r * Math.sin(offset);
+        double vy = r * Math.cos(offset);
+        double asin = Math.sin(a);
+        double acos = Math.cos(a);
+        int x0 = cx + (int) (vx);
+        int y0 = cy - (int) (vy);
         int prevX = x0;
         int prevY = y0;
-        for (int i = 0; i < n; i++) {
-            double rcos = Math.cos(a * i + offset) * r;
-            double rsin = Math.sin(a * i + offset) * r;
-
-            int x = (int) (cx + rcos);
-            int y = (int) (cy + rsin);
-            drawLine(prevX, prevY, x, y, 1, c);
-
-            int x1 = (int) (cx + rcos / 2);
-            int y1 = (int) (cy + rsin / 2);
-            drawLine(x, y, x1, y1, 1, c);
+        for (int i = 1; i < n * 2; i++) {
+            double x = vx * acos - vy * asin;
+            double y = vx * asin + vy * acos;
+            int x1 = cx - r / 2 + (int) (x);
+            int y1 = cy + r / 2 - (int) (y);
+            vx = x;
+            vy = y;
+            drawLine(prevX, prevY, x1, y1, 1, c);
             prevX = x1;
             prevY = y1;
         }
@@ -95,16 +96,27 @@ public class Canvas {
     public void drawRegularPolygon(int cx, int cy, int n, int r, int theta, Color c) {
         double offset = theta * Math.PI / 180;
         double a = 2 * Math.PI / n;
-        int x0 = (int) (cx + r * Math.cos(offset));
-        int y0 = (int) (cy - r * Math.sin(offset));
+        if(n % 2 == 0) {
+            offset += a / 2;
+        }
+        double vx = - r * Math.sin(offset);
+        double vy = r * Math.cos(offset);
+        double asin = Math.sin(a);
+        double acos = Math.cos(a);
+        int x0 = cx + (int) (vx);
+        int y0 = cy - (int) (vy);
         int prevX = x0;
         int prevY = y0;
         for (int i = 1; i < n; i++) {
-            int x = (int) (cx + r * Math.cos(a * i + offset));
-            int y = (int) (cy - r * Math.sin(a * i + offset));
-            drawLine(prevX, prevY, x, y, 1, c);
-            prevX = x;
-            prevY = y;
+            double x = vx * acos - vy * asin;
+            double y = vx * asin + vy * acos;
+            int x1 = cx + (int) (x);
+            int y1 = cy - (int) (y);
+            vx = x;
+            vy = y;
+            drawLine(prevX, prevY, x1, y1, 1, c);
+            prevX = x1;
+            prevY = y1;
         }
         drawLine(prevX, prevY, x0, y0, 1, c);
         notifyListeners();

@@ -12,26 +12,21 @@ import java.util.List;
 public class SettingsDialog {
 
     private final JDialog dialog;
+    private final List<IntegerProperty> properties;
+    private final List<JSlider> sliders;
 
     public SettingsDialog(JFrame frame, List<IntegerProperty> properties) {
         dialog = new JDialog(frame, "Settings", Dialog.ModalityType.DOCUMENT_MODAL);
-        initByProperties(properties);
-    }
 
-    public void show() {
-        dialog.setVisible(true);
-    }
-
-    private void initByProperties(List<IntegerProperty> properties) {
+        this.properties = properties;
         dialog.setMinimumSize(new Dimension(400, 60 * properties.size()));
-        dialog.setLocationRelativeTo(null);
 
-        List<JSlider> sliders = new ArrayList<>();
+        sliders = new ArrayList<>();
         if(properties.isEmpty()) {
             JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
             panel.add(new JLabel("No settings"));
             dialog.add(panel);
-            dialog.add(getButtonsPane(properties, sliders), BorderLayout.SOUTH);
+            dialog.add(getButtonsPane(), BorderLayout.SOUTH);
             dialog.pack();
             return;
         }
@@ -69,14 +64,23 @@ public class SettingsDialog {
             grid.add(line);
         }
 
-        JPanel buttons = getButtonsPane(properties, sliders);
+        JPanel buttons = getButtonsPane();
 
         dialog.add(grid);
         dialog.add(buttons, BorderLayout.SOUTH);
         dialog.pack();
+        dialog.setLocationRelativeTo(null);
     }
 
-    private JPanel getButtonsPane(List<IntegerProperty> properties, List<JSlider> sliders) {
+    public void show() {
+        for(int i = 0; i < properties.size(); i++) {
+            var slider = sliders.get(i);
+            slider.setValue(properties.get(i).getVal());
+        }
+        dialog.setVisible(true);
+    }
+
+    private JPanel getButtonsPane() {
         JButton okButton = new JButton("Ok");
         okButton.addActionListener(e -> {
             for(int i = 0; i < properties.size(); i++) {
@@ -87,13 +91,7 @@ public class SettingsDialog {
         });
 
         JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(e -> {
-            dialog.setVisible(false);
-            for(int i = 0; i < properties.size(); i++) {
-                var slider = sliders.get(i);
-                slider.setValue(properties.get(i).getVal());
-            }
-        });
+        cancelButton.addActionListener(e -> dialog.setVisible(false));
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttons.add(okButton);

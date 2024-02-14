@@ -69,7 +69,6 @@ public class MainFrame extends JFrame {
             toolBar.add(button);
             toolsGroup.add(button);
         }
-        toolBar.add(new JToolBar.Separator());
         List<Action> stampActions = actionKit.createStampActions(toolManager);
         for(var action: stampActions) {
             toolsMenu.add(action);

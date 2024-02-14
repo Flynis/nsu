@@ -19,6 +19,7 @@ public class SettingsManager implements ToolChangeListener {
             SettingsDialog dialog = new SettingsDialog(frame, entry.getValue().getProperties());
             settings.put(entry.getKey(), dialog);
         }
+        current = settings.get(ToolType.PENCIL);
     }
 
     @Override
@@ -29,4 +30,5 @@ public class SettingsManager implements ToolChangeListener {
     public void showSettings() {
         current.show();
     }
+
 }

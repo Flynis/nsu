@@ -8,7 +8,7 @@ import java.awt.*;
 public class PolygonStampTool extends StampTool {
 
     public PolygonStampTool(Canvas canvas) {
-        super(canvas);
+        super(canvas, new IntegerProperty(4, 3, 16, "Number of vertices"));
     }
 
     @Override

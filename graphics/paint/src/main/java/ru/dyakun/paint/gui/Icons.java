@@ -20,7 +20,7 @@ public class Icons {
             Image image = ImageIO.read(Objects.requireNonNull(Icons.class.getResource(resource)));
             return new ImageIcon(image.getScaledInstance(ICON_SIZE, ICON_SIZE, Image.SCALE_DEFAULT));
         } catch (IOException e) {
-            throw new AssertionError();
+            throw new IllegalStateException("Failed to load resource icon");
         }
     }
 

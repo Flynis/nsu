@@ -8,7 +8,7 @@ import java.awt.*;
 public class StarStampTool extends StampTool {
 
     public StarStampTool(Canvas canvas) {
-        super(canvas);
+        super(canvas, new IntegerProperty(5, 5, 16, "Number of vertices"));
     }
 
     @Override

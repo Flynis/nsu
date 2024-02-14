@@ -17,7 +17,7 @@ public class ExtensionFileFilter extends FileFilter {
 
     public boolean accept(File file) {
         if (file.isDirectory()) {
-            return false;
+            return true;
         } else {
             String path = file.getAbsolutePath().toLowerCase();
             for (var ext: extensions) {

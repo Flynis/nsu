@@ -9,20 +9,19 @@ public class AboutDialog extends JDialog {
     public AboutDialog(JFrame frame) {
         super(frame, "About program", Dialog.ModalityType.DOCUMENT_MODAL);
         setMinimumSize(new Dimension(500, 400));
-        setLocationRelativeTo(null);
 
         JPanel panel = new JPanel();
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JTextArea textArea = new JTextArea();
         textArea.setEditable(false);
-        textArea.setText("About program");
-
-        JPanel buttons = getButtonsPane();
+        textArea.setText("About program aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        panel.add(textArea);
 
         add(panel);
-        add(buttons, BorderLayout.SOUTH);
+        add(getButtonsPane(), BorderLayout.SOUTH);
         pack();
+        setLocationRelativeTo(null);
     }
 
     private JPanel getButtonsPane() {

@@ -12,6 +12,7 @@ public class ColorObserverPane extends JPanel implements ColorChangeListener {
         Dimension size = new Dimension(Icons.ICON_SIZE, Icons.ICON_SIZE);
         setMaximumSize(size);
         setPreferredSize(size);
+        setToolTipText("Current color");
         ColorManager.getInstance().addColorChangedListener(this);
     }
 

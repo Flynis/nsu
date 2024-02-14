@@ -7,28 +7,29 @@ import java.util.List;
 
 public abstract class StampTool extends Tool {
 
-    private int n;
+    private final IntegerProperty n;
     private final IntegerProperty radius;
     private final IntegerProperty theta;
 
     public void setN(int n) {
-        this.n = n;
+        this.n.setVal(n);
     }
 
-    public StampTool(Canvas canvas) {
+    public StampTool(Canvas canvas, IntegerProperty n) {
         super(canvas);
         radius = new IntegerProperty(5, 5, 100, "Radius");
         theta = new IntegerProperty(0, 0, 360, "Rotate");
+        this.n = n;
     }
 
     @Override
     public List<IntegerProperty> getProperties() {
-        return List.of(radius, theta);
+        return List.of(n, radius, theta);
     }
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        drawStamp(e.getX(), e.getY(), n, radius.getVal(), theta.getVal());
+        drawStamp(e.getX(), e.getY(), n.getVal(), radius.getVal(), theta.getVal());
     }
 
     protected abstract void drawStamp(int x, int y, int n, int r, int theta);

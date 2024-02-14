@@ -97,10 +97,7 @@ public class ActionKit {
     public List<Action> createStampActions(ToolManager toolManager) {
         StampAction[] actions = {
                 new StampAction("Square", "/icons/square.png", POLYGON_STAMP, 4),
-                new StampAction("Pentagon", "/icons/pentagon.png", POLYGON_STAMP, 5),
-                new StampAction("Hexagon", "/icons/hexagon.png", POLYGON_STAMP, 6),
                 new StampAction("Star", "/icons/star.png", STAR_STAMP, 5),
-                new StampAction("Hexagram", "/icons/hexagram.png", STAR_STAMP, 6),
         };
         List<Action> res = new ArrayList<>();
         for(var action: actions) {
@@ -108,8 +105,8 @@ public class ActionKit {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     toolManager.setCurrent(action.type);
-                    StampTool painter = (StampTool) toolManager.getCurrent();
-                    painter.setN(action.n);
+                    StampTool tool = (StampTool) toolManager.getCurrent();
+                    tool.setN(action.n);
                 }
             };
             initAction(a, action.name, loadIcon(action.path));
@@ -162,7 +159,8 @@ public class ActionKit {
     }
 
     private Action createOpenAction(JFrame frame, CanvasManager manager, JFileChooser fileChooser) {
-        var openFilter = new ExtensionFileFilter("Images", List.of("jpg", "jpeg", "bmp", "png", "gif"));
+        String desc = "*.jpg, *.jpeg, *.bpm, *.png, *.gif";
+        var openFilter = new ExtensionFileFilter(desc, List.of("jpg", "jpeg", "bmp", "png", "gif"));
         Action a = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -171,7 +169,7 @@ public class ActionKit {
                 int result = fileChooser.showOpenDialog(frame);
                 if (result == JFileChooser.APPROVE_OPTION) {
                     try {
-                        manager.loadPicture(fileChooser.getSelectedFile());
+                        manager.loadImage(fileChooser.getSelectedFile());
                     } catch (IOException ex) {
                         JOptionPane.showMessageDialog(frame, "Failed to open file", "Error", JOptionPane.ERROR_MESSAGE);
                     }
@@ -192,7 +190,7 @@ public class ActionKit {
                 int result = fileChooser.showSaveDialog(frame);
                 if (result == JFileChooser.APPROVE_OPTION) {
                     try {
-                        manager.exportToPng(fileChooser.getSelectedFile());
+                        manager.exportImageToPng(fileChooser.getSelectedFile());
                     } catch (IOException ex) {
                         JOptionPane.showMessageDialog(frame, "Failed to open file", "Error", JOptionPane.ERROR_MESSAGE);
                     }
