@@ -122,4 +122,33 @@ public class GraphicsUtil {
         }
     }
 
+    public static class Point {
+        public int x;
+        public int y;
+
+        public Point(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    public static Point[] getRegularPolygonPoints(int cx, int cy, int n, int r, int theta) {
+        double offset = theta * Math.PI / 180;
+        double a = 2 * Math.PI / n;
+        Point[] points = new Point[n];
+        double vx = - r * Math.sin(offset);
+        double vy = r * Math.cos(offset);
+        double asin = Math.sin(a);
+        double acos = Math.cos(a);
+        points[0] = new Point(cx + (int) (vx), cy - (int) (vy));
+        for (int i = 1; i < n; i++) {
+            double x = vx * acos - vy * asin;
+            double y = vx * asin + vy * acos;
+            points[i] = new Point(cx + (int) (x), cy - (int) (y));
+            vx = x;
+            vy = y;
+        }
+        return points;
+    }
+
 }
