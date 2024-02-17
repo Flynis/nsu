@@ -28,6 +28,7 @@ public class SettingsDialog {
             dialog.add(panel);
             dialog.add(getButtonsPane(), BorderLayout.SOUTH);
             dialog.pack();
+            dialog.setLocationRelativeTo(null);
             return;
         }
 
@@ -53,7 +54,7 @@ public class SettingsDialog {
             JSlider slider = new JSlider();
             slider.setMaximum(prop.getMax());
             slider.setMinimum(prop.getMin());
-            slider.setMajorTickSpacing(prop.getMax() - 1);
+            slider.setMajorTickSpacing(prop.getMax() - prop.getMin());
             slider.setValue(prop.getVal());
             slider.setPaintLabels(true);
             line.add(slider);
