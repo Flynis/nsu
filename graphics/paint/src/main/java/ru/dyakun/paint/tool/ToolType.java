@@ -4,7 +4,7 @@ public enum ToolType {
     LINE,
     STAR_STAMP,
     POLYGON_STAMP,
-    FILLING,
+    FILL,
     PENCIL,
     ERASER
 

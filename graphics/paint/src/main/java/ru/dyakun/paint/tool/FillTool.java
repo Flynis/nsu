@@ -6,9 +6,9 @@ import ru.dyakun.paint.model.ColorManager;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
-public class FillingTool extends Tool {
+public class FillTool extends Tool {
 
-    public FillingTool(Canvas canvas) {
+    public FillTool(Canvas canvas) {
         super(canvas);
     }
 

@@ -75,7 +75,7 @@ public class ActionKit {
         ToolAction[] actions = {
                 new ToolAction("Pencil", "/icons/pencil.png", PENCIL),
                 new ToolAction("Line", "/icons/line.png", LINE),
-                new ToolAction("Filling", "/icons/paint_bucket.png", FILLING),
+                new ToolAction("Fill", "/icons/paint_bucket.png", FILL),
                 new ToolAction("Eraser", "/icons/eraser.png", ERASER),
         };
         List<Action> res = new ArrayList<>();

@@ -14,7 +14,7 @@ public class ToolManager {
         tools.put(ToolType.LINE, new LineTool(canvas));
         tools.put(ToolType.POLYGON_STAMP, new PolygonStampTool(canvas));
         tools.put(ToolType.STAR_STAMP, new StarStampTool(canvas));
-        tools.put(ToolType.FILLING, new FillingTool(canvas));
+        tools.put(ToolType.FILL, new FillTool(canvas));
         tools.put(ToolType.PENCIL, new PencilTool(canvas));
         tools.put(ToolType.ERASER, new EraserTool(canvas));
         setCurrent(ToolType.PENCIL);

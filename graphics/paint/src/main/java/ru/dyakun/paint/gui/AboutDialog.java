@@ -12,16 +12,21 @@ public class AboutDialog extends JDialog {
 
     public AboutDialog(JFrame frame) {
         super(frame, "About program", Dialog.ModalityType.DOCUMENT_MODAL);
-        setMinimumSize(new Dimension(500, 400));
+        Dimension size = new Dimension(500, 400);
+        setMinimumSize(size);
+        setPreferredSize(size);
 
         JPanel panel = new JPanel();
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        panel.setBorder(new EmptyBorder(5, 5, 5, 5));
 
         JEditorPane editor = new JEditorPane();
         editor.setEditable(false);
         editor.setContentType("text/html");
         editor.setBackground(getBackground());
-        panel.add(editor);
+
+        JScrollPane scrollPane = new JScrollPane(editor, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setPreferredSize(new Dimension(470, 360));
+        panel.add(scrollPane);
 
         String filename = "/about.md";
         try (var inputStream = AboutDialog.class.getResourceAsStream(filename)) {
