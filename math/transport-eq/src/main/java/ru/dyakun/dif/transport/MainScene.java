@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+
 public class MainScene implements Initializable {
     private static final Logger logger = LoggerFactory.getLogger(MainScene.class);
     private static final double a = -1;

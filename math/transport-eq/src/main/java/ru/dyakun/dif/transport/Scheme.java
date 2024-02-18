@@ -34,7 +34,7 @@ public abstract class Scheme {
         }
     }
 
-    protected abstract void calcU();
+    public abstract void calcU();
 
     public double[] next() {
         if(t == 0.0) {

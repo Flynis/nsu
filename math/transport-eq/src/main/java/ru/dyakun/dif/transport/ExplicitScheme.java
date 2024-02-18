@@ -8,8 +8,8 @@ public class ExplicitScheme extends Scheme {
 
     @Override
     public void calcU() {
-        u[0] = Vd.apply(0, 0);
-        u[n - 1] = Vd.apply(0, n - 1);
+        u[0] = Vd.apply(t, 0);
+        u[n - 1] = Vd.apply(t, n - 1);
         for(int j = 1; j < n - 1; j++) {
             u[j] = f[j] * (1 - r) + r * f[j - 1];
         }
