@@ -70,8 +70,14 @@ public class ActionKit {
         return a;
     }
 
+    public List<Action> createToolsActions(ToolManager toolManager) {
+        List<Action> actions = createToolActions(toolManager);
+        actions.addAll(createStampActions(toolManager));
+        return actions;
+    }
+
     private record ToolAction(String name, String path, ToolType type) {}
-    public List<Action> createToolActions(ToolManager toolManager) {
+    private List<Action> createToolActions(ToolManager toolManager) {
         ToolAction[] actions = {
                 new ToolAction("Pencil", "/icons/pencil.png", PENCIL),
                 new ToolAction("Line", "/icons/line.png", LINE),
@@ -87,14 +93,14 @@ public class ActionKit {
                 }
             };
             initAction(a, action.name, loadIcon(action.path));
+            a.putValue(SELECTED_KEY, action.type);
             res.add(a);
         }
-        res.get(0).putValue(SELECTED_KEY, Boolean.TRUE);
         return res;
     }
 
     private record StampAction(String name, String path, ToolType type, int n) {}
-    public List<Action> createStampActions(ToolManager toolManager) {
+    private List<Action> createStampActions(ToolManager toolManager) {
         StampAction[] actions = {
                 new StampAction("Square", "/icons/square.png", POLYGON_STAMP, 4),
                 new StampAction("Star", "/icons/star.png", STAR_STAMP, 5),
@@ -110,6 +116,7 @@ public class ActionKit {
                 }
             };
             initAction(a, action.name, loadIcon(action.path));
+            a.putValue(SELECTED_KEY, action.type);
             res.add(a);
         }
         return res;
@@ -197,7 +204,7 @@ public class ActionKit {
                 }
             }
         };
-        initAction(a, "Save", loadIcon("/icons/save.png"));
+        initAction(a, "Save as", loadIcon("/icons/save.png"));
         return a;
     }
 

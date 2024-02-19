@@ -9,6 +9,12 @@
 
 * You can choose any color.
 
+***
+
+### Author: Ilya Dyakun
+
+Student of the Faculty of Information Technologies of Novosibirsk State University
+
 *** 
 
 ## Tools

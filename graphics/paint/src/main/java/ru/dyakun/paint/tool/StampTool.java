@@ -17,7 +17,7 @@ public abstract class StampTool extends Tool {
 
     public StampTool(Canvas canvas, IntegerProperty n) {
         super(canvas);
-        radius = new IntegerProperty(5, 5, 100, "Size");
+        radius = new IntegerProperty(100, 10, 10000, "Size");
         theta = new IntegerProperty(0, 0, 360, "Rotate");
         this.n = n;
     }

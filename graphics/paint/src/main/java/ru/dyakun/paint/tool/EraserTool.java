@@ -12,7 +12,7 @@ public class EraserTool extends Tool {
 
     public EraserTool(Canvas canvas) {
         super(canvas);
-        radius = new IntegerProperty(1, 1, 100, "Radius");
+        radius = new IntegerProperty(10, 1, 100, "Size");
     }
 
     @Override

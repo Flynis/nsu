@@ -2,10 +2,10 @@ package ru.dyakun.paint.gui;
 
 import ru.dyakun.paint.model.ImageManager;
 import ru.dyakun.paint.tool.ToolManager;
+import ru.dyakun.paint.tool.ToolType;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ItemEvent;
 import java.util.List;
 
 public class MainFrame extends JFrame {
@@ -65,20 +65,17 @@ public class MainFrame extends JFrame {
         toolsMenu.add(chooseAction);
         toolsMenu.add(new JSeparator());
 
-        ButtonGroup toolsMenuGroup = new ButtonGroup();
-        ButtonGroup toolsGroup = new ButtonGroup();
-        List<Action> toolActions = actionKit.createToolActions(toolManager);
+        ToolRadioButtonGroup toolsMenuGroup = new ToolRadioButtonGroup(toolManager);
+        ToolRadioButtonGroup toolsGroup = new ToolRadioButtonGroup(toolManager);
+        List<Action> toolActions = actionKit.createToolsActions(toolManager);
         for(var action: toolActions) {
-            JRadioButton toolButton = jRadioButtonFromAction(action);
-            toolBar.add(toolButton);
-            toolsGroup.add(toolButton);
-        }
-        List<Action> stampActions = actionKit.createStampActions(toolManager);
-        for(var action: stampActions) {
-            JRadioButton button = jRadioButtonFromAction(action);
+            ToolType type = (ToolType) action.getValue(Action.SELECTED_KEY);
+            JRadioButton button = WidgetKit.jRadioButtonFromAction(action, true);
             toolBar.add(button);
-            //toolsMenu.add(button);
-            toolsGroup.add(button);
+            toolsGroup.add(type, button);
+            JRadioButton menuButton = WidgetKit.jRadioButtonFromAction(action, false);
+            toolsMenu.add(menuButton);
+            toolsMenuGroup.add(type, menuButton);
         }
         toolBar.add(new JToolBar.Separator());
 
@@ -89,11 +86,11 @@ public class MainFrame extends JFrame {
         ButtonGroup colorsGroup = new ButtonGroup();
         List<Action> colorActions = actionKit.createPaletteActions();
         for(var action: colorActions) {
-            JRadioButton button = jRadioButtonFromAction(action);
+            JRadioButton button = WidgetKit.jRadioButtonFromAction(action, true);
             toolBar.add(button);
             colorsGroup.add(button);
         }
-        JRadioButton chooseButton = jRadioButtonFromAction(chooseAction);
+        JRadioButton chooseButton = WidgetKit.jRadioButtonFromAction(chooseAction, true);
         toolBar.add(chooseButton);
         colorsGroup.add(chooseButton);
         toolBar.add(new JToolBar.Separator());
@@ -101,25 +98,8 @@ public class MainFrame extends JFrame {
         Action aboutAction = actionKit.createAboutAction(frame);
         toolBar.add(aboutAction);
         helpMenu.add(aboutAction);
-    }
 
-    private static JRadioButton jRadioButtonFromAction(Action action) {
-        JRadioButton button = new JRadioButton();
-        button.setIcon((Icon) action.getValue(Action.SMALL_ICON));
-        button.setToolTipText((String) action.getValue(Action.SHORT_DESCRIPTION));
-        button.addActionListener(action);
-        button.addItemListener(e -> {
-            if(e.getStateChange() == ItemEvent.SELECTED) {
-                button.setBackground(Colors.DARK_BACK_COLOR);
-            } else if (e.getStateChange() == ItemEvent.DESELECTED) {
-                button.setBackground(Colors.LIGHT_BACK_COLOR);
-            }
-        });
-        Object selectedKey = action.getValue(Action.SELECTED_KEY);
-        if(selectedKey != null) {
-            button.setSelected((Boolean) selectedKey);
-        }
-        return button;
+        toolManager.setCurrent(ToolType.PENCIL); // choose tool only after all button groups initialized
     }
 
 }
