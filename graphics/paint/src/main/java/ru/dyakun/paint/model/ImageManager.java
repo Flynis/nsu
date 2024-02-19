@@ -6,11 +6,11 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
-public class CanvasManager {
+public class ImageManager {
 
     private final Canvas canvas;
 
-    public CanvasManager(int width, int height) {
+    public ImageManager(int width, int height) {
         canvas = new Canvas();
         createEmptyImage(width, height);
     }

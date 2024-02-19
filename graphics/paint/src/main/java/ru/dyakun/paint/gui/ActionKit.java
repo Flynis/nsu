@@ -1,6 +1,6 @@
 package ru.dyakun.paint.gui;
 
-import ru.dyakun.paint.model.CanvasManager;
+import ru.dyakun.paint.model.ImageManager;
 import ru.dyakun.paint.model.ColorManager;
 import ru.dyakun.paint.tool.StampTool;
 import ru.dyakun.paint.tool.ToolManager;
@@ -151,14 +151,14 @@ public class ActionKit {
         return a;
     }
 
-    public List<Action> createFileActions(JFrame frame, CanvasManager manager) {
+    public List<Action> createFileActions(JFrame frame, ImageManager manager) {
         JFileChooser fileChooser = new JFileChooser();
         Action openAction = createOpenAction(frame, manager, fileChooser);
         Action saveAction = createSaveAction(frame, manager, fileChooser);
         return List.of(openAction, saveAction);
     }
 
-    private Action createOpenAction(JFrame frame, CanvasManager manager, JFileChooser fileChooser) {
+    private Action createOpenAction(JFrame frame, ImageManager manager, JFileChooser fileChooser) {
         String desc = "*.jpg, *.jpeg, *.bpm, *.png, *.gif";
         var openFilter = new ExtensionFileFilter(desc, List.of("jpg", "jpeg", "bmp", "png", "gif"));
         Action a = new AbstractAction() {
@@ -180,7 +180,7 @@ public class ActionKit {
         return a;
     }
 
-    private Action createSaveAction(JFrame frame, CanvasManager manager, JFileChooser fileChooser) {
+    private Action createSaveAction(JFrame frame, ImageManager manager, JFileChooser fileChooser) {
         var saveFilter = new ExtensionFileFilter("*.png", List.of("png"));
         Action a = new AbstractAction() {
             @Override

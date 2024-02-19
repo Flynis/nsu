@@ -11,15 +11,11 @@ public class GraphicsUtil {
         throw new AssertionError();
     }
 
-    private record Span(int left, int right, int y) {
-        public boolean isEmpty() {
-            return left == right;
-        }
-    }
+    private record Span(int left, int right, int y) { }
 
     private static Span findSpan(int x0, int y0, int c, BufferedImage image) {
         if (image.getRGB(x0, y0) != c) {
-            return new Span(x0, x0, y0);
+            return null;
         }
         int x = x0 - 1;
         while (x >= 0 && image.getRGB(x, y0) == c) {
@@ -37,7 +33,7 @@ public class GraphicsUtil {
     private static void findSpanNeighbors(Span span, int y, Deque<Span> stack, int c, BufferedImage image) {
         for (int i = span.left; i < span.right; i++) {
             var neighbor = findSpan(i, y, c, image);
-            if (neighbor.isEmpty()) {
+            if (neighbor == null) {
                 continue;
             }
             i = neighbor.right + 1;
@@ -55,11 +51,11 @@ public class GraphicsUtil {
         stack.addFirst(firstSpan);
         while (!stack.isEmpty()) {
             var span = stack.pollFirst();
-            // recolor span
-            if(image.getRGB(span.left, span.y) == newColor.getRGB()) {
+            if (image.getRGB(span.left, span.y) == newColor.getRGB()) {
+                // span is already recolored
                 continue;
             }
-            for (int i = span.left; i <= span.right; i++) {
+            for (int i = span.left; i <= span.right; i++) { // recolor span
                 image.setRGB(i, span.y, newColor.getRGB());
             }
             if (span.y - 1 >= 0) { // search upper spans
@@ -77,58 +73,44 @@ public class GraphicsUtil {
         }
     }
 
+    private static int sign(int x) {
+        return Integer.compare(x, 0);
+    }
+
     public static void drawBresenhamLine(int x0, int y0, int x1, int y1, BufferedImage image, Color c) {
         int dx = x1 - x0;
         int dy = y1 - y0;
-        int signX = Integer.compare(dx, 0);
-        int signY = Integer.compare(dy, 0);
-        // make dx and dy positive
-        if (dx < 0) {
-            dx = -dx;
-        }
-        if (dy < 0) {
-            dy = -dy;
-        }
-        int pdx, pdy, es, el;
+        int dirx = sign(dx);
+        int diry = sign(dy);
+        dx = Math.abs(dx);
+        dy = Math.abs(dy);
+        int stepx, stepy, dmin, dmax;
         if (dx > dy) {
-            pdx = signX;
-            pdy = 0;
-            es = dy;
-            el = dx;
-        }
-        else {
-            pdx = 0;
-            pdy = signY;
-            es = dx;
-            el = dy;
+            stepx = dirx;
+            stepy = 0;
+            dmin = dy;
+            dmax = dx;
+        } else {
+            stepx = 0;
+            stepy = diry;
+            dmin = dx;
+            dmax = dy;
         }
         int x = x0;
         int y = y0;
-        int err = el / 2;
-        // first point
+        int err = dmax / 2;
         setPixel(x, y, image, c);
-        for (int i = 0; i < el; i++) {
-            err -= es;
+        for (int i = 0; i < dmax; i++) {
+            err -= dmin;
             if (err < 0) {
-                err += el;
-                x += signX;
-                y += signY;
-            }
-            else {
-                x += pdx;
-                y += pdy;
+                err += dmax;
+                x += dirx;
+                y += diry;
+            } else { // unconditional offset
+                x += stepx;
+                y += stepy;
             }
             setPixel(x, y, image, c);
-        }
-    }
-
-    public static class Point {
-        public int x;
-        public int y;
-
-        public Point(int x, int y) {
-            this.x = x;
-            this.y = y;
         }
     }
 

@@ -1,6 +1,6 @@
 package ru.dyakun.paint.gui;
 
-import ru.dyakun.paint.model.CanvasManager;
+import ru.dyakun.paint.model.ImageManager;
 import ru.dyakun.paint.tool.ToolManager;
 
 import javax.swing.*;
@@ -10,12 +10,12 @@ import java.util.List;
 
 public class MainFrame extends JFrame {
 
-    private final CanvasManager canvasManager;
+    private final ImageManager imageManager;
     private final ToolManager toolManager;
 
-    public MainFrame(CanvasManager canvasManager, ToolManager toolManager) {
+    public MainFrame(ImageManager imageManager, ToolManager toolManager) {
         super("Paint");
-        this.canvasManager = canvasManager;
+        this.imageManager = imageManager;
         this.toolManager = toolManager;
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         createUI(this);
@@ -27,7 +27,7 @@ public class MainFrame extends JFrame {
     }
 
     private void createUI(JFrame frame) {
-        CanvasPane canvasPane = new CanvasPane(toolManager, canvasManager.getCanvas());
+        CanvasPane canvasPane = new CanvasPane(toolManager, imageManager.getCanvas());
         JScrollPane scrollPane = new JScrollPane(canvasPane);
         frame.add(scrollPane);
 
@@ -46,7 +46,7 @@ public class MainFrame extends JFrame {
 
         ActionKit actionKit = new ActionKit();
 
-        List<Action> fileActions = actionKit.createFileActions(frame, canvasManager);
+        List<Action> fileActions = actionKit.createFileActions(frame, imageManager);
         for(var action: fileActions) {
             fileMenu.add(action);
             toolBar.add(action);
@@ -61,19 +61,23 @@ public class MainFrame extends JFrame {
         toolBar.add(new JToolBar.Separator());
         toolsMenu.add(settingsAction);
 
+        Action chooseAction = actionKit.createColorChooseAction(frame);
+        toolsMenu.add(chooseAction);
+        toolsMenu.add(new JSeparator());
+
+        ButtonGroup toolsMenuGroup = new ButtonGroup();
         ButtonGroup toolsGroup = new ButtonGroup();
         List<Action> toolActions = actionKit.createToolActions(toolManager);
         for(var action: toolActions) {
-            toolsMenu.add(action);
-            JRadioButton button = jRadioButtonFromAction(action);
-            toolBar.add(button);
-            toolsGroup.add(button);
+            JRadioButton toolButton = jRadioButtonFromAction(action);
+            toolBar.add(toolButton);
+            toolsGroup.add(toolButton);
         }
         List<Action> stampActions = actionKit.createStampActions(toolManager);
         for(var action: stampActions) {
-            toolsMenu.add(action);
             JRadioButton button = jRadioButtonFromAction(action);
             toolBar.add(button);
+            //toolsMenu.add(button);
             toolsGroup.add(button);
         }
         toolBar.add(new JToolBar.Separator());
@@ -89,8 +93,6 @@ public class MainFrame extends JFrame {
             toolBar.add(button);
             colorsGroup.add(button);
         }
-        Action chooseAction = actionKit.createColorChooseAction(frame);
-        toolsMenu.add(chooseAction);
         JRadioButton chooseButton = jRadioButtonFromAction(chooseAction);
         toolBar.add(chooseButton);
         colorsGroup.add(chooseButton);

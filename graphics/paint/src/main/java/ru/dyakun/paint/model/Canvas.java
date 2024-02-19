@@ -1,7 +1,5 @@
 package ru.dyakun.paint.model;
 
-import ru.dyakun.paint.model.GraphicsUtil.Point;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -88,10 +86,10 @@ public class Canvas {
             theta += 180 / n;
         }
         Point[] points = getRegularPolygonPoints(cx, cy, n, r, theta);
-        for(int i = 0; i < n - 1; i++) {
-            drawLine(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y, 1, c);
+        for(int i = 0; i < n; i++) {
+            int next = (i + 1) % n;
+            drawLine(points[i].x, points[i].y, points[next].x, points[next].y, 1, c);
         }
-        drawLine(points[n - 1].x, points[n - 1].y, points[0].x, points[0].y, 1, c);
         notifyListeners();
     }
 
