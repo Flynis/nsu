@@ -1,5 +1,6 @@
 package ru.dyakun.paint.gui;
 
+import ru.dyakun.paint.gui.components.SettingsDialog;
 import ru.dyakun.paint.tool.ToolChangeListener;
 import ru.dyakun.paint.tool.ToolManager;
 import ru.dyakun.paint.tool.ToolType;

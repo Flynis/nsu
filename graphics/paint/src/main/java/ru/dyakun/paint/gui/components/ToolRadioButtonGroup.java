@@ -1,4 +1,4 @@
-package ru.dyakun.paint.gui;
+package ru.dyakun.paint.gui.components;
 
 import ru.dyakun.paint.tool.ToolChangeListener;
 import ru.dyakun.paint.tool.ToolManager;

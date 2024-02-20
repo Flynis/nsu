@@ -1,5 +1,6 @@
-package ru.dyakun.paint.gui;
+package ru.dyakun.paint.gui.components;
 
+import ru.dyakun.paint.gui.Icons;
 import ru.dyakun.paint.model.ColorChangeListener;
 import ru.dyakun.paint.model.ColorManager;
 

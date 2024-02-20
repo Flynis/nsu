@@ -1,4 +1,4 @@
-package ru.dyakun.paint.gui;
+package ru.dyakun.paint.gui.components;
 
 import ru.dyakun.paint.model.Canvas;
 import ru.dyakun.paint.model.CanvasListener;

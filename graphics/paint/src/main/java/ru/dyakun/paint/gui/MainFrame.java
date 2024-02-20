@@ -1,5 +1,9 @@
 package ru.dyakun.paint.gui;
 
+import ru.dyakun.paint.gui.components.CanvasPane;
+import ru.dyakun.paint.gui.components.ColorObserverPane;
+import ru.dyakun.paint.gui.components.ToolRadioButtonGroup;
+import ru.dyakun.paint.gui.components.WidgetKit;
 import ru.dyakun.paint.model.ImageManager;
 import ru.dyakun.paint.tool.ToolManager;
 import ru.dyakun.paint.tool.ToolType;

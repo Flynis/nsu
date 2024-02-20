@@ -1,5 +1,6 @@
 package ru.dyakun.paint.gui;
 
+import ru.dyakun.paint.gui.components.AboutDialog;
 import ru.dyakun.paint.model.ImageManager;
 import ru.dyakun.paint.model.ColorManager;
 import ru.dyakun.paint.tool.StampTool;

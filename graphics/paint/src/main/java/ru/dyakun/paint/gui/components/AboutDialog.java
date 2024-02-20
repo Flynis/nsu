@@ -1,4 +1,4 @@
-package ru.dyakun.paint.gui;
+package ru.dyakun.paint.gui.components;
 
 import com.github.rjeschke.txtmark.Processor;
 
@@ -15,6 +15,7 @@ public class AboutDialog extends JDialog {
         Dimension size = new Dimension(500, 400);
         setMinimumSize(size);
         setPreferredSize(size);
+        setResizable(false);
 
         JPanel panel = new JPanel();
         panel.setBorder(new EmptyBorder(5, 5, 5, 5));

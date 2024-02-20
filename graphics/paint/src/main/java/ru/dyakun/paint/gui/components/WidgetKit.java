@@ -1,6 +1,8 @@
-package ru.dyakun.paint.gui;
+package ru.dyakun.paint.gui.components;
 
 import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 
 public class WidgetKit {
@@ -31,6 +33,19 @@ public class WidgetKit {
             }
         }
         return button;
+    }
+
+    public static JPanel createConfirmButtonsPane(ActionListener ok, ActionListener cancel) {
+        JButton okButton = new JButton("Ok");
+        okButton.addActionListener(ok);
+
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(cancel);
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttons.add(okButton);
+        buttons.add(cancelButton);
+        return buttons;
     }
 
 }

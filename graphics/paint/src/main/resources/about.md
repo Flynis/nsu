@@ -1,6 +1,9 @@
 
 # Paint
 
+Author: Ilya Dyakun, student of the Faculty of Information 
+Technologies of Novosibirsk State University
+
 ### Paint is a graphic editor for drawing raster images
 
 * It allows you to upload, edit and save your images. 
@@ -8,12 +11,6 @@
 * It can stamp and draw straight and arbitrary lines. 
 
 * You can choose any color.
-
-***
-
-### Author: Ilya Dyakun
-
-Student of the Faculty of Information Technologies of Novosibirsk State University
 
 *** 
 
