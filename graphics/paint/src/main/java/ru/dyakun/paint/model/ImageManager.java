@@ -22,7 +22,11 @@ public class ImageManager {
     public void createEmptyImage(int width, int height) {
         BufferedImage image = new BufferedImage(width, height, Image.SCALE_DEFAULT);
         canvas.setImage(image);
-        canvas.clear();
+    }
+
+    public void resizeImage(int width, int height) {
+        BufferedImage image = new BufferedImage(width, height, Image.SCALE_DEFAULT);
+        canvas.resize(image);
     }
 
     public void loadImage(File file) throws IOException {

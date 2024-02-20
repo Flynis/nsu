@@ -19,9 +19,14 @@ public class Canvas {
     void setImage(BufferedImage image) {
         this.image = image;
         image.createGraphics();
+        clear();
         for(var listener: listeners) {
             listener.onSourceChange(this.image);
         }
+    }
+
+    void resize(BufferedImage image) {
+
     }
 
     public BufferedImage getImage() {

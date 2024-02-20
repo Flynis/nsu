@@ -62,8 +62,12 @@ public class MainFrame extends JFrame {
         SettingsManager settingsManager = new SettingsManager(frame, toolManager);
         Action settingsAction = actionKit.createToolSettingsAction(settingsManager);
         toolBar.add(settingsAction);
-        toolBar.add(new JToolBar.Separator());
         toolsMenu.add(settingsAction);
+
+        Action clearAction = actionKit.createClearAction(imageManager);
+        toolBar.add(clearAction);
+        toolsMenu.add(clearAction);
+        toolBar.add(new JToolBar.Separator());
 
         Action chooseAction = actionKit.createColorChooseAction(frame);
         toolsMenu.add(chooseAction);

@@ -1,6 +1,7 @@
 package ru.dyakun.paint.gui;
 
 import ru.dyakun.paint.gui.components.AboutDialog;
+import ru.dyakun.paint.gui.components.ImageSizeDialog;
 import ru.dyakun.paint.model.ImageManager;
 import ru.dyakun.paint.model.ColorManager;
 import ru.dyakun.paint.tool.StampTool;
@@ -134,6 +135,17 @@ public class ActionKit {
         return a;
     }
 
+    public Action createClearAction(ImageManager manager) {
+        Action a = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                manager.getCanvas().clear();
+            }
+        };
+        initAction(a, "Clear canvas", loadIcon("/icons/clear.png"));
+        return a;
+    }
+
     public Action createExitAction(JFrame frame) {
         String name = "Exit";
         Action a = new AbstractAction() {
@@ -161,9 +173,25 @@ public class ActionKit {
 
     public List<Action> createFileActions(JFrame frame, ImageManager manager) {
         JFileChooser fileChooser = new JFileChooser();
+        Action newFileAction = createNewFileAction(frame, manager);
         Action openAction = createOpenAction(frame, manager, fileChooser);
         Action saveAction = createSaveAction(frame, manager, fileChooser);
-        return List.of(openAction, saveAction);
+        return List.of(newFileAction, openAction, saveAction);
+    }
+
+    private Action createNewFileAction(JFrame frame, ImageManager manager) {
+        ImageSizeDialog dialog = new ImageSizeDialog("New image", frame, e -> {
+            ImageSizeDialog sizeDialog = (ImageSizeDialog) e.getSource();
+            manager.createEmptyImage(sizeDialog.getWidthValue(), sizeDialog.getHeightValue());
+        } );
+        Action a = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.setVisible(true);
+            }
+        };
+        initAction(a, "New image", loadIcon("/icons/new_file.png"));
+        return a;
     }
 
     private Action createOpenAction(JFrame frame, ImageManager manager, JFileChooser fileChooser) {
