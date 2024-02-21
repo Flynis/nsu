@@ -1,7 +1,8 @@
 package ru.dyakun.paint.gui;
 
 import ru.dyakun.paint.gui.components.AboutDialog;
-import ru.dyakun.paint.gui.components.ImageSizeDialog;
+import ru.dyakun.paint.gui.components.NewImageDialog;
+import ru.dyakun.paint.gui.components.ResizeDialog;
 import ru.dyakun.paint.model.ImageManager;
 import ru.dyakun.paint.model.ColorManager;
 import ru.dyakun.paint.tool.StampTool;
@@ -164,30 +165,28 @@ public class ActionKit {
         Action a = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                dialog.setVisible(true);
+                dialog.show();
             }
         };
         initAction(a, "About program", loadIcon("/icons/info.png"));
         return a;
     }
 
-    public List<Action> createFileActions(JFrame frame, ImageManager manager) {
+    public List<Action> createImageActions(JFrame frame, ImageManager manager) {
         JFileChooser fileChooser = new JFileChooser();
-        Action newFileAction = createNewFileAction(frame, manager);
+        Action newFileAction = createNewImageAction(frame, manager);
         Action openAction = createOpenAction(frame, manager, fileChooser);
         Action saveAction = createSaveAction(frame, manager, fileChooser);
-        return List.of(newFileAction, openAction, saveAction);
+        Action resizeAction = createResizeAction(frame, manager);
+        return List.of(newFileAction, openAction, saveAction, resizeAction);
     }
 
-    private Action createNewFileAction(JFrame frame, ImageManager manager) {
-        ImageSizeDialog dialog = new ImageSizeDialog("New image", frame, e -> {
-            ImageSizeDialog sizeDialog = (ImageSizeDialog) e.getSource();
-            manager.createEmptyImage(sizeDialog.getWidthValue(), sizeDialog.getHeightValue());
-        } );
+    private Action createNewImageAction(JFrame frame, ImageManager manager) {
+        var dialog = new NewImageDialog(frame, manager);
         Action a = new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                dialog.setVisible(true);
+                dialog.show();
             }
         };
         initAction(a, "New image", loadIcon("/icons/new_file.png"));
@@ -234,6 +233,18 @@ public class ActionKit {
             }
         };
         initAction(a, "Save as", loadIcon("/icons/save.png"));
+        return a;
+    }
+
+    private Action createResizeAction(JFrame frame, ImageManager manager) {
+        var dialog = new ResizeDialog(frame, manager);
+        Action a = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.show();
+            }
+        };
+        initAction(a, "Resize", loadIcon("/icons/resize.png"));
         return a;
     }
 

@@ -28,8 +28,11 @@ public class ResizeDialog extends PropertiesDialog {
 
     @Override
     protected void beforeShow() {
-        width.setMin(width.getVal());
-        height.setMin(height.getVal());
+        var image = manager.getCanvas().getImage();
+        width.setVal(image.getWidth());
+        width.setMin(image.getWidth());
+        height.setVal(image.getHeight());
+        height.setMin(image.getHeight());
         super.beforeShow();
     }
 

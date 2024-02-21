@@ -11,7 +11,15 @@ public class WidgetKit {
         throw new AssertionError();
     }
 
-    public static JRadioButton jRadioButtonFromAction(Action action, boolean hideText) {
+    public static JRadioButton toolbarButtonFromAction(Action action) {
+        return jRadioButtonFromAction(action, true);
+    }
+
+    public static JRadioButton menuButtonFromAction(Action action) {
+        return jRadioButtonFromAction(action, false);
+    }
+
+    private static JRadioButton jRadioButtonFromAction(Action action, boolean hideText) {
         JRadioButton button = new JRadioButton();
         button.setIcon((Icon) action.getValue(Action.SMALL_ICON));
         button.setToolTipText((String) action.getValue(Action.SHORT_DESCRIPTION));

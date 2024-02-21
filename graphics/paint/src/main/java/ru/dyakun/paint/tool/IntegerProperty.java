@@ -3,7 +3,7 @@ package ru.dyakun.paint.tool;
 public class IntegerProperty {
 
     private int val;
-    private int max;
+    private final int max;
     private int min;
     private final String name;
 

@@ -16,6 +16,7 @@ public class MainFrame extends JFrame {
 
     private final ImageManager imageManager;
     private final ToolManager toolManager;
+    private JScrollPane scrollPane;
 
     public MainFrame(ImageManager imageManager, ToolManager toolManager) {
         super("Paint");
@@ -27,12 +28,18 @@ public class MainFrame extends JFrame {
         setMinimumSize(new Dimension(640, 480));
         pack();
         setLocationRelativeTo(null);
+        maximizeCanvas();
         setVisible(true);
+    }
+
+    private void maximizeCanvas() {
+        var bounds = scrollPane.getViewportBorderBounds();
+        imageManager.createEmptyImage(bounds.width - bounds.x, bounds.height - bounds.y);
     }
 
     private void createUI(JFrame frame) {
         CanvasPane canvasPane = new CanvasPane(toolManager, imageManager.getCanvas());
-        JScrollPane scrollPane = new JScrollPane(canvasPane);
+        scrollPane = new JScrollPane(canvasPane);
         frame.add(scrollPane);
 
         JMenuBar menuBar = new JMenuBar();
@@ -50,7 +57,7 @@ public class MainFrame extends JFrame {
 
         ActionKit actionKit = new ActionKit();
 
-        List<Action> fileActions = actionKit.createFileActions(frame, imageManager);
+        List<Action> fileActions = actionKit.createImageActions(frame, imageManager);
         for(var action: fileActions) {
             fileMenu.add(action);
             toolBar.add(action);
@@ -78,10 +85,10 @@ public class MainFrame extends JFrame {
         List<Action> toolActions = actionKit.createToolsActions(toolManager);
         for(var action: toolActions) {
             ToolType type = (ToolType) action.getValue(Action.SELECTED_KEY);
-            JRadioButton button = WidgetKit.jRadioButtonFromAction(action, true);
+            JRadioButton button = WidgetKit.toolbarButtonFromAction(action);
             toolBar.add(button);
             toolsGroup.add(type, button);
-            JRadioButton menuButton = WidgetKit.jRadioButtonFromAction(action, false);
+            JRadioButton menuButton = WidgetKit.menuButtonFromAction(action);
             toolsMenu.add(menuButton);
             toolsMenuGroup.add(type, menuButton);
         }
@@ -94,11 +101,11 @@ public class MainFrame extends JFrame {
         ButtonGroup colorsGroup = new ButtonGroup();
         List<Action> colorActions = actionKit.createPaletteActions();
         for(var action: colorActions) {
-            JRadioButton button = WidgetKit.jRadioButtonFromAction(action, true);
+            JRadioButton button = WidgetKit.toolbarButtonFromAction(action);
             toolBar.add(button);
             colorsGroup.add(button);
         }
-        JRadioButton chooseButton = WidgetKit.jRadioButtonFromAction(chooseAction, true);
+        JRadioButton chooseButton = WidgetKit.toolbarButtonFromAction(chooseAction);
         toolBar.add(chooseButton);
         colorsGroup.add(chooseButton);
         toolBar.add(new JToolBar.Separator());

@@ -7,8 +7,8 @@ import javax.swing.*;
 import java.util.List;
 
 public class NewImageDialog extends PropertiesDialog {
-    private final IntegerProperty width = new IntegerProperty(100, 1920, 10000, "Width");
-    private final IntegerProperty height = new IntegerProperty(100, 1080, 10000, "Height");
+    private final IntegerProperty width = new IntegerProperty(1920, 100, 10000, "Width");
+    private final IntegerProperty height = new IntegerProperty(1080, 100, 10000, "Height");
     private final ImageManager manager;
 
     public NewImageDialog(JFrame frame, ImageManager manager) {

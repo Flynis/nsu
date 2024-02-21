@@ -26,7 +26,10 @@ public class Canvas {
     }
 
     void resize(BufferedImage image) {
-
+        var oldImage = this.image;
+        setImage(image);
+        var g = image.getGraphics();
+        g.drawImage(oldImage, 0, 0, null);
     }
 
     public BufferedImage getImage() {
