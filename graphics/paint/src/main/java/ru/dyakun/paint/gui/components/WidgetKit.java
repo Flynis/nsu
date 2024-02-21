@@ -35,16 +35,23 @@ public class WidgetKit {
         return button;
     }
 
+    public static JPanel createConfirmButtonsPane(ActionListener ok) {
+        return createConfirmButtonsPane(ok, null);
+    }
+
     public static JPanel createConfirmButtonsPane(ActionListener ok, ActionListener cancel) {
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
         JButton okButton = new JButton("Ok");
         okButton.addActionListener(ok);
-
-        JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(cancel);
-
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttons.add(okButton);
-        buttons.add(cancelButton);
+
+        if (cancel != null) {
+            JButton cancelButton = new JButton("Cancel");
+            cancelButton.addActionListener(cancel);
+            buttons.add(cancelButton);
+        }
+
         return buttons;
     }
 

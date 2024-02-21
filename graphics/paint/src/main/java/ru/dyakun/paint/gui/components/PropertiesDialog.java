@@ -8,42 +8,29 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SettingsDialog {
+public class PropertiesDialog extends Dialog {
 
-    private final JDialog dialog;
-    private final List<PropertyEditPane> editPanes = new ArrayList<>();
-    private final JLabel errorLabel = new JLabel("Error");
+    protected final List<PropertyEditPane> editPanes = new ArrayList<>();
+    protected final JLabel errorLabel = new JLabel("Error");
 
-    public SettingsDialog(JFrame frame, List<IntegerProperty> properties) {
-        dialog = new JDialog(frame, "Settings", Dialog.ModalityType.DOCUMENT_MODAL);
+    PropertiesDialog(String title, JFrame frame) {
+        super(title, frame);
+    }
+
+    public PropertiesDialog(String title, String onEmpty, JFrame frame, List<IntegerProperty> properties) {
+        super(title, frame);
+        init(onEmpty, properties);
+    }
+
+    protected void init(String onEmpty, List<IntegerProperty> properties) {
         dialog.setMinimumSize(new Dimension(400, properties.size() * 30 + 50));
         dialog.setResizable(false);
 
-        JPanel buttons = WidgetKit.createConfirmButtonsPane(
-                e -> {
-                    for(var pane: editPanes) {
-                        String error = pane.validateValue();
-                        if(error != null) {
-                            errorLabel.setText(error);
-                            errorLabel.setVisible(true);
-                            return;
-                        }
-                    }
-                    for(var pane: editPanes) {
-                        pane.updateValue();
-                    }
-                    dialog.setVisible(false);
-                    errorLabel.setVisible(false);
-                },
-                e -> {
-                    dialog.setVisible(false);
-                    errorLabel.setVisible(false);
-                }
-        );
+        JPanel buttons = WidgetKit.createConfirmButtonsPane(e -> onOk(), e -> onCancel());
 
         if(properties.isEmpty()) {
             JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-            panel.add(new JLabel("No settings"));
+            panel.add(new JLabel(onEmpty));
             dialog.add(panel);
             dialog.add(buttons, BorderLayout.SOUTH);
             dialog.pack();
@@ -78,11 +65,40 @@ public class SettingsDialog {
         errorLabel.setVisible(false);
     }
 
-    public void show() {
+    protected void onConfirm() {} // for override
+
+    protected void onOk() {
+        for(var pane: editPanes) {
+            String error = pane.validateValue();
+            if(error != null) {
+                errorLabel.setText(error);
+                errorLabel.setVisible(true);
+                return;
+            }
+        }
+        for(var pane: editPanes) {
+            pane.updateValue();
+        }
+        errorLabel.setVisible(false);
+        onConfirm();
+        hide();
+    }
+
+    protected void onCancel() {
+        hide();
+        errorLabel.setVisible(false);
+    }
+
+    protected void beforeShow() {
         for(var pane: editPanes) {
             pane.resetValue();
         }
-        dialog.setVisible(true);
+    }
+
+    @Override
+    public void show() {
+        beforeShow();
+        super.show();
     }
 
 }

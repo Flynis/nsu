@@ -8,14 +8,14 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.Objects;
 
-public class AboutDialog extends JDialog {
+public class AboutDialog extends Dialog {
 
     public AboutDialog(JFrame frame) {
-        super(frame, "About program", Dialog.ModalityType.DOCUMENT_MODAL);
+        super("About program", frame);
         Dimension size = new Dimension(500, 400);
-        setMinimumSize(size);
-        setPreferredSize(size);
-        setResizable(false);
+        dialog.setMinimumSize(size);
+        dialog.setPreferredSize(size);
+        dialog.setResizable(false);
 
         JPanel panel = new JPanel();
         panel.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -23,7 +23,7 @@ public class AboutDialog extends JDialog {
         JEditorPane editor = new JEditorPane();
         editor.setEditable(false);
         editor.setContentType("text/html");
-        editor.setBackground(getBackground());
+        editor.setBackground(dialog.getBackground());
 
         JScrollPane scrollPane = new JScrollPane(editor, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setPreferredSize(new Dimension(470, 360));
@@ -38,18 +38,12 @@ public class AboutDialog extends JDialog {
             editor.setText("<h1>Paint</h1>");
         }
 
-        add(panel);
-        add(getButtonsPane(), BorderLayout.SOUTH);
-        pack();
-        setLocationRelativeTo(null);
-    }
+        JPanel buttons = WidgetKit.createConfirmButtonsPane(e -> hide());
 
-    private JPanel getButtonsPane() {
-        JButton okButton = new JButton("Ok");
-        okButton.addActionListener(e -> setVisible(false));
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttons.add(okButton);
-        return buttons;
+        dialog.add(panel);
+        dialog.add(buttons, BorderLayout.SOUTH);
+        dialog.pack();
+        dialog.setLocationRelativeTo(null);
     }
 
 }

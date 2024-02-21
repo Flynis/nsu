@@ -82,6 +82,9 @@ public class PropertyEditPane extends JPanel implements DocumentListener {
 
     public void resetValue() {
         setValue(prop.getVal(), null);
+        slider.setMinimum(prop.getMin());
+        slider.setMaximum(prop.getMax());
+        slider.setMajorTickSpacing(prop.getMax() - prop.getMin());
     }
 
     public void updateValue() {

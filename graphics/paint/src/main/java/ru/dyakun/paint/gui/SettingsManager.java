@@ -1,6 +1,6 @@
 package ru.dyakun.paint.gui;
 
-import ru.dyakun.paint.gui.components.SettingsDialog;
+import ru.dyakun.paint.gui.components.PropertiesDialog;
 import ru.dyakun.paint.tool.ToolChangeListener;
 import ru.dyakun.paint.tool.ToolManager;
 import ru.dyakun.paint.tool.ToolType;
@@ -11,13 +11,14 @@ import java.util.Map;
 
 public class SettingsManager implements ToolChangeListener {
 
-    private SettingsDialog current;
-    private final Map<ToolType, SettingsDialog> settings = new EnumMap<>(ToolType.class);
+    private PropertiesDialog current;
+    private final Map<ToolType, PropertiesDialog> settings = new EnumMap<>(ToolType.class);
 
     public SettingsManager(JFrame frame, ToolManager toolManager) {
         toolManager.addToolChangedListener(this);
         for(var entry: toolManager.getTools().entrySet()) {
-            SettingsDialog dialog = new SettingsDialog(frame, entry.getValue().getProperties());
+            var props = entry.getValue().getProperties();
+            var dialog = new PropertiesDialog("Settings", "No settings", frame, props);
             settings.put(entry.getKey(), dialog);
         }
         current = settings.get(ToolType.PENCIL);
