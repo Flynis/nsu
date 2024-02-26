@@ -19,7 +19,6 @@ public class Canvas {
     void setImage(BufferedImage image) {
         this.image = image;
         image.createGraphics();
-        clear();
         for(var listener: listeners) {
             listener.onSourceChange(this.image);
         }
@@ -29,6 +28,7 @@ public class Canvas {
         var oldImage = this.image;
         setImage(image);
         var g = image.getGraphics();
+        clear();
         g.drawImage(oldImage, 0, 0, null);
     }
 

@@ -1,9 +1,6 @@
 package ru.dyakun.paint.gui;
 
-import ru.dyakun.paint.gui.components.CanvasPane;
-import ru.dyakun.paint.gui.components.ColorObserverPane;
-import ru.dyakun.paint.gui.components.ToolRadioButtonGroup;
-import ru.dyakun.paint.gui.components.WidgetKit;
+import ru.dyakun.paint.gui.components.*;
 import ru.dyakun.paint.model.ImageManager;
 import ru.dyakun.paint.tool.ToolManager;
 import ru.dyakun.paint.tool.ToolType;
@@ -38,9 +35,10 @@ public class MainFrame extends JFrame {
     }
 
     private void createUI(JFrame frame) {
-        CanvasPane canvasPane = new CanvasPane(toolManager, imageManager.getCanvas());
-        scrollPane = new JScrollPane(canvasPane);
+        scrollPane = new JScrollPane();
+        scrollPane.setBackground(Colors.DARK_BACK_COLOR);
         frame.add(scrollPane);
+        new CanvasPane(toolManager, imageManager.getCanvas(), scrollPane);
 
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");

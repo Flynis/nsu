@@ -16,8 +16,8 @@ public class ResizeDialog extends PropertiesDialog {
         super("Resize", frame);
         this.manager = manager;
         var image = manager.getCanvas().getImage();
-        width = new IntegerProperty(image.getWidth(), image.getWidth(), 10000, "Width");
-        height = new IntegerProperty(image.getHeight(), image.getHeight(), 10000, "Height");
+        width = new IntegerProperty(image.getWidth(), 100, 10000, "Width");
+        height = new IntegerProperty(image.getHeight(), 100, 10000, "Height");
         init("", List.of(width, height));
     }
 
@@ -30,9 +30,7 @@ public class ResizeDialog extends PropertiesDialog {
     protected void beforeShow() {
         var image = manager.getCanvas().getImage();
         width.setVal(image.getWidth());
-        width.setMin(image.getWidth());
         height.setVal(image.getHeight());
-        height.setMin(image.getHeight());
         super.beforeShow();
     }
 

@@ -22,13 +22,10 @@ public class ImageManager {
     public void createEmptyImage(int width, int height) {
         BufferedImage image = new BufferedImage(width, height, Image.SCALE_DEFAULT);
         canvas.setImage(image);
+        canvas.clear();
     }
 
     public void resizeImage(int width, int height) {
-        var image = canvas.getImage();
-        if(width < image.getWidth() || height < image.getHeight()) {
-            throw new IllegalArgumentException("Resized image must be greater then source");
-        }
         BufferedImage resized = new BufferedImage(width, height, Image.SCALE_DEFAULT);
         canvas.resize(resized);
     }

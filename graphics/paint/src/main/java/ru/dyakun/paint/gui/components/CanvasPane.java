@@ -16,11 +16,14 @@ public class CanvasPane extends JPanel implements MouseListener, MouseMotionList
     private final ToolManager toolManager;
     private final Canvas canvas;
     private final Dimension size;
+    private final JScrollPane scrollPane;
 
 
-    public CanvasPane(ToolManager toolManager, Canvas canvas) {
+    public CanvasPane(ToolManager toolManager, Canvas canvas, JScrollPane scrollPane) {
         this.toolManager = toolManager;
         this.canvas = canvas;
+        this.scrollPane = scrollPane;
+        scrollPane.setViewportView(this);
         addMouseListener(this);
         addMouseMotionListener(this);
         canvas.addCanvasListener(this);
@@ -101,7 +104,9 @@ public class CanvasPane extends JPanel implements MouseListener, MouseMotionList
     @Override
     public void onSourceChange(BufferedImage image) {
         size.setSize(image.getWidth(), image.getHeight());
+        scrollPane.getViewport().setViewPosition(new Point(0,0));
         revalidate();
+        scrollPane.paintAll(scrollPane.getGraphics());
     }
 
 }
